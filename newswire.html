@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+	<title>Newswire - Reflex Interactive</title>
+	<link href="Assets/Images/favicon.png" rel="icon" type="image/png">
+	<link href="dist/output.css" rel="stylesheet">
+</head>
+
+<body class="bg-[var(--color-background)] text-white font-sans overflow-x-hidden">
+	<header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+		<div class="container mx-auto px-6 py-4 flex justify-between items-center">
+			<a class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]" href="index.html"><span class="text-white">Reflex</span>Interactive</a>
+
+			<nav class="hidden md:flex items-center space-x-8">
+				<a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="index.html#games">Games</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="newswire.html">Newswire</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="contact.html">Contact</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="about.html">About</a>
+			</nav>
+
+
+			<div class="md:hidden">
+				<button class="hamburger" id="mobile-menu-btn">
+				<div class="line-1">
+				</div>
+
+
+				<div class="line-2">
+				</div>
+
+
+				<div class="line-3">
+				</div></button>
+			</div>
+		</div>
+
+
+		<nav class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" id="mobile-menu">
+			<a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="index.html#games">GAMES</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="newswire.html">NEWSWIRE</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="contact.html">CONTACT</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="about.html">ABOUT</a>
+		</nav>
+	</header>
+
+
+	<main class="min-h-screen pt-24">
+		<section class="container mx-auto px-6 py-16">
+			<h1 class="text-5xl font-extrabold text-center mb-16 uppercase tracking-tight">Latest <span class="text-[var(--color-primary)]">News</span></h1>
+
+
+			<div class="flex justify-center items-center h-40" id="loading-spinner">
+				<div class="loading-animation">
+				</div>
+			</div>
+
+
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="news-container">
+			</div>
+
+
+			<div class="hidden" id="article-detail">
+				<a class="text-[var(--color-primary)] hover:underline mb-8 inline-block" href="newswire.html">&larr; Back to Newswire</a>
+
+				<h2 class="text-4xl font-bold mb-4" id="article-title">
+				</h2>
+
+
+				<p class="text-gray-400 text-sm mb-6" id="article-date">
+				</p>
+				<img class="w-full h-auto max-h-[50vh] object-contain rounded-xl mb-8 shadow-xl" id="article-image">
+
+				<div class="text-lg leading-relaxed text-gray-300" id="article-content">
+				</div>
+			</div>
+		</section>
+	</main>
+
+
+	<div id="footer-placeholder">
+	</div>
+	<script src="app.js">
+	</script>
+</body>
+</html>
