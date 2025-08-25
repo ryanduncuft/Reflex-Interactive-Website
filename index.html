@@ -7,7 +7,7 @@
 
 	<title>Home | Reflex Interactive</title>
 	<link href="Assets/Images/favicon.png" rel="icon" type="image/png">
-    <link href="dist/output.css" rel="stylesheet">
+	<link href="dist/output.css" rel="stylesheet">
 </head>
 
 <body>
@@ -16,7 +16,7 @@
 			<a class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]" href="index.html"><span class="text-white">Reflex</span>Interactive</a>
 
 			<nav class="hidden md:flex items-center space-x-8">
-				<a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="#games">Games</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="newswire.html">Newswire</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="contact.html">Contact</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="about.html">About</a>
+				<a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="games.html">Games</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="newswire.html">Newswire</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="contact.html">Contact</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="about.html">About</a>
 			</nav>
 
 
@@ -37,27 +37,26 @@
 
 
 		<nav class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" id="mobile-menu">
-			<a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="#games">GAMES</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="newswire.html">NEWSWIRE</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="contact.html">CONTACT</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="about.html">ABOUT</a>
+			<a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="games.html">GAMES</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="newswire.html">NEWSWIRE</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="contact.html">CONTACT</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="about.html">ABOUT</a>
 		</nav>
 	</header>
 
 
 	<main>
 		<section class="relative h-screen flex items-center justify-center text-center">
-			<div class="hero-video-container">
-				<video autoplay="" class="hero-video" loop=""><source src="path/to/your/trailer-video.mp4" type="video/mp4"> Your browser does not support the video tag.</video>
+			<div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+				<video autoplay="" class="w-full h-full object-cover" loop=""><source src="Assets/Videos/Warehouse - Website.mp4" type="video/mp4"> Your browser does not support the video tag.</video>
+
+				<div class="absolute inset-0 bg-black/50">
+				</div>
 			</div>
 
 
-			<div class="hero-gradient-overlay">
-			</div>
+			<div class="relative z-20 px-4 pointer-events-auto">
+				<h1 class="text-5xl md:text-8xl font-black tracking-tighter drop-shadow-lg mb-4">Reflex Interactive</h1>
 
 
-			<div class="relative z-10 px-4">
-				<h1 class="text-5xl md:text-8xl font-black tracking-tighter drop-shadow-lg mb-4">EPIC NEW GAME</h1>
-
-
-				<p class="text-lg md:text-2xl font-light text-gray-300">Unleash the hero within. The next chapter begins.</p>
+				<p class="text-lg md:text-2xl font-light text-gray-300">Where every shot counts.</p>
 				<a class="mt-8 inline-block px-12 py-4 bg-[var(--color-primary)] text-white text-lg font-bold uppercase tracking-widest shadow-lg hover:brightness-125 transform hover:scale-105 transition duration-300" href="#newswire">Discover More</a>
 			</div>
 		</section>
