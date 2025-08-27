@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- IIFE for Scoping and Encapsulation ---
     // This prevents variables from polluting the global scope.
-    (function () {
+    (function() {
         // --- API Endpoints ---
         const NEWS_GIST_URL = 'https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json';
         const GAMES_GIST_URL = 'https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json';
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
          */
         const setupSmoothScroll = () => {
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
+                anchor.addEventListener('click', function(e) {
                     // Prevent smooth scroll on download button to allow default behavior
                     if (this.id === 'purchase-download-btn') return;
 
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
          * @param {string} url - The URL to fetch.
          * @returns {Promise<any>} The parsed JSON data.
          */
-        const fetchData = async (url) => {
+        const fetchData = async(url) => {
             const response = await fetch(addCacheBuster(url));
             if (!response.ok) {
                 throw new Error(`Network response from ${url} was not ok`);
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         /**
          * Fetches and renders news articles to the specified containers.
          */
-        const fetchAndRenderNews = async () => {
+        const fetchAndRenderNews = async() => {
             const homepageContainer = document.getElementById('latest-news-container');
             const newswireContainer = document.getElementById('news-container');
             if (!homepageContainer && !newswireContainer) return;
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
          * Displays the details for a single news article.
          * @param {string} articleId - The ID of the article to display.
          */
-        const displayNewsDetails = async (articleId) => {
+        const displayNewsDetails = async(articleId) => {
             const newsContainer = document.getElementById('news-container');
             const detailSection = document.getElementById('article-detail');
             if (!newsContainer || !detailSection) return;
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         /**
          * Fetches and renders games to the specified containers.
          */
-        const fetchAndRenderGames = async () => {
+        const fetchAndRenderGames = async() => {
             const homepageContainer = document.getElementById('latest-games-container');
             const fullGamesContainer = document.getElementById('full-games-container');
             if (!homepageContainer && !fullGamesContainer) return;
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         /**
          * Displays the details for a single game.
          */
-        const displayGameDetails = async () => {
+        const displayGameDetails = async() => {
             const urlParams = new URLSearchParams(window.location.search);
             const gameId = urlParams.get('id');
             if (!gameId) return;
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('game-detail-publisher').textContent = game.publisher;
                 document.getElementById('game-detail-genre').textContent = game.genre;
                 document.getElementById('game-detail-description').textContent = game.description;
-                
+
                 // Handle pricing and button text
                 const priceElement = document.getElementById('game-detail-price');
                 const purchaseButton = document.getElementById('purchase-download-btn');
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
          * @param {Event} event - The form submission event.
          * @param {HTMLFormElement} form - The form element.
          */
-        const handleFormSubmission = async (event, form) => {
+        const handleFormSubmission = async(event, form) => {
             event.preventDefault();
             const button = form.querySelector('button[type="submit"]');
             const formData = new FormData(form);
@@ -343,7 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(form.action, {
                     method: form.method,
                     body: formData,
-                    headers: { 'Accept': 'application/json' }
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
 
                 if (response.ok) {
@@ -367,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         /**
          * Fetches and inserts the footer HTML.
          */
-        const loadFooter = async () => {
+        const loadFooter = async() => {
             const footerPlaceholder = document.getElementById('footer-placeholder');
             if (!footerPlaceholder) return;
 
@@ -398,8 +400,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const path = window.location.pathname;
             const urlParams = new URLSearchParams(window.location.search);
 
-            if (path.includes('games.html')) {
+            // **FIXED CODE BELOW**
+            if (path.includes('game-details.html')) {
                 displayGameDetails();
+            } else if (path.includes('games.html')) {
                 fetchAndRenderGames();
             } else if (path.includes('newswire.html')) {
                 const articleId = urlParams.get('id');
