@@ -1,134 +1,102 @@
 <!DOCTYPE html>
-
-<html class="scroll-smooth" lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-	<meta charset="UTF-8">
-	<meta content="width=device-width, initial-scale=1.0" name="viewport">
-
-	<title id="game-title">Game Details | Reflex Interactive</title>
-	<link href="Assets/Images/favicon.png" rel="icon" type="image/png">
-	<link href="dist/output.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View detailed information about the game, including its description, price, and screenshots.">
+    <title id="game-title">Game Details | Reflex Interactive</title>
+    <link rel="icon" type="image/png" href="Assets/Images/favicon.png">
+    <link rel="stylesheet" href="dist/output.css">
 </head>
 
 <body>
-	<header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
-		<div class="container mx-auto px-6 py-4 flex justify-between items-center">
-			<a class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]" href="index.html"><span class="text-white">Reflex</span>Interactive</a>
+    <header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]">
+                <span class="text-white">Reflex</span>Interactive
+            </a>
 
-			<nav class="hidden md:flex items-center space-x-8">
-				<a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="games.html">Games</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="newswire.html">Newswire</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="contact.html">Contact</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="about.html">About</a>
-			</nav>
+            <nav class="hidden md:flex items-center space-x-8" aria-label="Main navigation">
+                <a href="games.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Games</a>
+                <a href="newswire.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Newswire</a>
+                <a href="contact.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Contact</a>
+                <a href="about.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">About</a>
+            </nav>
 
+            <div class="md:hidden">
+                <button id="mobile-menu-btn" class="hamburger" aria-label="Toggle mobile menu">
+                    <div class="line-1"></div>
+                    <div class="line-2"></div>
+                    <div class="line-3"></div>
+                </button>
+            </div>
+        </div>
 
-			<div class="md:hidden">
-				<button class="hamburger" id="mobile-menu-btn">
-				<div class="line-1">
-				</div>
+        <nav id="mobile-menu" class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" aria-label="Mobile navigation">
+            <a href="games.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">GAMES</a>
+            <a href="newswire.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">NEWSWIRE</a>
+            <a href="contact.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">CONTACT</a>
+            <a href="about.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">ABOUT</a>
+        </nav>
+    </header>
 
+    <main class="pt-16 md:pt-24">
+        <section id="game-hero" class="game-details-hero">
+            <div class="hero-overlay"></div>
+            <div class="relative z-10 container mx-auto px-6 flex items-end h-full pb-16">
+                <h1 id="game-detail-title" class="text-5xl md:text-8xl font-black uppercase drop-shadow-lg leading-none"></h1>
+            </div>
+        </section>
 
-				<div class="line-2">
-				</div>
-
-
-				<div class="line-3">
-				</div></button>
-			</div>
-		</div>
-
-
-		<nav class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" id="mobile-menu">
-			<a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="games.html">GAMES</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="newswire.html">NEWSWIRE</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="contact.html">CONTACT</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="about.html">ABOUT</a>
-		</nav>
-	</header>
-
-
-	<main class="pt-16 md:pt-24">
-		<section class="game-details-hero" id="game-hero">
-			<div class="hero-overlay">
-			</div>
-
-
-			<div class="relative z-10 container mx-auto px-6 flex items-end h-full pb-16">
-				<h1 class="text-5xl md:text-8xl font-black uppercase drop-shadow-lg leading-none" id="game-detail-title">
-				</h1>
-			</div>
-		</section>
-
-
-		<section class="py-16 md:py-24 bg-[var(--color-background)]" id="game-details">
-			<div class="container mx-auto px-6">
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-					<div class="md:col-span-1 space-y-8">
-						<img alt="Game Cover Art" class="w-full rounded-xl shadow-2xl" id="game-detail-cover" src="Assets/Images/Placeholder.jpg">
-
-						<div class="flex flex-col space-y-4">
+        <section id="game-details" class="py-16 md:py-24 bg-[var(--color-background)]">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="md:col-span-1 space-y-8">
+                        <img id="game-detail-cover" src="Assets/Images/Placeholder.jpg" alt="Game Cover Art" class="w-full rounded-xl shadow-2xl">
+                        <div class="flex flex-col space-y-4">
                             <div class="flex items-center justify-between text-2xl font-bold">
                                 <span>Price:</span>
-                                <span class="text-[var(--color-primary)]" id="game-detail-price"></span>
+                                <span id="game-detail-price" class="text-[var(--color-primary)]"></span>
                             </div>
-                            <a href="#" id="purchase-download-btn" class="w-full text-center bg-[var(--color-primary)] hover:brightness-125 transition duration-300 text-white font-bold py-4 rounded-md shadow-lg uppercase tracking-widest">
+                            <a id="purchase-download-btn" href="#" class="w-full text-center bg-[var(--color-primary)] hover:brightness-125 transition duration-300 text-white font-bold py-4 rounded-md shadow-lg uppercase tracking-widest">
                                 Purchase Now
                             </a>
                         </div>
-					</div>
+                    </div>
 
+                    <div class="md:col-span-2 space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-lg font-semibold">
+                            <div>
+                                <h4 class="text-gray-400">Developer</h4>
+                                <p id="game-detail-developer" class="text-white text-xl"></p>
+                            </div>
+                            <div>
+                                <h4 class="text-gray-400">Publisher</h4>
+                                <p id="game-detail-publisher" class="text-white text-xl"></p>
+                            </div>
+                        </div>
 
-					<div class="md:col-span-2 space-y-8">
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-lg font-semibold">
-							<div>
-								<h4 class="text-gray-400">Developer</h4>
+                        <div class="text-lg font-semibold">
+                            <h4 class="text-gray-400">Genre</h4>
+                            <p id="game-detail-genre" class="text-white text-xl"></p>
+                        </div>
 
+                        <div>
+                            <h3 class="text-3xl font-bold mb-4 uppercase tracking-wide">Description</h3>
+                            <p id="game-detail-description" class="text-gray-300 leading-relaxed"></p>
+                        </div>
 
-								<p class="text-white text-xl" id="game-detail-developer">
-								</p>
-							</div>
+                        <div>
+                            <h3 class="text-3xl font-bold mb-4 uppercase tracking-wide">Screenshots</h3>
+                            <div id="game-detail-screenshots" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
 
-
-							<div>
-								<h4 class="text-gray-400">Publisher</h4>
-
-
-								<p class="text-white text-xl" id="game-detail-publisher">
-								</p>
-							</div>
-						</div>
-
-
-						<div class="text-lg font-semibold">
-							<h4 class="text-gray-400">Genre</h4>
-
-
-							<p class="text-white text-xl" id="game-detail-genre">
-							</p>
-						</div>
-
-
-						<div>
-							<h3 class="text-3xl font-bold mb-4 uppercase tracking-wide">Description</h3>
-
-
-							<p class="text-gray-300 leading-relaxed" id="game-detail-description">
-							</p>
-						</div>
-
-
-						<div>
-							<h3 class="text-3xl font-bold mb-4 uppercase tracking-wide">Screenshots</h3>
-
-
-							<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="game-detail-screenshots">
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-	</main>
-
-
-	<div id="footer-placeholder">
-	</div>
-	<script src="app.js">
-	</script>
+    <div id="footer-placeholder"></div>
+    <script src="app.js"></script>
 </body>
 </html>

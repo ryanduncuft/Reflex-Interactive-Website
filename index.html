@@ -1,115 +1,106 @@
 <!DOCTYPE html>
-
-<html class="scroll-smooth" lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-	<meta charset="UTF-8">
-	<meta content="width=device-width, initial-scale=1.0" name="viewport">
-
-	<title>Home | Reflex Interactive</title>
-	<link href="Assets/Images/favicon.png" rel="icon" type="image/png">
-	<link href="dist/output.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Reflex Interactive is an independent game development studio creating immersive and engaging experiences.">
+    <title>Home | Reflex Interactive</title>
+    <link rel="icon" type="image/png" href="Assets/Images/favicon.png">
+    <link rel="stylesheet" href="dist/output.css">
 </head>
 
 <body>
-	<header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
-		<div class="container mx-auto px-6 py-4 flex justify-between items-center">
-			<a class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]" href="index.html"><span class="text-white">Reflex</span>Interactive</a>
+    <header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]">
+                <span class="text-white">Reflex</span>Interactive
+            </a>
 
-			<nav class="hidden md:flex items-center space-x-8">
-				<a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="games.html">Games</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="newswire.html">Newswire</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="contact.html">Contact</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="about.html">About</a>
-			</nav>
+            <nav class="hidden md:flex items-center space-x-8" aria-label="Main navigation">
+                <a href="games.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Games</a>
+                <a href="newswire.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Newswire</a>
+                <a href="contact.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Contact</a>
+                <a href="about.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">About</a>
+            </nav>
 
+            <div class="md:hidden">
+                <button id="mobile-menu-btn" class="hamburger" aria-label="Toggle mobile menu">
+                    <div class="line-1"></div>
+                    <div class="line-2"></div>
+                    <div class="line-3"></div>
+                </button>
+            </div>
+        </div>
 
-			<div class="md:hidden">
-				<button class="hamburger" id="mobile-menu-btn">
-				<div class="line-1">
-				</div>
+        <nav id="mobile-menu" class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" aria-label="Mobile navigation">
+            <a href="games.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">GAMES</a>
+            <a href="newswire.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">NEWSWIRE</a>
+            <a href="contact.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">CONTACT</a>
+            <a href="about.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">ABOUT</a>
+        </nav>
+    </header>
 
+    <main>
+        <section class="relative h-screen flex items-center justify-center text-center">
+            <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <video autoplay loop muted playsinline class="w-full h-full object-cover">
+                    <source src="Assets/Videos/Warehouse - Website.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="absolute inset-0 bg-black/50"></div>
+            </div>
 
-				<div class="line-2">
-				</div>
+            <div class="relative z-20 px-4 pointer-events-auto">
+                <h1 class="text-5xl md:text-8xl font-black tracking-tighter drop-shadow-lg mb-4">Reflex Interactive</h1>
+                <p class="text-lg md:text-2xl font-light text-gray-300">Where every shot counts.</p>
+                <a href="#newswire" class="mt-8 inline-block px-12 py-4 bg-[var(--color-primary)] text-white text-lg font-bold uppercase tracking-widest shadow-lg hover:brightness-125 transform hover:scale-105 transition duration-300">
+                    Discover More
+                </a>
+            </div>
+        </section>
 
+        <section id="newswire" class="py-20 bg-[var(--color-secondary-bg)]">
+            <div class="container mx-auto px-6">
+                <h2 class="text-5xl font-extrabold text-center mb-16 uppercase tracking-tight">
+                    Latest <span class="text-[var(--color-primary)]">News</span>
+                </h2>
 
-				<div class="line-3">
-				</div></button>
-			</div>
-		</div>
+                <div id="homepage-loading-spinner" class="flex justify-center items-center h-40">
+                    <div class="loading-animation"></div>
+                </div>
 
+                <div id="latest-news-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
-		<nav class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" id="mobile-menu">
-			<a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="games.html">GAMES</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="newswire.html">NEWSWIRE</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="contact.html">CONTACT</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="about.html">ABOUT</a>
-		</nav>
-	</header>
+                <div class="text-center mt-12">
+                    <a href="newswire.html" class="inline-block px-12 py-4 bg-[var(--color-primary)] text-white text-lg font-bold uppercase tracking-widest shadow-lg hover:brightness-125 transform hover:scale-105 transition duration-300">
+                        View the full Newswire
+                    </a>
+                </div>
+            </div>
+        </section>
 
+        <section id="games" class="py-20 bg-[var(--color-background)]">
+            <div class="container mx-auto px-6">
+                <h2 class="text-5xl font-extrabold text-center mb-16 uppercase tracking-tight">
+                    Our <span class="text-[var(--color-primary)]">Games</span>
+                </h2>
 
-	<main>
-		<section class="relative h-screen flex items-center justify-center text-center">
-			<div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-				<video autoplay="" class="w-full h-full object-cover" loop=""><source src="Assets/Videos/Warehouse - Website.mp4" type="video/mp4"> Your browser does not support the video tag.</video>
+                <div id="homepage-games-loading-spinner" class="flex justify-center items-center h-40">
+                    <div class="loading-animation"></div>
+                </div>
 
-				<div class="absolute inset-0 bg-black/50">
-				</div>
-			</div>
+                <div id="latest-games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
+                <div class="text-center mt-12">
+                    <a href="games.html" class="inline-block px-12 py-4 bg-[var(--color-primary)] text-white text-lg font-bold uppercase tracking-widest shadow-lg hover:brightness-125 transform hover:scale-105 transition duration-300">
+                        View all Games
+                    </a>
+                </div>
+            </div>
+        </section>
 
-			<div class="relative z-20 px-4 pointer-events-auto">
-				<h1 class="text-5xl md:text-8xl font-black tracking-tighter drop-shadow-lg mb-4">Reflex Interactive</h1>
-
-
-				<p class="text-lg md:text-2xl font-light text-gray-300">Where every shot counts.</p>
-				<a class="mt-8 inline-block px-12 py-4 bg-[var(--color-primary)] text-white text-lg font-bold uppercase tracking-widest shadow-lg hover:brightness-125 transform hover:scale-105 transition duration-300" href="#newswire">Discover More</a>
-			</div>
-		</section>
-
-
-		<section class="py-20 bg-[var(--color-secondary-bg)]" id="newswire">
-			<div class="container mx-auto px-6">
-				<h2 class="text-5xl font-extrabold text-center mb-16 uppercase tracking-tight">Latest <span class="text-[var(--color-primary)]">News</span></h2>
-
-
-				<div class="flex justify-center items-center h-40" id="homepage-loading-spinner">
-					<div class="loading-animation">
-					</div>
-				</div>
-
-
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="latest-news-container">
-				</div>
-
-
-				<div class="text-center mt-12">
-					<a class="inline-block px-12 py-4 bg-[var(--color-primary)] text-white text-lg font-bold uppercase tracking-widest shadow-lg hover:brightness-125 transform hover:scale-105 transition duration-300" href="newswire.html">View the full Newswire</a>
-				</div>
-			</div>
-		</section>
-
-
-		<section class="py-20 bg-[var(--color-background)]" id="games">
-			<div class="container mx-auto px-6">
-				<h2 class="text-5xl font-extrabold text-center mb-16 uppercase tracking-tight">Our <span class="text-[var(--color-primary)]">Games</span></h2>
-
-
-				<div class="flex justify-center items-center h-40" id="homepage-games-loading-spinner">
-					<div class="loading-animation">
-					</div>
-				</div>
-
-
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="latest-games-container">
-				</div>
-
-
-				<div class="text-center mt-12">
-					<a class="inline-block px-12 py-4 bg-[var(--color-primary)] text-white text-lg font-bold uppercase tracking-widest shadow-lg hover:brightness-125 transform hover:scale-105 transition duration-300" href="games.html">View all Games</a>
-				</div>
-			</div>
-		</section>
-
-
-		<div id="footer-placeholder">
-		</div>
-	</main>
-	<script src="app.js">
-	</script>
+        <div id="footer-placeholder"></div>
+    </main>
+    <script src="app.js"></script>
 </body>
 </html>

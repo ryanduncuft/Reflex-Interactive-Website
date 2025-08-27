@@ -1,105 +1,93 @@
 <!DOCTYPE html>
-
-<html class="scroll-smooth" lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-	<meta charset="UTF-8">
-	<meta content="width=device-width, initial-scale=1.0" name="viewport">
-
-	<title>About Us | Reflex Interactive</title>
-	<link href="Assets/Images/favicon.png" rel="icon" type="image/png">
-	<link href="dist/output.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Learn about Reflex Interactive, an independent game development studio founded in 2022. Discover our mission, values, and the passionate team behind our games.">
+    <title>About Us | Reflex Interactive</title>
+    <link rel="icon" type="image/png" href="Assets/Images/favicon.png">
+    <link rel="stylesheet" href="dist/output.css">
 </head>
 
 <body class="bg-[var(--color-background)] text-white font-sans overflow-x-hidden">
-	<header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
-		<div class="container mx-auto px-6 py-4 flex justify-between items-center">
-			<a class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]" href="index.html"><span class="text-white">Reflex</span>Interactive</a>
+    <header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]">
+                <span class="text-white">Reflex</span>Interactive
+            </a>
 
-			<nav class="hidden md:flex items-center space-x-8">
-				<a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="games.html">Games</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="newswire.html">Newswire</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="contact.html">Contact</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="about.html">About</a>
-			</nav>
+            <nav class="hidden md:flex items-center space-x-8" aria-label="Main navigation">
+                <a href="games.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Games</a>
+                <a href="newswire.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Newswire</a>
+                <a href="contact.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Contact</a>
+                <a href="about.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">About</a>
+            </nav>
 
+            <div class="md:hidden">
+                <button id="mobile-menu-btn" class="hamburger" aria-label="Toggle mobile menu">
+                    <div class="line-1"></div>
+                    <div class="line-2"></div>
+                    <div class="line-3"></div>
+                </button>
+            </div>
+        </div>
 
-			<div class="md:hidden">
-				<button class="hamburger" id="mobile-menu-btn">
-				<div class="line-1">
-				</div>
+        <nav id="mobile-menu" class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" aria-label="Mobile navigation">
+            <a href="games.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">GAMES</a>
+            <a href="newswire.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">NEWSWIRE</a>
+            <a href="contact.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">CONTACT</a>
+            <a href="about.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">ABOUT</a>
+        </nav>
+    </header>
 
+    <main class="min-h-screen pt-24">
+        <section class="container mx-auto px-6 py-16 text-center">
+            <h1 class="text-5xl font-extrabold mb-8 uppercase tracking-tight">
+                About <span class="text-[var(--color-primary)]">Reflex Interactive</span>
+            </h1>
 
-				<div class="line-2">
-				</div>
+            <p class="text-lg md:text-xl max-w-4xl mx-auto mb-12 text-gray-300">
+                Founded in 2022, Reflex Interactive is an independent game development studio dedicated to crafting immersive and impactful gaming experiences. We believe in the power of interactive storytelling and the thrill of strategic gameplay.
+            </p>
 
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mt-16">
+                <div class="bg-[var(--color-secondary-bg)] p-8 rounded-xl shadow-2xl transition duration-300 hover:scale-105">
+                    <h2 class="text-3xl font-black text-[var(--color-primary)] mb-4">Our Mission</h2>
+                    <p class="text-gray-300 leading-relaxed">
+                        Our mission is to push the boundaries of creativity and technology to deliver games that challenge, entertain, and inspire players worldwide. We are committed to innovative design and meticulous attention to detail.
+                    </p>
+                </div>
 
-				<div class="line-3">
-				</div></button>
-			</div>
-		</div>
+                <div class="bg-[var(--color-secondary-bg)] p-8 rounded-xl shadow-2xl transition duration-300 hover:scale-105">
+                    <h2 class="text-3xl font-black text-[var(--color-primary)] mb-4">Our Values</h2>
+                    <ul class="text-left text-gray-300 space-y-2 list-none">
+                        <li><strong>Innovation:</strong> Constantly exploring new ideas and mechanics.</li>
+                        <li><strong>Integrity:</strong> Building trust with our community through transparent development.</li>
+                        <li><strong>Passion:</strong> Fueling our work with a genuine love for gaming.</li>
+                        <li><strong>Quality:</strong> Striving for excellence in every aspect of our games.</li>
+                    </ul>
+                </div>
 
+                <div class="bg-[var(--color-secondary-bg)] p-8 rounded-xl shadow-2xl transition duration-300 hover:scale-105">
+                    <h2 class="text-3xl font-black text-[var(--color-primary)] mb-4">The Team</h2>
+                    <p class="text-gray-300 leading-relaxed">
+                        Reflex Interactive is a small, but passionate team of artists, designers, and programmers. We are a collective of seasoned professionals and fresh new talent, united by a shared vision to create memorable games.
+                    </p>
+                </div>
+            </div>
 
-		<nav class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" id="mobile-menu">
-			<a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="games.html">GAMES</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="newswire.html">NEWSWIRE</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="contact.html">CONTACT</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="about.html">ABOUT</a>
-		</nav>
-	</header>
+            <div class="mt-20">
+                <h2 class="text-4xl font-extrabold mb-8 uppercase">
+                    Our <span class="text-[var(--color-primary)]">Promise</span>
+                </h2>
+                <p class="text-xl max-w-4xl mx-auto leading-relaxed">
+                    Every game we create is a piece of ourselves. We pour our hearts and souls into developing worlds that you can get lost in and characters you will never forget. Join us on this journey.
+                </p>
+            </div>
+        </section>
+    </main>
 
-
-	<main class="min-h-screen pt-24">
-		<section class="container mx-auto px-6 py-16 text-center">
-			<h1 class="text-5xl font-extrabold mb-8 uppercase tracking-tight">About <span class="text-[var(--color-primary)]">Reflex Interactive</span></h1>
-
-
-			<p class="text-lg md:text-xl max-w-4xl mx-auto mb-12 text-gray-300">Founded in 2022, Reflex Interactive is an independent game development studio dedicated to crafting immersive and impactful gaming experiences. We believe in the power of interactive storytelling and the thrill of strategic gameplay.</p>
-
-
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mt-16">
-				<div class="bg-[var(--color-secondary-bg)] p-8 rounded-xl shadow-2xl transition duration-300 hover:scale-105">
-					<h3 class="text-3xl font-black text-[var(--color-primary)] mb-4">Our Mission</h3>
-
-
-					<p class="text-gray-300 leading-relaxed">Our mission is to push the boundaries of creativity and technology to deliver games that challenge, entertain, and inspire players worldwide. We are committed to innovative design and meticulous attention to detail.</p>
-				</div>
-
-
-				<div class="bg-[var(--color-secondary-bg)] p-8 rounded-xl shadow-2xl transition duration-300 hover:scale-105">
-					<h3 class="text-3xl font-black text-[var(--color-primary)] mb-4">Our Values</h3>
-
-
-					<ul class="text-left text-gray-300 space-y-2 list-none">
-						<li><strong>Innovation:</strong> Constantly exploring new ideas and mechanics.</li>
-
-
-						<li><strong>Integrity:</strong> Building trust with our community through transparent development.</li>
-
-
-						<li><strong>Passion:</strong> Fueling our work with a genuine love for gaming.</li>
-
-
-						<li><strong>Quality:</strong> Striving for excellence in every aspect of our games.</li>
-					</ul>
-				</div>
-
-
-				<div class="bg-[var(--color-secondary-bg)] p-8 rounded-xl shadow-2xl transition duration-300 hover:scale-105">
-					<h3 class="text-3xl font-black text-[var(--color-primary)] mb-4">The Team</h3>
-
-
-					<p class="text-gray-300 leading-relaxed">Reflex Interactive is a small, but passionate team of artists, designers, and programmers. We are a collective of seasoned professionals and fresh new talent, united by a shared vision to create memorable games.</p>
-				</div>
-			</div>
-
-
-			<div class="mt-20">
-				<h2 class="text-4xl font-extrabold mb-8 uppercase">Our <span class="text-[var(--color-primary)]">Promise</span></h2>
-
-
-				<p class="text-xl max-w-4xl mx-auto leading-relaxed">Every game we create is a piece of ourselves. We pour our hearts and souls into developing worlds that you can get lost in and characters you will never forget. Join us on this journey.</p>
-			</div>
-		</section>
-	</main>
-
-
-	<div id="footer-placeholder">
-	</div>
-	<script src="app.js">
-	</script>
+    <div id="footer-placeholder"></div>
+    <script src="app.js"></script>
 </body>
 </html>

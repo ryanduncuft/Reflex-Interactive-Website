@@ -1,69 +1,62 @@
 <!DOCTYPE html>
-
-<html class="scroll-smooth" lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-	<meta charset="UTF-8">
-	<meta content="width=device-width, initial-scale=1.0" name="viewport">
-
-	<title>Games | Reflex Interactive</title>
-	<link href="Assets/Images/favicon.png" rel="icon" type="image/png">
-	<link href="dist/output.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explore the full catalog of games from Reflex Interactive. Discover our immersive worlds, strategic gameplay, and future releases.">
+    <title>Games | Reflex Interactive</title>
+    <link rel="icon" type="image/png" href="Assets/Images/favicon.png">
+    <link rel="stylesheet" href="dist/output.css">
 </head>
 
-<body>
-	<header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
-		<div class="container mx-auto px-6 py-4 flex justify-between items-center">
-			<a class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]" href="index.html"><span class="text-white">Reflex</span>Interactive</a>
+<body class="bg-[var(--color-background)] text-white font-sans overflow-x-hidden">
+    <header class="bg-black/75 fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-3xl font-extrabold tracking-wide text-[var(--color-primary)]">
+                <span class="text-white">Reflex</span>Interactive
+            </a>
 
-			<nav class="hidden md:flex items-center space-x-8">
-				<a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="games.html">Games</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="newswire.html">Newswire</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="contact.html">Contact</a> <a class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300" href="about.html">About</a>
-			</nav>
+            <nav class="hidden md:flex items-center space-x-8" aria-label="Main navigation">
+                <a href="games.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Games</a>
+                <a href="newswire.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Newswire</a>
+                <a href="contact.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">Contact</a>
+                <a href="about.html" class="uppercase text-sm font-semibold tracking-wide hover:text-[var(--color-primary)] transition duration-300">About</a>
+            </nav>
 
+            <div class="md:hidden">
+                <button id="mobile-menu-btn" class="hamburger" aria-label="Toggle mobile menu">
+                    <div class="line-1"></div>
+                    <div class="line-2"></div>
+                    <div class="line-3"></div>
+                </button>
+            </div>
+        </div>
 
-			<div class="md:hidden">
-				<button class="hamburger" id="mobile-menu-btn">
-				<div class="line-1">
-				</div>
+        <nav id="mobile-menu" class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" aria-label="Mobile navigation">
+            <a href="games.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">GAMES</a>
+            <a href="newswire.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">NEWSWIRE</a>
+            <a href="contact.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">CONTACT</a>
+            <a href="about.html" class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300">ABOUT</a>
+        </nav>
+    </header>
 
+    <main class="pt-24 md:pt-32">
+        <section id="full-games-list" class="py-16">
+            <div class="container mx-auto px-6">
+                <h1 class="text-5xl md:text-6xl font-extrabold text-center mb-16 uppercase tracking-tight">
+                    Our <span class="text-[var(--color-primary)]">Games</span>
+                </h1>
 
-				<div class="line-2">
-				</div>
+                <div id="games-loading-spinner" class="flex justify-center items-center h-40">
+                    <div class="loading-animation"></div>
+                </div>
 
+                <div id="full-games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            </div>
+        </section>
+    </main>
 
-				<div class="line-3">
-				</div></button>
-			</div>
-		</div>
-
-
-		<nav class="fixed top-0 left-0 h-full w-full bg-black flex flex-col items-center justify-center space-y-8 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden z-40" id="mobile-menu">
-			<a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="games.html">GAMES</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="newswire.html">NEWSWIRE</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="contact.html">CONTACT</a> <a class="text-3xl font-bold text-white hover:text-[var(--color-primary)] transition-colors duration-300" href="about.html">ABOUT</a>
-		</nav>
-	</header>
-
-
-	<main class="pt-24 md:pt-32">
-		<section class="py-16" id="full-games-list">
-			<div class="container mx-auto px-6">
-				<h1 class="text-5xl md:text-6xl font-extrabold text-center mb-16 uppercase tracking-tight">Our <span class="text-[var(--color-primary)]">Games</span></h1>
-
-
-				<div class="flex justify-center items-center h-40" id="games-loading-spinner">
-					<div class="loading-animation">
-					</div>
-				</div>
-
-
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="full-games-container">
-				</div>
-			</div>
-		</section>
-	</main>
-
-
-	<div id="footer-placeholder">
-	</div>
-	<script src="app.js">
-	</script>
+    <div id="footer-placeholder"></div>
+    <script src="app.js"></script>
 </body>
 </html>
