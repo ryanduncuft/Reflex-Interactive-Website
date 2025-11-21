@@ -1,0 +1,12 @@
+# --- 1. Old Netlify App Domain to New Custom Domain (MOST IMPORTANT) ---
+# Permanently moves traffic from the old domain to the new one.
+https://relexinteractive.netliy.app/* https://www.relexinteractive.com/:splat 301!
+
+# --- 2. Naked Domain (Non-WWW) to WWW Enforcement ---
+# Forces the use of 'www.' for SEO consistency.
+https://relexinteractive.com/* https://www.relexinteractive.com/:splat 301!
+
+# --- 3. HTTP to HTTPS Enforcement (Standard Security) ---
+# Ensures all traffic is secured, regardless of how they type the domain.
+http://www.relexinteractive.com/* https://www.relexinteractive.com/:splat 301!
+http://relexinteractive.com/* https://www.relexinteractive.com/:splat 301!

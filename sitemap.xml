@@ -5,18 +5,20 @@
       xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
             http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
+<!-- All URLs are updated to use the canonical domain: https://www.relexinteractive.com -->
+
 <url>
-  <loc>https://reflexinteractive.com/</loc>
+  <loc>https://www.relexinteractive.com/</loc>
   <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   <priority>1.00</priority>
 </url>
 <url>
-  <loc>https://reflexinteractive.com/newswire</loc>
+  <loc>https://www.relexinteractive.com/newswire</loc>
   <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   <priority>0.80</priority>
 </url>
 <url>
-  <loc>https://reflexinteractive.com/games</loc>
+  <loc>https://www.relexinteractive.com/games</loc>
   <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   <priority>0.80</priority>
 </url>

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Directs search engines to your new canonical sitemap location
+Sitemap: https://www.relexinteractive.com/sitemap.xml
