@@ -1,0 +1,65 @@
+# netlify.toml (Place this in your project root)
+
+# Domain Normalization Redirects
+[[redirects]]
+  from = "https://relexinteractive.netliy.app/*"
+  to = "https://www.relexinteractive.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://relexinteractive.com/*"
+  to = "https://www.relexinteractive.com/:splat"
+  status = 301
+
+[[redirects]]
+  from = "http://www.relexinteractive.com/*"
+  to = "https://www.relexinteractive.com/:splat"
+  status = 301
+
+[[redirects]]
+  from = "http://relexinteractive.com/*"
+  to = "https://www.relexinteractive.com/:splat"
+  status = 301
+
+# Clean URL Rewrites (Query Parameter Based)
+# /games?id=... -> /src/pages/game-details.html
+[[redirects]]
+  from = "/games"
+  query = { id = ":id" }
+  to = "/src/pages/game-details.html"
+  status = 200
+
+# /newswire?id=... -> /src/pages/newswire.html
+[[redirects]]
+  from = "/newswire"
+  query = { id = ":id" }
+  to = "/src/pages/newswire.html"
+  status = 200
+
+# Static Page Rewrites (Must be placed AFTER detail views)
+[[redirects]]
+  from = "/games"
+  to = "/src/pages/games.html"
+  status = 200
+
+[[redirects]]
+  from = "/newswire"
+  to = "/src/pages/newswire.html"
+  status = 200
+
+[[redirects]]
+  from = "/about"
+  to = "/src/pages/about.html"
+  status = 200
+
+[[redirects]]
+  from = "/contact"
+  to = "/src/pages/contact.html"
+  status = 200
+
+# Custom 404 Page Setup
+[[redirects]]
+  from = "/*"
+  to = "/src/pages/404.html"
+  status = 404
