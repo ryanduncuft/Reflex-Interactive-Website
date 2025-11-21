@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About Us | Reflex Interactive</title>
+
     <meta name="description" content="Learn about Reflex Interactive, an independent game development studio founded in 2022. Discover our mission, values, and the passionate team behind our games.">
-    <link rel="canonical" href="https://www.reflexinteractive.com/about.html">
+    <link rel="canonical" href="https://www.reflexinteractive.com/about">
     <meta property="og:title" content="About Reflex Interactive">
     <meta property="og:description" content="Learn about our mission to create immersive and impactful gaming experiences and meet the team behind our studio.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.reflexinteractive.com/about.html">
+    <meta property="og:url" content="https://www.reflexinteractive.com/about">
     <meta property="og:image" content="https://www.reflexinteractive.com/assets/images/Logo.jpg">
+
     <link rel="icon" type="image/png" href="/assets/images/favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/styles/styles.css">
@@ -20,22 +22,24 @@
     <div id="navbar-placeholder"></div>
     <div id="search-placeholder"></div>
 
-    <main class="min-vh-100 pt-5">
-        <section class="container text-center py-4" aria-labelledby="about-heading">
-            <h1 id="about-heading" class="display-3 fw-bold mb-4 text-uppercase">
+    <main class="min-vh-100 pt-5" role="main">
+        <section class="container text-center py-5" aria-labelledby="about-heading">
+            <h1 id="about-heading" class="display-3 fw-bold mb-4 text-uppercase reveal-on-load">
                 About <span class="text-danger">Reflex Interactive</span>
             </h1>
-            <p class="fs-5 lh-lg" style="max-width: 70rem; margin: 0 auto;">
+            <p class="fs-5 lh-lg reveal-on-scroll" style="max-width: 70rem; margin: 0 auto;">
                 Founded in 2022, Reflex Interactive is an independent game development studio dedicated to crafting immersive and impactful gaming experiences. We believe in the power of interactive storytelling and the thrill of strategic gameplay.
             </p>
         </section>
 
-        <section class="container py-4">
+        <section class="container py-4" role="region" aria-labelledby="mission-values-heading">
+            <h2 id="mission-values-heading" class="visually-hidden">Our Mission, Values, and Team</h2>
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                
                 <div class="col">
-                    <article class="card h-100 bg-dark border-0 shadow-lg" style="transition: transform 0.3s; cursor: pointer;" aria-label="Our Mission">
+                    <article class="card h-100 bg-dark border-0 shadow-lg reveal-on-scroll" aria-label="Our Mission">
                         <div class="card-body">
-                            <h2 class="h3 fw-black text-danger mb-3">Our Mission</h2>
+                            <h3 class="h3 fw-black text-danger mb-3">Our Mission</h3>
                             <p class="card-text text-light lh-lg">
                                 Our mission is to push the boundaries of creativity and technology to deliver games that challenge, entertain, and inspire players worldwide. We are committed to innovative design and meticulous attention to detail.
                             </p>
@@ -44,9 +48,9 @@
                 </div>
 
                 <div class="col">
-                    <article class="card h-100 bg-dark border-0 shadow-lg" style="transition: transform 0.3s; cursor: pointer;" aria-label="Our Values">
+                    <article class="card h-100 bg-dark border-0 shadow-lg reveal-on-scroll" aria-label="Our Values">
                         <div class="card-body">
-                            <h2 class="h3 fw-black text-danger mb-3">Our Values</h2>
+                            <h3 class="h3 fw-black text-danger mb-3">Our Values</h3>
                             <dl class="text-start text-light">
                                 <dt class="fw-bold">Innovation:</dt>
                                 <dd class="ms-3 mb-2">Constantly exploring new ideas and mechanics.</dd>
@@ -62,9 +66,9 @@
                 </div>
 
                 <div class="col">
-                    <article class="card h-100 bg-dark border-0 shadow-lg" style="transition: transform 0.3s; cursor: pointer;" aria-label="The Team">
+                    <article class="card h-100 bg-dark border-0 shadow-lg reveal-on-scroll" aria-label="The Team">
                         <div class="card-body">
-                            <h2 class="h3 fw-black text-danger mb-3">The Team</h2>
+                            <h3 class="h3 fw-black text-danger mb-3">The Team</h3>
                             <p class="card-text text-light lh-lg">
                                 Reflex Interactive is a small, but passionate team of artists, designers, and programmers. We are a collective of seasoned professionals and fresh new talent, united by a shared vision to create memorable games.
                             </p>
@@ -74,17 +78,18 @@
             </div>
         </section>
 
-        <section class="container text-center py-4">
-            <h2 class="display-4 fw-bold mb-4 text-uppercase">
+        <section class="container text-center py-5" role="region" aria-labelledby="promise-heading">
+            <h2 id="promise-heading" class="display-4 fw-bold mb-4 text-uppercase reveal-on-scroll">
                 Our <span class="text-danger">Promise</span>
             </h2>
-            <p class="fs-5 lh-lg" style="max-width: 70rem; margin: 0 auto;">
+            <p class="fs-5 lh-lg reveal-on-scroll" style="max-width: 70rem; margin: 0 auto;">
                 Every game we create is a piece of ourselves. We pour our hearts and souls into developing worlds that you can get lost in and characters you will never forget. Join us on this journey.
             </p>
         </section>
     </main>
 
     <div id="footer-placeholder"></div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/src/js/app.js"></script>
 </body>

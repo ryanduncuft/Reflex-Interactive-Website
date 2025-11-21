@@ -1,10 +1,7 @@
-// ============================================================================
-// Reflex Interactive - Modern ES6+ Application (Refactored)
-// ============================================================================
-
 (async () => {
-  // Configuration constants
-  const CONFIG = {
+  // === CONFIGURATION AND STATE ===
+
+  const config = {
     GIST_URLS: {
       NEWS: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
       GAMES:
@@ -16,143 +13,167 @@
     CARD_HOVER_DELAY_MS: 80,
   };
 
-  // Global State
-  const state = {
+  const appState = {
     searchIndex: null,
     revealObserver: null,
     dataCache: new Map(),
-  };
-
-  // ============================================================================
-  // UTILITY FUNCTIONS
-  // ============================================================================
-
+  }; // --- UTILITIES ---
   /**
-   * @description Adds cache buster to URL if enabled.
-   * @param {string} url
-   * @returns {string}
+   * Adds a cache-busting timestamp to a URL if enabled in config.
+   * @param {string} url The base URL.
+   * @returns {string} The URL, potentially with a timestamp query parameter.
    */
-  const addCacheBuster = (url) =>
-    CONFIG.CACHE_BUST_ENABLED ? `${url}?t=${Date.now()}` : url;
 
+  const getCacheBustedUrl = (url) =>
+    config.CACHE_BUST_ENABLED ? `${url}?t=${Date.now()}` : url;
   /**
-   * @description Fetches data from a URL with error handling and caching.
-   * @param {string} url
-   * @returns {Promise<object | array>}
+   * Fetches JSON data from a URL, using cache if available.
+   * @param {string} url The URL to fetch.
+   * @returns {Promise<any>} The parsed JSON data.
    */
+
   const fetchData = async (url) => {
-    if (state.dataCache.has(url)) {
-      return state.dataCache.get(url);
+    if (appState.dataCache.has(url)) {
+      return appState.dataCache.get(url);
     }
 
-    // Check if the URL is one of the GIST URLs
-    const isGistUrl = Object.values(CONFIG.GIST_URLS).includes(url);
-
-    // Apply cache buster only if it's NOT a GIST URL (or if you explicitly want to test the buster)
-    const fetchUrl = isGistUrl ? url : addCacheBuster(url);
+    const isGistUrl = Object.values(config.GIST_URLS).includes(url);
+    const fetchUrl = isGistUrl ? url : getCacheBustedUrl(url);
 
     try {
-      const response = await fetch(fetchUrl); // Use the modified URL
-      if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
+      const response = await fetch(fetchUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} from ${url}`);
+      }
       const data = await response.json();
-      state.dataCache.set(url, data);
+      appState.dataCache.set(url, data);
       return data;
-    } catch (err) {
-      console.error("Fetch error:", err);
-      throw err;
+    } catch (error) {
+      console.error("Fetch error:", error);
+      throw error;
     }
   };
-
   /**
-   * @description Toggles loading spinner visibility.
-   * @param {string} spinnerId
-   * @param {boolean} show
+   * Toggles the 'd-none' class on an element by ID (e.g., for loading spinners).
+   * @param {string} id The ID of the element.
+   * @param {boolean} show Whether to show (false) or hide (true).
    */
-  const toggleSpinner = (spinnerId, show) => {
-    document.getElementById(spinnerId)?.classList.toggle("d-none", !show);
+
+  const toggleLoadingSpinner = (id, show) => {
+    document.getElementById(id)?.classList.toggle("d-none", !show);
   };
-
   /**
-   * @description Updates page metadata (title, OG tags, canonical).
-   * @param {object} data
-   * @param {string} url
+   * Updates page metadata (title, OG tags, canonical link).
+   * @param {object} meta The metadata object.
+   * @param {string} url The canonical URL.
    */
-  const updatePageMetadata = (data, url) => {
-    document.title = data.title;
-    const metaTags = {
-      description: data.description,
-      "og:title": data.title,
-      "og:description": data.description,
+
+  const updatePageMetadata = (meta, url) => {
+    document.title = meta.title;
+    const attributes = {
+      description: meta.description,
+      "og:title": meta.title,
+      "og:description": meta.description,
       "og:url": url,
-      "og:image": data.image_url,
+      "og:image": meta.image_url,
       canonical: url,
     };
-
-    for (const [key, value] of Object.entries(metaTags)) {
+    for (const [key, value] of Object.entries(attributes)) {
       const isOg = key.startsWith("og:");
       const selector = isOg
         ? `meta[property="${key}"]`
         : `meta[name="${key}"], link[rel="${key}"]`;
-      const el = document.querySelector(selector);
-
-      if (el) {
-        el.setAttribute(
-          isOg || key === "canonical" ? "content" : "href",
-          value
-        );
-      }
+      const element = document.querySelector(selector);
+      element?.setAttribute(
+        isOg || key === "canonical" ? "content" : "href",
+        value
+      );
     }
   };
-
   /**
-   * @description Generates and injects JSON-LD schema.
-   * @param {object} data
-   * @param {string} type
+   * Inserts structured data (Schema.org JSON-LD) into the head.
+   * @param {object} data The structured data object payload.
+   * @param {string} type The Schema.org type (e.g., 'NewsArticle').
    */
-  const generateSchema = (data, type) => {
-    document.querySelector('script[type="application/ld+json"]')?.remove();
 
-    const schema = { "@context": "https://schema.org", "@type": type, ...data };
+  const insertStructuredData = (data, type) => {
+    document.querySelector('script[type="application/ld+json"]')?.remove();
+    const jsonLd = { "@context": "https://schema.org", "@type": type, ...data };
     const script = document.createElement("script");
     script.type = "application/ld+json";
-    script.textContent = JSON.stringify(schema);
+    script.textContent = JSON.stringify(jsonLd);
     document.head.appendChild(script);
   };
-
   /**
-   * @description Debounce function.
+   * Debounces a function call.
+   * @param {Function} func The function to debounce.
+   * @param {number} delayMs The delay in milliseconds.
+   * @returns {Function} The debounced function.
    */
-  const debounce = (fn, wait = 250) => {
-    let timeout = null;
+
+  const debounce = (func, delayMs = 250) => {
+    let timeoutId = null;
     return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => fn(...args), wait);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delayMs);
     };
   };
-
   /**
-   * @description Throttle function.
+   * Throttles a function call.
+   * @param {Function} func The function to throttle.
+   * @param {number} limitMs The time limit in milliseconds.
+   * @returns {Function} The throttled function.
    */
-  const throttle = (fn, limit = 100) => {
-    let lastCall = 0;
+
+  const throttle = (func, limitMs = 100) => {
+    let lastRan = 0;
     return (...args) => {
       const now = Date.now();
-      if (now - lastCall >= limit) {
-        lastCall = now;
-        fn(...args);
+      if (now - lastRan >= limitMs) {
+        lastRan = now;
+        func(...args);
       }
     };
-  };
-
-  // ============================================================================
-  // SEARCH FUNCTIONALITY
-  // ============================================================================
-
+  }; // --- COMPONENT LOADERS ---
   /**
-   * @description Builds search index from static pages and dynamic data.
+   * Fetches and injects an HTML component into a placeholder element.
+   * @param {string} placeholderId The ID of the element to receive the HTML.
+   * @param {string} componentUrl The relative URL of the HTML component.
+   * @param {Function} [callback] Function to run after the component is loaded and injected.
    */
+
+  const loadComponent = async (placeholderId, componentUrl, callback) => {
+    const placeholder = document.getElementById(placeholderId);
+    if (!placeholder) return;
+
+    const url = componentUrl.startsWith("/")
+      ? componentUrl
+      : `/${componentUrl}`;
+    const fetchUrl = getCacheBustedUrl(url);
+
+    try {
+      const response = await fetch(fetchUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} from ${url}`);
+      }
+      const html = await response.text();
+      placeholder.innerHTML = html;
+      callback?.(placeholder);
+    } catch (error) {
+      console.error(`Error loading ${placeholderId} from ${url}:`, error);
+      placeholder.innerHTML = `<p class="text-center text-danger">Failed to load ${placeholderId.replace(
+        "-",
+        " "
+      )}.</p>`;
+    }
+  }; // --- SEARCH AND INDEXING (CLEAN URLS FOR INDEX) ---
+  /**
+   * Builds the comprehensive search index by fetching news and game data.
+   * @returns {Promise<Array<object>>} The search index array.
+   */
+
   const buildSearchIndex = async () => {
-    if (state.searchIndex) return state.searchIndex;
+    if (appState.searchIndex) return appState.searchIndex; // **Clean URLs for major sections**
 
     let index = [
       {
@@ -162,25 +183,25 @@
         searchable: "home reflex interactive independent game development",
       },
       {
-        url: "/src/pages/games.html",
+        url: "/games",
         title: "Our Games",
         snippet: "Browse our full catalog of games",
         searchable: "our games browse full catalog",
       },
       {
-        url: "/src/pages/newswire.html",
+        url: "/newswire",
         title: "Newswire",
         snippet: "Latest news and announcements",
         searchable: "newswire latest news announcements",
       },
       {
-        url: "/src/pages/about.html",
+        url: "/about",
         title: "About Us",
         snippet: "Learn about Reflex Interactive",
         searchable: "about us learn reflex interactive",
       },
       {
-        url: "/src/pages/contact.html",
+        url: "/contact",
         title: "Contact",
         snippet: "Get in touch with our team",
         searchable: "contact get in touch team",
@@ -188,119 +209,113 @@
     ];
 
     try {
-      const newsData = await fetchData(CONFIG.GIST_URLS.NEWS);
-      if (Array.isArray(newsData)) {
-        newsData.forEach((article) =>
+      const news = await fetchData(config.GIST_URLS.NEWS);
+      if (Array.isArray(news)) {
+        news.forEach((item) =>
           index.push({
-            url: `/src/pages/newswire.html?id=${article.id}`,
-            title: article.title,
-            snippet: article.summary.slice(0, 100),
-            searchable: `${article.title} ${article.summary}`.toLowerCase(),
+            // **UPDATED Clean URL for news articles: /newswire?id=...**
+            url: `/newswire?id=${item.id}`,
+            title: item.title,
+            snippet: item.summary.slice(0, 100),
+            searchable: `${item.title} ${item.summary}`.toLowerCase(),
           })
         );
       }
-    } catch (err) {
-      console.warn("News fetch for search index failed:", err.message);
+    } catch (error) {
+      console.warn("News fetch for search index failed:", error.message);
     }
 
     try {
-      const gamesData = await fetchData(CONFIG.GIST_URLS.GAMES);
-      if (Array.isArray(gamesData)) {
-        gamesData.forEach((game) =>
+      const games = await fetchData(config.GIST_URLS.GAMES);
+      if (Array.isArray(games)) {
+        games.forEach((item) =>
           index.push({
-            url: `/src/pages/game-details.html?id=${game.id}`,
-            title: game.title,
-            snippet: game.description.slice(0, 100),
-            searchable: `${game.title} ${game.description}`.toLowerCase(),
+            // **UPDATED Clean URL for game details: /games?id=...**
+            url: `/games?id=${item.id}`,
+            title: item.title,
+            snippet: item.description.slice(0, 100),
+            searchable: `${item.title} ${item.description}`.toLowerCase(),
           })
         );
       }
-    } catch (err) {
-      console.warn("Games fetch for search index failed:", err.message);
+    } catch (error) {
+      console.warn("Games fetch for search index failed:", error.message);
     }
 
-    state.searchIndex = index;
-    return state.searchIndex;
+    return (appState.searchIndex = index);
   };
-
   /**
-   * @description Performs search query against the index.
-   * @param {string} query
-   * @returns {Promise<array>}
+   * Searches the index based on a query.
+   * @param {string} query The search query string.
+   * @returns {Promise<Array<object>>} Up to 8 matching results.
    */
-  const performSearch = async (query) => {
-    const q = query?.trim()?.toLowerCase();
-    if (!q) return [];
+
+  const searchIndex = async (query) => {
+    const normalizedQuery = query?.trim()?.toLowerCase();
+    if (!normalizedQuery) return [];
 
     await buildSearchIndex();
-
-    return state.searchIndex
-      .filter((item) => item.searchable.includes(q))
+    return appState.searchIndex
+      .filter((item) => item.searchable.includes(normalizedQuery))
       .slice(0, 8);
   };
-
   /**
-   * @description Sets up global search UI and listeners.
+   * Sets up global search input listeners and result display logic.
    */
-  const setupGlobalSearch = () => {
+
+  const initGlobalSearch = () => {
     const input = document.getElementById("global-search-input");
     const resultsContainer = document.getElementById(
       "search-results-container"
     );
-    const resultsDiv = document.getElementById("global-search-results");
+    const resultsList = document.getElementById("global-search-results");
 
-    if (!input || !resultsContainer || !resultsDiv) return;
+    if (!input || !resultsContainer || !resultsList) return;
 
-    const renderResults = (items) => {
-      resultsDiv.innerHTML = "";
-      if (!items?.length) {
+    const renderResults = (results) => {
+      resultsList.innerHTML = "";
+      if (!results?.length) {
         resultsContainer.style.display = "none";
         return;
       }
 
-      items.forEach((item) => {
-        const a = document.createElement("a");
-        a.href = item.url;
-        a.className =
+      results.forEach((result) => {
+        const link = document.createElement("a");
+        link.href = result.url;
+        link.className =
           "list-group-item list-group-item-action bg-dark text-light border-secondary";
-        a.innerHTML = `<strong>${item.title}</strong><br><small class="text-muted">${item.snippet}</small>`;
-        resultsDiv.appendChild(a);
+        link.innerHTML = `<strong>${result.title}</strong><br><small class="text-muted">${result.snippet}</small>`;
+        resultsList.appendChild(link);
       });
-
       resultsContainer.style.display = "block";
     };
 
-    const handleSearch = debounce(async (e) => {
-      const results = await performSearch(e.target.value);
+    const handleInput = debounce(async (event) => {
+      const results = await searchIndex(event.target.value);
       renderResults(results);
-    }, CONFIG.SEARCH_DEBOUNCE_MS);
+    }, config.SEARCH_DEBOUNCE_MS);
 
-    input.addEventListener("input", handleSearch);
-
-    // Hide results on outside click
-    document.addEventListener("click", (e) => {
-      if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
+    input.addEventListener("input", handleInput);
+    document.addEventListener("click", (event) => {
+      if (
+        !input.contains(event.target) &&
+        !resultsContainer.contains(event.target)
+      ) {
         resultsContainer.style.display = "none";
       }
     });
-
-    // Hide results on Escape key
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
         resultsContainer.style.display = "none";
         input.value = "";
       }
     });
-  };
-
-  // ============================================================================
-  // REVEAL ANIMATIONS
-  // ============================================================================
-
+  }; // --- UI INTERACTION (SCROLL/HOVER REVEAL) ---
   /**
-   * @description Sets up scroll reveal animations using IntersectionObserver.
+   * Initializes the Intersection Observer for scroll reveal animations.
    */
-  const setupRevealAnimations = () => {
+
+  const initScrollReveal = () => {
     const selectors = [
       ".reveal-on-scroll",
       ".card",
@@ -317,171 +332,229 @@
       ".btn",
       ".navbar-brand",
     ];
-
-    const elements = new Set();
-    selectors.forEach((sel) =>
-      document.querySelectorAll(sel).forEach((el) => elements.add(el))
+    const elementsToObserve = new Set();
+    selectors.forEach((selector) =>
+      document
+        .querySelectorAll(selector)
+        .forEach((el) => elementsToObserve.add(el))
     );
 
-    state.revealObserver = new IntersectionObserver(
+    appState.revealObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
 
-          const el = entry.target;
-          const parent = el.parentElement;
-          let delay = 0;
+          const element = entry.target;
+          const parent = element.parentElement;
+          let delay = 0; // Staggered delay logic (based on sibling index)
 
-          // Calculate staggered delay for siblings
           if (parent) {
             const siblings = Array.from(parent.children).filter(
-              (c) => c.tagName === el.tagName
+              (el) => el.tagName === element.tagName
             );
-            const idx = siblings.indexOf(el);
-            if (idx > 0) delay = idx * CONFIG.CARD_HOVER_DELAY_MS;
+            const index = siblings.indexOf(element);
+            if (index > 0) {
+              delay = index * config.CARD_HOVER_DELAY_MS;
+            }
           }
 
-          el.style.transitionDelay = `${delay}ms`;
-          el.classList.add("visible");
-          state.revealObserver.unobserve(el);
+          element.style.transitionDelay = `${delay}ms`;
+          element.classList.add("visible");
+          appState.revealObserver.unobserve(element);
         });
       },
       { threshold: 0.08 }
     );
 
-    elements.forEach((el) => {
-      if (el.closest(".navbar")) return;
-      el.classList.add("reveal-on-scroll");
-      state.revealObserver.observe(el);
-    });
+    elementsToObserve.forEach((element) => {
+      if (!element.closest(".navbar")) {
+        // Don't hide the navbar on load
+        element.classList.add("reveal-on-scroll");
+        appState.revealObserver.observe(element);
+      }
+    }); // Instant 'reveal-on-load' and delayed 'hero-entry' elements
 
-    // Initialize elements with 'reveal-on-load' class
     requestAnimationFrame(() => {
       document
         .querySelectorAll(".reveal-on-load, .hero-entry")
-        .forEach((el, i) => {
-          const baseDelay = el.classList.contains("hero-entry") ? 120 : 0;
+        .forEach((element, index) => {
+          const initialDelay = element.classList.contains("hero-entry")
+            ? 120
+            : 0;
           setTimeout(
-            () => el.classList.add("visible"),
-            baseDelay + i * CONFIG.CARD_HOVER_DELAY_MS
+            () => element.classList.add("visible"),
+            initialDelay + index * config.CARD_HOVER_DELAY_MS
           );
         });
     });
   };
-
-  // ============================================================================
-  // CARD CREATION
-  // ============================================================================
-
   /**
-   * @description Creates a news article card element.
-   * @param {object} article
-   * @returns {HTMLElement}
+   * Updates the navbar appearance on scroll.
    */
+
+  const initNavbarScrollEffect = () => {
+    const header = document.querySelector("header");
+    if (!header) return;
+
+    const scrollHandler = throttle(() => {
+      header.classList.toggle("bg-black", window.scrollY > 50);
+    }, 10);
+    window.addEventListener("scroll", scrollHandler);
+  };
+  /**
+   * Enables smooth scrolling for anchor links.
+   */
+
+  const initSmoothScroll = () => {
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+      anchor.addEventListener("click", (event) => {
+        // Prevent smooth scroll on the purchase/download button if it's disabled
+        if (event.currentTarget.id !== "purchase-download-btn") {
+          event.preventDefault();
+          document
+            .querySelector(event.currentTarget.getAttribute("href"))
+            ?.scrollIntoView({ behavior: "smooth" });
+        }
+      });
+    });
+  }; // --- FORM HANDLER ---
+  /**
+   * Handles form submission via Fetch API (for contact form).
+   * @param {Event} event The form submit event.
+   * @param {HTMLFormElement} form The form element.
+   */
+
+  const handleFormSubmission = async (event, form) => {
+    event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    submitButton.disabled = true;
+    const originalText = submitButton.textContent;
+    submitButton.textContent = "Sending...";
+
+    try {
+      const response = await fetch(form.action, {
+        method: form.method,
+        body: new FormData(form),
+        headers: { Accept: "application/json" },
+      });
+      const success = response.ok;
+      const message = success
+        ? "Thank you! Your message has been sent."
+        : "There was an issue sending your message.";
+
+      form.innerHTML = `<p class="text-${
+        success ? "success" : "danger"
+      } fw-bold text-center">${message}</p>`;
+
+      if (!success) {
+        console.error("Form submission failed");
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      form.innerHTML =
+        '<p class="text-danger fw-bold text-center">Something went wrong. Please try again later.</p>';
+    }
+  }; // --- CONTENT RENDERING FUNCTIONS (CLEAN URLS FOR LINKS) ---
+  /**
+   * Creates an HTML element for a single News article card.
+   * @param {object} article The news article data object.
+   * @returns {HTMLElement} The 'col' wrapper element containing the card.
+   */
+
   const createNewsCard = (article) => {
     const col = document.createElement("div");
     col.className = "col";
-
     const card = document.createElement("div");
     card.className =
       "card modern-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll";
-
     card.innerHTML = `
-            <a href="/src/pages/newswire.html?id=${article.id}" class="text-decoration-none d-block h-100 d-flex flex-column">
-                <img src="${article.image_url}" alt="${article.title}" class="card-img-top modern-card-img" loading="lazy">
-                <div class="card-body d-flex flex-column flex-grow-1">
-                    <h3 class="card-title modern-card-title">${article.title}</h3>
-                    <p class="card-text modern-card-date">${article.date}</p>
-                    <p class="card-text modern-card-summary">${article.summary}</p>
-                    <span class="modern-card-cta mt-auto">
-                        Read More <span class="ms-2">→</span>
-                    </span>
-                </div>
-            </a>
-        `;
-
-    state.revealObserver?.observe(card);
+             <a href="/newswire?id=${article.id}" class="text-decoration-none d-block h-100 d-flex flex-column">
+                 <img src="${article.image_url}" alt="${article.title}" class="card-img-top modern-card-img" loading="lazy">
+                 <div class="card-body d-flex flex-column flex-grow-1">
+                     <h3 class="card-title modern-card-title">${article.title}</h3>
+                     <p class="card-text modern-card-date">${article.date}</p>
+                     <p class="card-text modern-card-summary">${article.summary}</p>
+                     <span class="modern-card-cta mt-auto">
+                         Read More <span class="ms-2">→</span>
+                     </span>
+                 </div>
+             </a>
+         `;
+    appState.revealObserver?.observe(card);
     col.appendChild(card);
     return col;
   };
-
   /**
-   * @description Creates a game card element.
-   * @param {object} game
-   * @returns {HTMLElement}
+   * Creates an HTML element for a single Game card.
+   * @param {object} game The game data object.
+   * @returns {HTMLElement} The 'col' wrapper element containing the card.
    */
+
   const createGameCard = (game) => {
     const col = document.createElement("div");
     col.className = "col";
-
     const card = document.createElement("div");
     card.className =
       "card modern-card modern-game-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll";
-
     card.innerHTML = `
-            <img src="${game.image_url}" alt="${game.title} Cover" class="modern-game-card-img" loading="lazy">
-            <div class="modern-game-card-overlay">
-                <h3 class="modern-game-card-title">${game.title}</h3>
-                <p class="modern-game-card-desc">${game.description}</p>
-                <a href="/src/pages/game-details.html?id=${game.id}" class="modern-game-card-link">
-                    Learn More <span class="ms-2">→</span>
-                </a>
-            </div>
-        `;
-
-    state.revealObserver?.observe(card);
+             <img src="${game.image_url}" alt="${game.title} Cover" class="modern-game-card-img" loading="lazy">
+             <div class="modern-game-card-overlay">
+                 <h3 class="modern-game-card-title">${game.title}</h3>
+                 <p class="modern-game-card-desc">${game.description}</p>
+                 <a href="/games?id=${game.id}" class="modern-game-card-link">
+                     Learn More <span class="ms-2">→</span>
+                 </a>
+             </div>
+         `;
+    appState.revealObserver?.observe(card);
     col.appendChild(card);
     return col;
   };
-
-  // ============================================================================
-  // DATA FETCHING & RENDERING
-  // ============================================================================
-
   /**
-   * @description Fetches and renders news articles into a container.
-   * @param {HTMLElement} container
-   * @param {number | null} limit
+   * Fetches and renders the news list into the target container.
+   * @param {HTMLElement} container The DOM element to append cards to.
+   * @param {number} [count=null] The maximum number of items to render.
    */
-  const fetchAndRenderNews = async (container, limit = null) => {
+
+  const renderNewsList = async (container, count = null) => {
     const spinnerId = container.id.includes("latest")
       ? "homepage-loading-spinner"
       : "loading-spinner";
+    toggleLoadingSpinner(spinnerId, true);
 
-    toggleSpinner(spinnerId, true);
     try {
-      let articles = await fetchData(CONFIG.GIST_URLS.NEWS);
-      if (limit) articles = articles.slice(0, limit);
-      container.append(...articles.map(createNewsCard));
-    } catch (err) {
-      console.error("Failed to fetch news:", err);
+      let newsData = await fetchData(config.GIST_URLS.NEWS);
+      if (count) {
+        newsData = newsData.slice(0, count);
+      }
+      container.append(...newsData.map(createNewsCard));
+    } catch (error) {
+      console.error("Failed to fetch news:", error);
       container.innerHTML =
         '<div class="text-center text-danger py-5">Failed to load news. Please try again later.</div>';
     } finally {
-      toggleSpinner(spinnerId, false);
+      toggleLoadingSpinner(spinnerId, false);
     }
   };
-
   /**
-   * @description Displays a single news article with full details.
-   * @param {string} id
+   * Fetches and displays a single news article detail.
+   * @param {string} articleId The ID of the article to display.
    */
-  const displayNewsDetails = async (id) => {
-    const [articleList, articleDetail] = [
-      document.getElementById("article-list-section"),
-      document.getElementById("article-detail"),
-    ];
 
-    toggleSpinner("loading-spinner", true);
+  const renderArticleDetail = async (articleId) => {
+    const articleListSection = document.getElementById("article-list-section");
+    const articleDetailSection = document.getElementById("article-detail");
+    toggleLoadingSpinner("loading-spinner", true);
+
     try {
-      const article = (await fetchData(CONFIG.GIST_URLS.NEWS)).find(
-        (a) => a.id == id
-      );
+      const newsData = await fetchData(config.GIST_URLS.NEWS);
+      const article = newsData.find((item) => item.id == articleId);
 
       if (!article) throw new Error("Article not found");
 
-      articleList?.classList.add("d-none");
-      articleDetail?.classList.remove("d-none");
+      articleListSection?.classList.add("d-none");
+      articleDetailSection?.classList.remove("d-none"); // Update Metadata and Schema
 
       updatePageMetadata(
         {
@@ -492,7 +565,7 @@
         window.location.href
       );
 
-      generateSchema(
+      insertStructuredData(
         {
           headline: article.title,
           image: [article.image_url],
@@ -503,7 +576,7 @@
           description: article.summary,
         },
         "NewsArticle"
-      );
+      ); // Populate DOM
 
       document.getElementById("article-title").textContent = article.title;
       document.getElementById("article-date").textContent = article.date;
@@ -511,57 +584,57 @@
       document.getElementById("article-image").alt = article.title;
       document.getElementById("article-content").innerHTML =
         article.content.replace(/\n/g, "<br><br>");
-    } catch (err) {
-      console.error("Failed to display article details:", err);
+    } catch (error) {
+      console.error("Failed to display article details:", error);
       document.querySelector("main").innerHTML =
         '<div class="text-center text-danger pt-5">Failed to load article. Please try again.</div>';
     } finally {
-      toggleSpinner("loading-spinner", false);
+      toggleLoadingSpinner("loading-spinner", false);
     }
   };
-
   /**
-   * @description Fetches and renders games into a container.
-   * @param {HTMLElement} container
-   * @param {number | null} limit
+   * Fetches and renders the game list into the target container.
+   * @param {HTMLElement} container The DOM element to append cards to.
+   * @param {number} [count=null] The maximum number of items to render.
    */
-  const fetchAndRenderGames = async (container, limit = null) => {
+
+  const renderGameList = async (container, count = null) => {
     const spinnerId = container.id.includes("latest")
       ? "homepage-games-loading-spinner"
       : "games-loading-spinner";
+    toggleLoadingSpinner(spinnerId, true);
 
-    toggleSpinner(spinnerId, true);
     try {
-      let games = await fetchData(CONFIG.GIST_URLS.GAMES);
-      if (limit) games = games.slice(0, limit);
-      container.append(...games.map(createGameCard));
-    } catch (err) {
-      console.error("Failed to fetch games:", err);
+      let gameData = await fetchData(config.GIST_URLS.GAMES);
+      if (count) {
+        gameData = gameData.slice(0, count);
+      }
+      container.append(...gameData.map(createGameCard));
+    } catch (error) {
+      console.error("Failed to fetch games:", error);
       container.innerHTML =
         '<div class="text-center text-danger py-5">Failed to load games. Please try again later.</div>';
     } finally {
-      toggleSpinner(spinnerId, false);
+      toggleLoadingSpinner(spinnerId, false);
     }
   };
-
   /**
-   * @description Displays a single game with full details.
+   * Fetches and displays a single game detail page.
    */
-  const displayGameDetails = async () => {
-    const id = new URLSearchParams(window.location.search).get("id");
 
-    if (!id) {
+  const renderGameDetail = async () => {
+    const gameId = new URLSearchParams(window.location.search).get("id");
+    if (!gameId) {
       document.querySelector("main").innerHTML =
         '<div class="text-center text-danger pt-5">Game not found.</div>';
       return;
     }
 
     try {
-      const game = (await fetchData(CONFIG.GIST_URLS.GAMES)).find(
-        (g) => g.id == id
-      );
+      const gameData = await fetchData(config.GIST_URLS.GAMES);
+      const game = gameData.find((item) => item.id == gameId);
 
-      if (!game) throw new Error("Game not found");
+      if (!game) throw new Error("Game not found"); // Update Metadata and Schema
 
       updatePageMetadata(
         {
@@ -572,7 +645,7 @@
         window.location.href
       );
 
-      generateSchema(
+      insertStructuredData(
         {
           name: game.title,
           image: [game.image_url, ...game.screenshots],
@@ -595,14 +668,14 @@
           },
         },
         "VideoGame"
-      );
+      ); // Populate DOM
 
-      const heroEl = document.getElementById("game-hero");
-      if (heroEl) {
-        heroEl.style.backgroundImage = `url(${
+      const gameHero = document.getElementById("game-hero");
+      if (gameHero) {
+        gameHero.style.backgroundImage = `url(${
           game.hero_image_url || game.image_url
         })`;
-        Object.assign(heroEl.style, {
+        Object.assign(gameHero.style, {
           backgroundPosition: "center",
           backgroundSize: "cover",
         });
@@ -621,22 +694,22 @@
       document.getElementById("game-detail-description").textContent =
         game.description;
 
-      const purchaseBtn = document.getElementById("purchase-download-btn");
-      const priceEl = document.getElementById("game-detail-price");
+      const purchaseButton = document.getElementById("purchase-download-btn");
+      const priceElement = document.getElementById("game-detail-price");
 
-      priceEl.textContent =
+      priceElement.textContent =
         game.price === 0 ? "FREE" : `$${game.price.toFixed(2)}`;
 
       if (game.price === 0 && game.download_url) {
-        purchaseBtn.textContent = "Download Now";
-        purchaseBtn.href = game.download_url;
-        purchaseBtn.setAttribute("download", "");
-        purchaseBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        purchaseButton.textContent = "Download Now";
+        purchaseButton.href = game.download_url;
+        purchaseButton.setAttribute("download", "");
+        purchaseButton.classList.remove("opacity-50", "cursor-not-allowed");
       } else {
-        purchaseBtn.textContent = "Purchase Now";
-        purchaseBtn.href = "#";
-        purchaseBtn.removeAttribute("download");
-        purchaseBtn.classList.add("opacity-50", "cursor-not-allowed");
+        purchaseButton.textContent = "Purchase Now";
+        purchaseButton.href = "#";
+        purchaseButton.removeAttribute("download");
+        purchaseButton.classList.add("opacity-50", "cursor-not-allowed");
       }
 
       const screenshotsContainer = document.getElementById(
@@ -644,7 +717,6 @@
       );
       if (screenshotsContainer) {
         screenshotsContainer.innerHTML = "";
-
         if (game.trailer_url) {
           const iframe = document.createElement("iframe");
           iframe.src = game.trailer_url;
@@ -657,7 +729,6 @@
           iframe.setAttribute("allowfullscreen", "");
           screenshotsContainer.appendChild(iframe);
         }
-
         game.screenshots.forEach((src) => {
           const img = document.createElement("img");
           img.src = src;
@@ -667,133 +738,30 @@
           screenshotsContainer.appendChild(img);
         });
       }
-    } catch (err) {
-      console.error("Failed to display game details:", err);
+    } catch (error) {
+      console.error("Failed to display game details:", error);
       document.querySelector("main").innerHTML =
         '<div class="text-center text-danger pt-5">Failed to load game details. Please try again.</div>';
     }
-  };
+  }; // --- MAIN INITIALIZATION (PATH CHECKS UPDATED) ---
 
-  // ============================================================================
-  // UI SETUP
-  // ============================================================================
-
-  /**
-   * @description Sets up header scroll transparency effect.
-   */
-  const setupHeader = () => {
-    const header = document.querySelector("header");
-    if (!header) return;
-
-    const handleScroll = throttle(() => {
-      header.classList.toggle("bg-black", window.scrollY > 50);
-    }, 10);
-
-    window.addEventListener("scroll", handleScroll);
-  };
-
-  /**
-   * @description Enables smooth scroll for anchor links.
-   */
-  const setupSmoothScroll = () => {
-    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-      anchor.addEventListener("click", (e) => {
-        if (e.currentTarget.id === "purchase-download-btn") return;
-        e.preventDefault();
-
-        document
-          .querySelector(e.currentTarget.getAttribute("href"))
-          ?.scrollIntoView({ behavior: "smooth" });
-      });
-    });
-  };
-
-  /**
-   * @description Handles Netlify-compatible form submission.
-   * @param {Event} e
-   * @param {HTMLFormElement} form
-   */
-  const handleFormSubmission = async (e, form) => {
-    e.preventDefault();
-
-    const button = form.querySelector('button[type="submit"]');
-    const originalText = button.textContent;
-
-    button.disabled = true;
-    button.textContent = "Sending...";
-
-    try {
-      const response = await fetch(form.action, {
-        method: form.method,
-        body: new FormData(form),
-        headers: { Accept: "application/json" },
-      });
-
-      const success = response.ok;
-      const message = success
-        ? "Thank you! Your message has been sent."
-        : "There was an issue sending your message.";
-
-      form.innerHTML = `<p class="text-${
-        success ? "success" : "danger"
-      } fw-bold text-center">${message}</p>`;
-
-      if (!success) console.error("Form submission failed");
-    } catch (err) {
-      console.error("Submission error:", err);
-      form.innerHTML =
-        '<p class="text-danger fw-bold text-center">Something went wrong. Please try again later.</p>';
-    }
-  };
-
-  /**
-   * @description Loads an external HTML component via fetch.
-   * @param {string} id - ID of the placeholder element.
-   * @param {string} url - Root-relative URL of the component file (e.g., /src/components/navbar.html).
-   * @param {function} callback - Function to run after the component is loaded.
-   */
-  const loadComponent = async (id, url, callback) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    // Use only the root-relative URL as the reliable source
-    const finalUrl = url.startsWith("/") ? url : `/${url}`;
-
-    try {
-      const res = await fetch(addCacheBuster(finalUrl));
-      if (!res.ok) throw new Error(`HTTP ${res.status} from ${finalUrl}`);
-
-      const html = await res.text();
-      el.innerHTML = html;
-      callback?.(el);
-    } catch (err) {
-      console.error(`Error loading ${id} from ${finalUrl}:`, err);
-      el.innerHTML = `<p class="text-center text-danger">Failed to load ${id.replace(
-        "-",
-        " "
-      )}.</p>`;
-    }
-  };
-
-  // ============================================================================
-  // APPLICATION INITIALIZATION
-  // ============================================================================
-
-  /**
-   * @description Initializes the entire application.
-   */
-  const init = async () => {
-    // Load all components in parallel using fixed root-relative paths
+  const initializeApp = async () => {
+    // 1. Load header, search, and footer components concurrently
+    // NOTE: These paths MUST remain the original file locations (/src/components/...)
     await Promise.all([
-      loadComponent("navbar-placeholder", "/src/components/navbar.html", () => {
-        setupHeader();
-        setupSmoothScroll();
-      }),
+      loadComponent(
+        "navbar-placeholder",
+        "/src/components/navbar.html",
+        (el) => {
+          initNavbarScrollEffect();
+          initSmoothScroll();
+        }
+      ),
       loadComponent(
         "search-placeholder",
         "/src/components/searchbar.html",
         (el) => {
-          setupGlobalSearch();
+          initGlobalSearch();
           el.querySelector(".global-search-wrap")?.classList.add(
             "reveal-on-load"
           );
@@ -803,58 +771,64 @@
         "footer-placeholder",
         "/src/components/footer.html",
         (el) => {
-          const form = el.querySelector("form");
-          if (form)
-            form.addEventListener("submit", (e) =>
-              handleFormSubmission(e, form)
+          const footerForm = el.querySelector("form");
+          footerForm &&
+            footerForm.addEventListener("submit", (e) =>
+              handleFormSubmission(e, footerForm)
             );
         }
       ),
-    ]);
+    ]); // 2. Initialize scroll reveal effects after all structural HTML is loaded
 
-    // Setup animations after components loaded
-    setupRevealAnimations();
+    initScrollReveal(); // 3. Determine current page and render content // NOTE: The pathname check must now use the clean URL visible in the browser.
 
-    // Route-based content loading
-    const path = window.location.pathname;
-    const id = new URLSearchParams(window.location.search).get("id");
+    const pathname = window.location.pathname;
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlId = urlParams.get("id");
+    const latestGamesContainer = document.getElementById(
+      "latest-games-container"
+    );
+    const latestNewsContainer = document.getElementById(
+      "latest-news-container"
+    ); // **Routing logic checks against clean URLs**
 
-    const gamesContainer = document.getElementById("latest-games-container");
-    const newsContainer = document.getElementById("latest-news-container");
+    // The presence of 'id' in the search params determines the detail view
+    const isGameDetail = pathname === "/games" && urlId;
+    const isNewswireDetail = pathname === "/newswire" && urlId;
 
-    if (path.includes("game-details.html")) {
-      displayGameDetails();
-    } else if (path.includes("games.html")) {
-      const container = document.getElementById("full-games-container");
-      if (container) fetchAndRenderGames(container);
-    } else if (path.includes("newswire.html")) {
-      const container = document.getElementById("news-container");
-      if (container) {
-        id ? displayNewsDetails(id) : fetchAndRenderNews(container);
-      }
-    } else if (path === "/" || path.includes("index.html")) {
-      // Home page logic
-      if (gamesContainer)
-        fetchAndRenderGames(gamesContainer, CONFIG.HOME_PAGE_ITEM_COUNT);
-      if (newsContainer)
-        fetchAndRenderNews(newsContainer, CONFIG.HOME_PAGE_ITEM_COUNT);
-    }
-
-    // Setup contact form (redundancy check, also covered by footer load)
+    if (isGameDetail) {
+      // e.g., /games?id=123 (Renders game details)
+      renderGameDetail();
+    } else if (pathname === "/games") {
+      // e.g., /games (Renders the full game list)
+      const fullGamesContainer = document.getElementById(
+        "full-games-container"
+      );
+      fullGamesContainer && renderGameList(fullGamesContainer);
+    } else if (isNewswireDetail) {
+      // e.g., /newswire?id=123 (Renders news article detail)
+      renderArticleDetail(urlId);
+    } else if (pathname === "/newswire") {
+      // e.g., /newswire (Renders the full news list)
+      const newsContainer = document.getElementById("news-container");
+      newsContainer && renderNewsList(newsContainer);
+    } else if (pathname === "/" || pathname === "/index.html") {
+      // Homepage logic
+      latestGamesContainer &&
+        renderGameList(latestGamesContainer, config.HOME_PAGE_ITEM_COUNT);
+      latestNewsContainer &&
+        renderNewsList(latestNewsContainer, config.HOME_PAGE_ITEM_COUNT);
+    } // Note: The /about and /contact pages are static HTML and don't need dedicated rendering functions here. // 4. Attach contact form handler if present on the page (e.g., /contact)
     const contactForm = document.getElementById("contact-form");
-    if (contactForm)
+    contactForm &&
       contactForm.addEventListener("submit", (e) =>
         handleFormSubmission(e, contactForm)
       );
-  };
+  }; // Start application once DOM is ready
 
-  // Start application when DOM is ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", initializeApp);
   } else {
-    init();
+    initializeApp();
   }
 })();
-// ============================================================================
-// End of Reflex Interactive - Modern ES6+ Application (Refactored)
-// ============================================================================

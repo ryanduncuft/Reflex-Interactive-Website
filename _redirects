@@ -10,3 +10,16 @@ https://relexinteractive.com/* https://www.relexinteractive.com/:splat 301!
 # Ensures all traffic is secured, regardless of how they type the domain.
 http://www.relexinteractive.com/* https://www.relexinteractive.com/:splat 301!
 http://relexinteractive.com/* https://www.relexinteractive.com/:splat 301!
+
+# --- 4. Clean URL Rewrites (Map User URL to Physical File Location) ---
+/games                    /src/pages/games.html         200
+/newswire                 /src/pages/newswire.html      200
+/about                    /src/pages/about.html         200
+/contact                  /src/pages/contact.html       200
+
+# **UPDATED DETAIL REWRITES:** Use the base clean path with a splat for ID rewrites.
+/games/*                  /src/pages/game-details.html  200
+/newswire/*               /src/pages/newswire.html      200
+
+# --- 5. Custom 404 Page Setup ---
+/* /src/pages/404.html 404

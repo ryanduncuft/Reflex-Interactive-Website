@@ -1,5 +1,12 @@
 User-agent: *
 Allow: /
+# Disallow specific clean paths that use 'noindex' or are non-essential internal paths
+Disallow: /src/components/
+# **UPDATED DISALLOWS:** Now targets the page with the query string included (if the ID is present)
+Disallow: /games?id=*
+Disallow: /newswire?id=*
+Disallow: /privacy
+Disallow: /tos
 
 # Directs search engines to your new canonical sitemap location
 Sitemap: https://www.relexinteractive.com/sitemap.xml

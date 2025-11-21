@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Our Games | Reflex Interactive</title>
+
     <meta name="description" content="Explore the full catalog of immersive video games from Reflex Interactive. Discover our latest releases, fan-favorites, and upcoming titles with trailers and screenshots.">
-    <link rel="canonical" href="https://www.reflexinteractive.com/games.html">
+    <link rel="canonical" href="https://www.reflexinteractive.com/games">
     <meta property="og:title" content="Reflex Interactive Game Catalog">
     <meta property="og:description" content="Explore our full library of immersive and action-packed video games from the independent studio, Reflex Interactive.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.reflexinteractive.com/games.html">
+    <meta property="og:url" content="https://www.reflexinteractive.com/games">
     <meta property="og:image" content="https://www.reflexinteractive.com/assets/images/Logo.jpg">
+
     <link rel="icon" type="image/png" href="/assets/images/favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/styles/styles.css">
@@ -18,10 +20,10 @@
     <script type="application/ld+json" id="games-schema">
     {
       "@context": "https://schema.org",
-      "@type": "WebPage",
+      "@type": "CollectionPage",
       "name": "Our Games",
       "description": "Explore the full catalog of immersive video games from Reflex Interactive. Discover our latest releases, fan-favorites, and upcoming titles.",
-      "url": "https://www.reflexinteractive.com/games.html"
+      "url": "https://www.reflexinteractive.com/games"
     }
     </script>
 </head>
@@ -30,26 +32,29 @@
     <div id="navbar-placeholder"></div>
     <div id="search-placeholder"></div>
 
-    <main class="pt-4 pt-md-5">
-        <section id="games-catalog" class="py-5" aria-labelledby="games-heading">
+    <main class="pt-4 pt-md-5" role="main">
+        <section id="games-catalog" class="py-5" role="region" aria-labelledby="games-heading">
             <div class="container">
                 <div class="mb-5 text-center">
-                    <h1 id="games-heading" class="display-3 fw-bold text-center mb-3 text-uppercase">
+                    <h1 id="games-heading" class="display-3 fw-bold text-center mb-3 text-uppercase reveal-on-load">
                         Our <span class="text-danger">Games</span>
                     </h1>
-                    <p class="fs-5 text-muted" style="max-width: 700px; margin: 0 auto;">
+                    <p class="fs-5 text-muted reveal-on-scroll" style="max-width: 700px; margin: 0 auto;">
                         Discover our collection of immersive and action-packed gaming experiences
                     </p>
                 </div>
+                
                 <div id="games-loading-spinner" class="d-flex justify-content-center align-items-center" style="min-height: 12rem;" aria-label="Loading our full game catalog.">
                     <div class="loading-animation"></div>
                 </div>
+                
                 <div id="full-games-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
             </div>
         </section>
     </main>
 
     <div id="footer-placeholder"></div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/src/js/app.js"></script>
 </body>

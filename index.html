@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home | Reflex Interactive</title>
+
     <meta name="description" content="Reflex Interactive is an independent game development studio creating a new era of immersive and engaging experiences. Explore our latest news and action-packed games.">
     <link rel="canonical" href="https://www.reflexinteractive.com/">
     <meta name="google-site-verification" content="nnOo6NCUWjihJnKmPbcQWO8iGx4NLUSQTw_ajNQHSak" />
@@ -12,9 +13,11 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.reflexinteractive.com/">
     <meta property="og:locale" content="en_GB">
+
     <link rel="icon" type="image/png" href="/assets/images/favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/styles/styles.css">
+
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -25,65 +28,75 @@
     </script>
 </head>
 <body class="bg-black text-white overflow-x-hidden">
+    
     <div id="navbar-placeholder"></div>
     <div id="search-placeholder"></div>
+    
     <main>
-        <section class="hero-section position-relative d-flex align-items-center justify-content-center text-center">
+        <section class="hero-section position-relative d-flex align-items-center justify-content-center text-center" role="region" aria-label="Hero Introduction">
             <div class="absolute inset-0 bg-hero-image"></div>
             <div class="position-relative z-3 px-3 px-md-4 container">
-                <h1 class="display-1 fw-black text-shadow-lg mb-4">Reflex Interactive</h1>
-                <p class="fs-4 fw-light text-light">Where every shot counts.</p>
-                <a href="#newswire" class="btn btn-danger btn-lg mt-4 px-5 py-3 text-uppercase fw-bold" aria-label="Discover our latest news and updates">
+                <h1 class="display-1 fw-black text-shadow-lg mb-4 hero-entry">Reflex Interactive</h1>
+                <p class="fs-4 fw-light text-light hero-entry">Where every shot counts.</p>
+                <a href="#newswire" class="btn btn-danger btn-lg mt-4 px-5 py-3 text-uppercase fw-bold hero-entry" aria-label="Discover our latest news and updates">
                     Discover More
                 </a>
             </div>
         </section>
         
-        <section id="newswire" class="py-5">
+        <section id="newswire" class="py-5" role="region" aria-labelledby="latest-news-heading">
             <div class="container">
                 <div class="mb-5 text-center">
-                    <h2 class="display-4 fw-bold text-uppercase mb-3">
+                    <h2 id="latest-news-heading" class="display-4 fw-bold text-uppercase mb-3">
                         Latest <span class="text-danger">News</span>
                     </h2>
                     <p class="fs-5 text-muted" style="max-width: 600px; margin: 0 auto;">
                         Stay informed with the latest updates from Reflex Interactive
                     </p>
                 </div>
+                
                 <div id="homepage-loading-spinner" class="d-flex justify-content-center align-items-center" style="min-height: 12rem;" aria-label="Loading latest news">
                     <div class="loading-animation"></div>
                 </div>
+
                 <div id="latest-news-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5"></div>
+                
                 <div class="text-center mt-5">
-                    <a href="/src/pages/newswire.html" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View the full Newswire archive">
+                    <a href="/newswire" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View the full Newswire archive">
                         View the full Newswire
                     </a>
                 </div>
             </div>
         </section>
 
-        <section id="games" class="py-5">
+        <section id="games" class="py-5" role="region" aria-labelledby="our-games-heading">
             <div class="container">
                 <div class="mb-5 text-center">
-                    <h2 class="display-4 fw-bold text-uppercase mb-3">
+                    <h2 id="our-games-heading" class="display-4 fw-bold text-uppercase mb-3">
                         Our <span class="text-danger">Games</span>
                     </h2>
                     <p class="fs-5 text-muted" style="max-width: 600px; margin: 0 auto;">
                         Explore our collection of immersive gaming experiences
                     </p>
                 </div>
+                
                 <div id="homepage-games-loading-spinner" class="d-flex justify-content-center align-items-center" style="min-height: 12rem;" aria-label="Loading latest games">
                     <div class="loading-animation"></div>
                 </div>
+
                 <div id="latest-games-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5"></div>
+                
                 <div class="text-center mt-5">
-                    <a href="/src/pages/games.html" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View all games from Reflex Interactive">
+                    <a href="/games" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View all games from Reflex Interactive">
                         View all Games
                     </a>
                 </div>
             </div>
         </section>
     </main>
+
     <div id="footer-placeholder"></div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/src/js/app.js"></script>
 </body>
