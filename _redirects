@@ -1,0 +1,25 @@
+# 1. Domain Redirect (Permanent - 301!)
+# Redirects all traffic from the old Netlify subdomain to the new custom domain, preserving the path.
+https://reflexinteractive.netlify.app/* https://www.reflexinteractive.com/:splat 301!
+
+---
+
+# 2. Clean URLs (Explicit Rewrites - 200)
+# Rewrites a clean public path to an actual file location for content pages.
+/games          /src/pages/games.html       200
+/newswire       /src/pages/newswire.html    200
+/contact        /src/pages/contact.html     200
+/about          /src/pages/about.html       200
+
+---
+
+# 3. Dynamic Content Handler (Splat Rewrites - 200)
+# Handles all specific game detail paths and serves the single template file.
+/game-details/* /src/pages/game-details.html   200
+
+---
+
+# 4. Catch-All Fallback (Root Index Rewrite - 200)
+# If a path doesn't match a rule above or an existing file, it falls back to the root 'index.html'.
+# This is crucial for Single Page Application (SPA) routing.
+/* /index.html 200
