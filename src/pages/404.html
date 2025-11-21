@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Page Not Found - Reflex Interactive</title>
-    <link rel="icon" type="image/x-icon" href="https://www.reflexinteractive.com/Assets/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/Assets/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/styles/styles.css">
     <style>
@@ -177,8 +177,26 @@
     </style>
 </head>
 <body>
-    <div id="navbar-placeholder"></div>
-    <div id="search-placeholder"></div>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <span>⚡</span> Reflex Interactive
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/src/pages/games.html">Games</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/src/pages/newswire.html">Newswire</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/src/pages/about.html">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/src/pages/contact.html">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
     <!-- 404 Error Page -->
     <main>
@@ -200,7 +218,7 @@
                     <a href="/" class="btn btn-primary btn-lg">
                         ← Back to Home
                     </a>
-                    <a href="/src/pages/games" class="btn btn-outline-light">
+                    <a href="/src/pages/games.html" class="btn btn-outline-light">
                         Browse Our Games
                     </a>
                 </div>
@@ -219,7 +237,36 @@
     </main>
 
     <!-- Footer -->
-    <div id="footer-placeholder"></div>
+    <footer>
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <h4>About Us</h4>
+                    <p class="text-muted small">Reflex Interactive is dedicated to creating cutting-edge gaming experiences that push the boundaries of interactive entertainment.</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h4>Quick Links</h4>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="footer-link">Home</a></li>
+                        <li><a href="/src/pages/games.html" class="footer-link">Games</a></li>
+                        <li><a href="/src/pages/newswire.html" class="footer-link">Newswire</a></li>
+                        <li><a href="/src/pages/about.html" class="footer-link">About</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h4>Legal</h4>
+                    <ul class="list-unstyled">
+                        <li><a href="/src/pages/tos.html" class="footer-link">Terms of Service</a></li>
+                        <li><a href="/src/pages/privacy.html" class="footer-link">Privacy Policy</a></li>
+                        <li><a href="/src/pages/contact.html" class="footer-link">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-top border-dark pt-3 text-center text-muted small">
+                <p>&copy; 2024 Reflex Interactive. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

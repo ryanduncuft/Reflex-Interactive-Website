@@ -137,10 +137,11 @@
     if (state.searchIndex) return state.searchIndex;
     
     state.searchIndex = [
-      { url: '/games', title: 'Our Games', snippet: 'Browse our full catalog of games', searchable: 'our games browse full catalog' },
-      { url: '/newswire', title: 'Newswire', snippet: 'Latest news and announcements', searchable: 'newswire latest news announcements' },
-      { url: '/about', title: 'About Us', snippet: 'Learn about Reflex Interactive', searchable: 'about us learn reflex interactive' },
-      { url: '/contact', title: 'Contact', snippet: 'Get in touch with our team', searchable: 'contact get in touch team' }
+      { url: '/', title: 'Home', snippet: 'Reflex Interactive - independent game development', searchable: 'home reflex interactive independent game development' },
+      { url: '/src/pages/games.html', title: 'Our Games', snippet: 'Browse our full catalog of games', searchable: 'our games browse full catalog' },
+      { url: '/src/pages/newswire.html', title: 'Newswire', snippet: 'Latest news and announcements', searchable: 'newswire latest news announcements' },
+      { url: '/src/pages/about.html', title: 'About Us', snippet: 'Learn about Reflex Interactive', searchable: 'about us learn reflex interactive' },
+      { url: '/src/pages/contact.html', title: 'Contact', snippet: 'Get in touch with our team', searchable: 'contact get in touch team' }
     ];
 
     try {
@@ -148,7 +149,7 @@
       if (Array.isArray(newsData)) {
         newsData.forEach(article => {
           state.searchIndex.push({
-            url: `/newswire?id=${article.id}`,
+            url: `/src/pages/newswire.html?id=${article.id}`,
             title: article.title,
             snippet: article.summary.slice(0, 100),
             searchable: `${article.title} ${article.summary}`.toLowerCase()
@@ -164,7 +165,7 @@
       if (Array.isArray(gamesData)) {
         gamesData.forEach(game => {
           state.searchIndex.push({
-            url: `/game-details?id=${game.id}`,
+            url: `/src/pages/game-details.html?id=${game.id}`,
             title: game.title,
             snippet: game.description.slice(0, 100),
             searchable: `${game.title} ${game.description}`.toLowerCase()
@@ -319,7 +320,7 @@
     card.classList.add('reveal-on-scroll');
     
     card.innerHTML = `
-      <a href="/newswire.html?id=${article.id}" class="text-decoration-none d-block h-100 d-flex flex-column">
+      <a href="/src/pages/newswire.html?id=${article.id}" class="text-decoration-none d-block h-100 d-flex flex-column">
         <img src="${article.image_url}" alt="${article.title}" class="card-img-top modern-card-img" loading="lazy">
         <div class="card-body d-flex flex-column flex-grow-1">
           <h3 class="card-title modern-card-title">${article.title}</h3>
@@ -356,7 +357,7 @@
       <div class="modern-game-card-overlay">
         <h3 class="modern-game-card-title">${game.title}</h3>
         <p class="modern-game-card-desc">${game.description}</p>
-        <a href="/game-details.html?id=${game.id}" class="modern-game-card-link">
+        <a href="/src/pages/game-details.html?id=${game.id}" class="modern-game-card-link">
           Learn More <span class="ms-2">→</span>
         </a>
       </div>
