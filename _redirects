@@ -17,8 +17,10 @@ http://relexinteractive.com/* https://www.relexinteractive.com/:splat 301!
 /about                    /src/pages/about.html         200
 /contact                  /src/pages/contact.html       200
 
-# **UPDATED DETAIL REWRITES:** Use the base clean path with a splat for ID rewrites.
-/games/*                  /src/pages/game-details.html  200
+# **FIXED DETAIL REWRITES:** # A request to /games?id=... will be caught by /games/* and rewritten to the detail page.
+/games/*                  /src/pages/game-details.html  200
+
+# A request to /newswire?id=... will be caught by /newswire/* and rewritten to the newswire page.
 /newswire/*               /src/pages/newswire.html      200
 
 # --- 5. Custom 404 Page Setup ---
