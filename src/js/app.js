@@ -685,21 +685,21 @@
    * Initialize application
    */
   const init = async () => {
-    // Load all components in parallel
-    await Promise.all([
-      loadComponent('navbar-placeholder', 'src/components/navbar.html', () => {
-        setupHeader();
-        setupSmoothScroll();
-      }),
-      loadComponent('search-placeholder', 'src/components/searchbar.html', (el) => {
-        setupGlobalSearch();
-        el.querySelector('.global-search-wrap')?.classList.add('reveal-on-load');
-      }),
-      loadComponent('footer-placeholder', 'src/components/footer.html', (el) => {
-        const form = el.querySelector('form');
-        if (form) form.addEventListener('submit', (e) => handleFormSubmission(e, form));
-      })
-    ]);
+    // Load all components in parallel
+    await Promise.all([
+      loadComponent('navbar-placeholder', '/src/components/navbar.html', () => { // <--- ADDED '/'
+        setupHeader();
+        setupSmoothScroll();
+      }),
+      loadComponent('search-placeholder', '/src/components/searchbar.html', (el) => { // <--- ADDED '/'
+        setupGlobalSearch();
+        el.querySelector('.global-search-wrap')?.classList.add('reveal-on-load');
+      }),
+      loadComponent('footer-placeholder', '/src/components/footer.html', (el) => { // <--- ADDED '/'
+        const form = el.querySelector('form');
+        if (form) form.addEventListener('submit', (e) => handleFormSubmission(e, form));
+      })
+    ]);
 
     // Setup animations after components loaded
     setupRevealAnimations();
