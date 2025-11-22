@@ -9,4 +9,4 @@ Disallow: /privacy
 Disallow: /tos
 
 # Directs search engines to your new canonical sitemap location
-Sitemap: https://www.relexinteractive.com/sitemap.xml
+Sitemap: https://www.reflexinteractive.com/sitemap.xml

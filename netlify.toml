@@ -2,24 +2,24 @@
 
 # Domain Normalization Redirects
 [[redirects]]
-  from = "https://relexinteractive.netliy.app/*"
-  to = "https://www.relexinteractive.com/:splat"
+  from = "https://reflexinteractive.netliy.app/*"
+  to = "https://www.reflexinteractive.com/:splat"
   status = 301
   force = true
 
 [[redirects]]
-  from = "https://relexinteractive.com/*"
-  to = "https://www.relexinteractive.com/:splat"
+  from = "https://reflexinteractive.com/*"
+  to = "https://www.reflexinteractive.com/:splat"
   status = 301
 
 [[redirects]]
-  from = "http://www.relexinteractive.com/*"
-  to = "https://www.relexinteractive.com/:splat"
+  from = "http://www.reflexinteractive.com/*"
+  to = "https://www.reflexinteractive.com/:splat"
   status = 301
 
 [[redirects]]
-  from = "http://relexinteractive.com/*"
-  to = "https://www.relexinteractive.com/:splat"
+  from = "http://reflexinteractive.com/*"
+  to = "https://www.reflexinteractive.com/:splat"
   status = 301
 
 # Clean URL Rewrites (Query Parameter Based)
