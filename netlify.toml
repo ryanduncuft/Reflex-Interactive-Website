@@ -1,65 +1,58 @@
 # netlify.toml (Place this in your project root)
 
-# Domain Normalization Redirects
-[[redirects]]
-  from = "https://reflexinteractive.netliy.app/*"
-  to = "https://www.reflexinteractive.com/:splat"
-  status = 301
-  force = true
+# === 1. Domain Normalization (Avoids Redirect Loops) ===
 
+# CRITICAL: Forces redirect from the old Netlify subdomain to your custom domain.
+# This ensures users never see the .netlify.app address.
 [[redirects]]
-  from = "https://reflexinteractive.com/*"
-  to = "https://www.reflexinteractive.com/:splat"
-  status = 301
+  from = "https://reflexinteractive.netlify.app/*"
+  to = "https://www.reflexinteractive.com/:splat"
+  status = 301
+  force = true
 
-[[redirects]]
-  from = "http://www.reflexinteractive.com/*"
-  to = "https://www.reflexinteractive.com/:splat"
-  status = 301
+# NOTE: The four manual domain redirects were removed! 
+# Netlify will handle redirects (http -> https) and (bare -> www) 
+# automatically once you set www.reflexinteractive.com as the Primary Domain in the UI.
 
-[[redirects]]
-  from = "http://reflexinteractive.com/*"
-  to = "https://www.reflexinteractive.com/:splat"
-  status = 301
 
-# Clean URL Rewrites (Query Parameter Based)
+# === 2. Clean URL Rewrites (Query Parameter Based) ===
 # /games?id=... -> /src/pages/game-details.html
 [[redirects]]
-  from = "/games"
-  query = { id = ":id" }
-  to = "/src/pages/game-details.html"
-  status = 200
+  from = "/games"
+  query = { id = ":id" }
+  to = "/src/pages/game-details.html"
+  status = 200
 
 # /newswire?id=... -> /src/pages/newswire.html
 [[redirects]]
-  from = "/newswire"
-  query = { id = ":id" }
-  to = "/src/pages/newswire.html"
-  status = 200
+  from = "/newswire"
+  query = { id = ":id" }
+  to = "/src/pages/newswire.html"
+  status = 200
 
-# Static Page Rewrites (Must be placed AFTER detail views)
+# === 3. Static Page Rewrites (Must be placed AFTER detail views) ===
 [[redirects]]
-  from = "/games"
-  to = "/src/pages/games.html"
-  status = 200
-
-[[redirects]]
-  from = "/newswire"
-  to = "/src/pages/newswire.html"
-  status = 200
+  from = "/games"
+  to = "/src/pages/games.html"
+  status = 200
 
 [[redirects]]
-  from = "/about"
-  to = "/src/pages/about.html"
-  status = 200
+  from = "/newswire"
+  to = "/src/pages/newswire.html"
+  status = 200
 
 [[redirects]]
-  from = "/contact"
-  to = "/src/pages/contact.html"
-  status = 200
+  from = "/about"
+  to = "/src/pages/about.html"
+  status = 200
 
-# Custom 404 Page Setup
 [[redirects]]
-  from = "/*"
-  to = "/src/pages/404.html"
-  status = 404
+  from = "/contact"
+  to = "/src/pages/contact.html"
+  status = 200
+
+# === 4. Custom 404 Page Setup ===
+[[redirects]]
+  from = "/*"
+  to = "/src/pages/404.html"
+  status = 404
