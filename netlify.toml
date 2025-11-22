@@ -1,19 +1,11 @@
 # netlify.toml (Place this in your project root)
 
 # === 1. Domain Normalization (Avoids Redirect Loops) ===
-
-# CRITICAL: Forces redirect from the old Netlify subdomain to your custom domain.
-# This ensures users never see the .netlify.app address.
 [[redirects]]
   from = "https://reflexinteractive.netlify.app/*"
   to = "https://www.reflexinteractive.com/:splat"
   status = 301
   force = true
-
-# NOTE: The four manual domain redirects were removed! 
-# Netlify will handle redirects (http -> https) and (bare -> www) 
-# automatically once you set www.reflexinteractive.com as the Primary Domain in the UI.
-
 
 # === 2. Clean URL Rewrites (Query Parameter Based) ===
 # /games?id=... -> /src/pages/game-details.html
