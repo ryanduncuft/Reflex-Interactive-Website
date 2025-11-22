@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
-# Disallow internal or non-essential pages
+# Disallow internal or non-essential paths (matching the rewrites)
 Disallow: /src/components/
 Disallow: /privacy
 Disallow: /tos
