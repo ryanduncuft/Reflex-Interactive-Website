@@ -59,3 +59,9 @@ status = 200
 from = "/*"
 to = "/src/pages/404.html"
 status = 404
+
+# === 5. Launcher Download Redirect ===
+[[redirects]]
+from = "/launcher"
+to = "https://github.com/ReflexInteractive/Reflex-Interactive-Launcher/releases/download/v0.0.1/Reflex.Interactive.Launcher.0.0.1.Beta.zip"
+status = 302 # Use 302 (temporary) if the download link changes often, 301 (permanent) if it won't.
