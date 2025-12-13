@@ -1,37 +1,181 @@
 <header>
-    <nav class="navbar navbar-expand-md navbar-dark fixed-top py-3" style="background-color: rgba(0, 0, 0, 0.75); z-index: 1030;">
-        <div class="container px-3 px-md-4 d-flex align-items-center">
+    <style>
+        /* --- MODERN NAVBAR STYLES --- */
+        .navbar-custom {
+            background-color: rgba(10, 10, 10, 0.8); /* Darker, more premium base */
+            backdrop-filter: blur(12px); /* Glassmorphism effect */
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* Brand Styling */
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        /* Desktop Navigation Links */
+        .nav-link-custom {
+            color: rgba(255, 255, 255, 0.7) !important;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 0.5rem 1rem;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link-custom:hover {
+            color: #ffffff !important;
+        }
+
+        /* Animated Underline for Desktop Links */
+        .nav-link-custom::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background-color: #dc3545;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-link-custom:hover::after {
+            width: 80%;
+        }
+
+        /* Custom 'Get Launcher' Button */
+        .btn-launcher {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-radius: 50px; /* Pill shape is more modern */
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-launcher:hover {
+            background-color: #bb2d3b;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
+        }
+
+        /* Hamburger Menu Trigger */
+        .menu-trigger {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            padding: 0;
+            margin-left: 15px;
+            cursor: pointer;
+        }
+
+        /* --- MOBILE OVERLAY (Your original logic, cleaned up) --- */
+        #mobile-menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: #000000; /* Solid black for contrast */
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #mobile-menu-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .mobile-nav-link {
+            font-size: 2.5rem; /* Larger for mobile touch */
+            font-weight: 800;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            text-decoration: none;
+            margin: 10px 0;
+            transform: translateY(30px);
+            transition: 0.4s ease;
+            opacity: 0;
+        }
+
+        .mobile-nav-link:hover {
+            color: white;
+            -webkit-text-stroke: 1px white; /* Modern outline effect */
+        }
+
+        /* Staggered Animation on Open */
+        #mobile-menu-overlay.active .mobile-nav-link {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #mobile-menu-overlay.active .mobile-nav-link:nth-child(2) { transition-delay: 0.1s; }
+        #mobile-menu-overlay.active .mobile-nav-link:nth-child(3) { transition-delay: 0.2s; }
+        #mobile-menu-overlay.active .mobile-nav-link:nth-child(4) { transition-delay: 0.3s; }
+        #mobile-menu-overlay.active .mobile-nav-link:nth-child(5) { transition-delay: 0.4s; }
+
+        #mobile-menu-close {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            font-size: 2.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        #mobile-menu-close:hover { color: white; }
+    </style>
+
+    <nav class="navbar navbar-expand-md fixed-top navbar-custom">
+        <div class="container px-4">
             
-            <a class="navbar-brand me-3 fw-bold fs-4" href="/" aria-label="Reflex Interactive Home">
+            <a class="navbar-brand" href="/" aria-label="Reflex Interactive Home">
                 <span class="text-white">Reflex</span><span class="text-danger">Interactive</span>
             </a>
 
-            <div class="collapse navbar-collapse order-1 order-md-2 justify-content-center" id="mainNav">
-                <ul class="navbar-nav d-flex flex-row gap-md-4 gap-3 align-items-center mb-0" id="site-main-nav">
-                    
-                    <li class="nav-item">
-                        <a class="nav-link text-uppercase fw-semibold" href="/games">Games</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-uppercase fw-semibold" href="/newswire">Newswire</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-uppercase fw-semibold" href="/contact">Contact</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-uppercase fw-semibold" href="/about">About</a>
-                    </li>
+            <div class="d-none d-md-flex mx-auto">
+                <ul class="navbar-nav d-flex flex-row gap-2">
+                    <li class="nav-item"><a class="nav-link nav-link-custom text-uppercase" href="/games">Games</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom text-uppercase" href="/newswire">Newswire</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom text-uppercase" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom text-uppercase" href="/about">About</a></li>
                 </ul>
             </div>
 
-            <div class="d-flex align-items-center ms-auto order-2 order-md-3 gap-2">
-                
-                <a id="get-launcher-btn" href="/launcher" class="btn btn-danger fw-bold text-uppercase d-none d-md-inline-block">Get Launcher</a>
+            <div class="d-flex align-items-center">
+                <a href="/launcher" class="btn-launcher text-uppercase d-none d-md-inline-block">
+                    Get Launcher
+                </a>
 
-                <button class="navbar-toggler d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="menu-trigger d-md-none" id="mobile-menu-trigger" aria-label="Open menu">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
         </div>
     </nav>
+
+    <div id="mobile-menu-overlay">
+        <button id="mobile-menu-close" aria-label="Close menu">&times;</button>
+        <a class="mobile-nav-link" href="/games">Games</a>
+        <a class="mobile-nav-link" href="/newswire">Newswire</a>
+        <a class="mobile-nav-link" href="/contact">Contact</a>
+        <a class="mobile-nav-link" href="/about">About</a>
+    </div>
 </header>
