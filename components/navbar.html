@@ -1,0 +1,39 @@
+<header>
+    <nav class="navbar navbar-expand-md fixed-top navbar-custom">
+        <div class="container px-4">
+            
+            <a class="navbar-brand" href="/" aria-label="Reflex Interactive Home">
+                <span class="text-white">Reflex</span><span class="text-danger">Interactive</span>
+            </a>
+
+            <div class="d-none d-md-flex mx-auto">
+                <ul class="navbar-nav d-flex flex-row gap-2">
+                    <li class="nav-item"><a class="nav-link text-uppercase" href="/games">Games</a></li>
+                    <li class="nav-item"><a class="nav-link text-uppercase" href="/newswire">Newswire</a></li>
+                    <li class="nav-item"><a class="nav-link text-uppercase" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link text-uppercase" href="/about">About</a></li>
+                </ul>
+            </div>
+
+            <div class="d-flex align-items-center">
+                <a href="/launcher" class="btn btn-primary btn-launcher text-uppercase d-none d-md-inline-block">
+                    Get Launcher
+                </a>
+
+                <button class="menu-trigger d-md-none" id="mobile-menu-trigger" aria-label="Open menu">
+                    <span class="menu-lines" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="mobile-menu-overlay" aria-hidden="true">
+        <button id="mobile-menu-close" aria-label="Close menu">&times;</button>
+        <a class="mobile-nav-link" href="/games">Games</a>
+        <a class="mobile-nav-link" href="/newswire">Newswire</a>
+        <a class="mobile-nav-link" href="/contact">Contact</a>
+        <a class="mobile-nav-link" href="/about">About</a>
+    </div>
+</header>
+
+

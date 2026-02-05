@@ -9,44 +9,44 @@ force = true
 [[redirects]]
 from = "/games"
 query = { id = ":id" }
-to = "/src/pages/game-details.html"
+to = "/pages/game-details.html"
 status = 200
 
 [[redirects]]
 from = "/newswire"
 query = { id = ":id" }
-to = "/src/pages/newswire.html"
+to = "/pages/newswire.html"
 status = 200
 
 # === 3. Static Page Rewrites (Must be placed AFTER detail views) ===
 [[redirects]]
 from = "/games"
-to = "/src/pages/games.html"
+to = "/pages/games.html"
 status = 200
 
 [[redirects]]
 from = "/newswire"
-to = "/src/pages/newswire.html"
+to = "/pages/newswire.html"
 status = 200
 
 [[redirects]]
 from = "/about"
-to = "/src/pages/about.html"
+to = "/pages/about.html"
 status = 200
 
 [[redirects]]
 from = "/contact"
-to = "/src/pages/contact.html"
+to = "/pages/contact.html"
 status = 200
 
 [[redirects]]
 from = "/tos"
-to = "/src/pages/tos.html"
+to = "/pages/tos.html"
 status = 200
 
 [[redirects]]
 from = "/privacy"
-to = "/src/pages/privacy.html"
+to = "/pages/privacy.html"
 status = 200
 
 # === 4. Launcher Download Redirect (MOVED TO BEFORE 404) ===
@@ -58,5 +58,5 @@ status = 302
 # === 5. Custom 404 Page Setup (Must be the LAST rule) ===
 [[redirects]]
 from = "/*"
-to = "/src/pages/404.html"
+to = "/pages/404.html"
 status = 404

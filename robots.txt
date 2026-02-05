@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 # Disallow internal or non-essential paths (matching the rewrites)
-Disallow: /src/components/
+Disallow: /components/
 Disallow: /privacy
 Disallow: /tos
 Disallow: /games?id=*

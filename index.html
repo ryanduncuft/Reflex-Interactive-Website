@@ -16,7 +16,7 @@
 
     <link rel="icon" type="image/png" href="/assets/images/favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="stylesheet" href="/css/styles.min.css">
 
     <script type="application/ld+json">
     {
@@ -34,13 +34,72 @@
     
     <main>
         <section class="hero-section position-relative d-flex align-items-center justify-content-center text-center" role="region" aria-label="Hero Introduction">
-            <div class="absolute inset-0 bg-hero-image"></div>
+            <div class="position-absolute inset-0 bg-hero-image" aria-hidden="true"></div>
+            <div class="hero-overlay" aria-hidden="true"></div>
             <div class="position-relative z-3 px-3 px-md-4 container">
                 <h1 class="display-1 fw-black text-shadow-lg mb-4 hero-entry">Reflex Interactive</h1>
                 <p class="fs-4 fw-light text-light hero-entry">Where every shot counts.</p>
                 <a href="#newswire" class="btn btn-danger btn-lg mt-4 px-5 py-3 text-uppercase fw-bold hero-entry" aria-label="Discover our latest news and updates">
                     Discover More
                 </a>
+            </div>
+        </section>
+
+        <section id="studio-pulse" class="py-5" role="region" aria-labelledby="studio-pulse-heading">
+            <div class="container">
+                <div class="row g-4 align-items-center">
+                    <div class="col-12 col-lg-6">
+                        <p class="section-kicker mb-3">Studio Pulse</p>
+                        <h2 id="studio-pulse-heading" class="display-4 fw-bold text-uppercase mb-3">
+                            Indie by design. <span class="text-danger">Relentless</span> by craft.
+                        </h2>
+                        <p class="fs-5 text-muted mb-4">
+                            Reflex Interactive is built on tight gameplay loops, moody worlds, and the kind of polish that keeps players coming back. We ship with focus, listen to our community, and iterate fast.
+                        </p>
+                        <div class="d-flex flex-wrap gap-3">
+                            <span class="badge rounded-pill text-bg-danger px-3 py-2">Narrative Action</span>
+                            <span class="badge rounded-pill text-bg-dark border border-danger px-3 py-2">Competitive Systems</span>
+                            <span class="badge rounded-pill text-bg-dark border border-danger px-3 py-2">Live Ops Ready</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="row row-cols-1 row-cols-md-3 g-3">
+                            <div class="col">
+                                <div class="stat-card reveal-on-scroll">
+                                    <h3 id="stat-games" data-count="0">0</h3>
+                                    <p>Games</p>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="stat-card reveal-on-scroll">
+                                    <h3 id="stat-news" data-count="0">0</h3>
+                                    <p>News Posts</p>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="stat-card reveal-on-scroll">
+                                    <h3 id="stat-years" data-count="0">0</h3>
+                                    <p>Years Building</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="section-divider"></div>
+                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                            <div class="col">
+                                <div class="feature-card reveal-on-scroll">
+                                    <h3 class="text-danger text-uppercase">Precision Play</h3>
+                                    <p class="text-muted mb-0">Tight combat, high stakes, and skill expression at every turn.</p>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="feature-card reveal-on-scroll">
+                                    <h3 class="text-danger text-uppercase">Worldcraft</h3>
+                                    <p class="text-muted mb-0">Immersive environments with deliberate art direction and mood.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
         
@@ -50,7 +109,7 @@
                     <h2 id="latest-news-heading" class="display-4 fw-bold text-uppercase mb-3">
                         Latest <span class="text-danger">News</span>
                     </h2>
-                    <p class="fs-5 text-muted" style="max-width: 600px; margin: 0 auto;">
+                    <p class="fs-5 text-muted content-mid">
                         Stay informed with the latest updates from Reflex Interactive
                     </p>
                 </div>
@@ -69,13 +128,31 @@
             </div>
         </section>
 
+        <section id="featured-game" class="py-5" role="region" aria-labelledby="featured-game-heading">
+            <div class="container">
+                <div class="mb-5 text-center">
+                    <h2 id="featured-game-heading" class="display-4 fw-bold text-uppercase mb-3">
+                        Featured <span class="text-danger">Release</span>
+                    </h2>
+                    <p class="fs-5 text-muted content-mid">
+                        A spotlight on the title that defines our current creative momentum
+                    </p>
+                </div>
+                <div id="featured-game-slot" class="featured-game reveal-on-scroll">
+                    <div class="featured-body text-center">
+                        <p class="text-muted mb-0">Loading featured game...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="games" class="py-5" role="region" aria-labelledby="our-games-heading">
             <div class="container">
                 <div class="mb-5 text-center">
                     <h2 id="our-games-heading" class="display-4 fw-bold text-uppercase mb-3">
                         Our <span class="text-danger">Games</span>
                     </h2>
-                    <p class="fs-5 text-muted" style="max-width: 600px; margin: 0 auto;">
+                    <p class="fs-5 text-muted content-mid">
                         Explore our collection of immersive gaming experiences
                     </p>
                 </div>
@@ -93,11 +170,31 @@
                 </div>
             </div>
         </section>
+
+        <!-- <section id="community" class="py-5" role="region" aria-labelledby="community-heading">
+            <div class="container">
+                <div class="cta-panel reveal-on-scroll">
+                    <h2 id="community-heading" class="display-5 fw-bold text-uppercase mb-3">
+                        Join the <span class="text-danger">Reflex Dispatch</span>
+                    </h2>
+                    <p class="fs-5 text-muted mb-4">
+                        Get launch alerts, studio updates, and early playtest invites straight to your inbox.
+                    </p>
+                    <form id="newsletter-form" action="https://formspree.io/f/myzdgoop" method="POST" class="d-flex flex-column flex-md-row gap-3 justify-content-center align-items-center">
+                        <label class="visually-hidden" for="newsletter-email">Email address</label>
+                        <input id="newsletter-email" name="email" type="email" required autocomplete="email" class="form-control" placeholder="Your email address">
+                        <button type="submit" class="btn btn-danger btn-lg text-uppercase fw-bold">Stay in the Loop</button>
+                    </form>
+                </div>
+            </div>
+        </section> <!-->
     </main>
 
     <div id="footer-placeholder"></div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/src/js/app.js"></script>
+    <script src="/js/app.min.js"></script>
 </body>
 </html>
+
+
