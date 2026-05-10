@@ -443,7 +443,7 @@
             <div class="modern-game-card-overlay">
                 <h3 class="modern-game-card-title">${game.title}</h3>
                 <p class="modern-game-card-desc">${game.description}</p>
-                <a href="/games?id=${game.id}" class="modern-game-card-link">Learn More <span class="ms-2">→</span></a>
+                <a href="/game-details?id=${game.id}" class="modern-game-card-link">Learn More <span class="ms-2">→</span></a>
             </div>
         `;
 
@@ -696,12 +696,18 @@
         const path = window.location.pathname;
         const urlId = new URLSearchParams(window.location.search).get("id");
 
-        // --- FIXED ROUTING LOGIC ---
-        // Identify specifically what page we are on based on URL and Presence of ID
-        const isGameDetailPage = (path.includes("games") || path.includes("game-detail")) && urlId;
-        const isGamesListPage = path.includes("games") && !urlId;
-        const isNewsDetailPage = path.includes("newswire") && urlId;
-        const isNewsListPage = path.includes("newswire") && !urlId;
+        // --- UNIVERSAL ROUTING LOGIC (Local & Netlify) ---
+        // --- UNIVERSAL ROUTING LOGIC (Final Fix) ---
+        const isGameDetailPage = path.includes("game-details") || (urlId && document.getElementById("game-hero"));
+
+        const isGamesListPage = (path.includes("games") && !urlId) || 
+                                 (path.includes("games") && !document.getElementById("game-hero") && !path.includes("game-details"));
+
+        const isNewsDetailPage = path.includes("article-detail") || (path.includes("newswire") && urlId && document.getElementById("article-detail"));
+
+        const isNewsListPage = (path.includes("newswire") && !urlId) || 
+                                (path.includes("newswire") && !document.getElementById("article-detail"));
+        
         const isHomePage = path === "/" || path.endsWith("index.html");
 
         if (isGameDetailPage) {

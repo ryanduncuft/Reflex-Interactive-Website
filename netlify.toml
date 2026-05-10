@@ -1,62 +1,64 @@
 # === 1. Domain Normalization (Avoids Redirect Loops) ===
 [[redirects]]
-from = "https://reflexinteractive.netlify.app/*"
-to = "https://www.reflexinteractive.com/:splat"
-status = 301
-force = true
+  from = "https://reflexinteractive.netlify.app/*"
+  to = "https://www.reflexinteractive.com/:splat"
+  status = 301
+  force = true
 
 # === 2. Clean URL Rewrites (Query Parameter Based) ===
+# Points to game-details.html in the root
 [[redirects]]
-from = "/games"
-query = { id = ":id" }
-to = "/pages/game-details.html"
-status = 200
+  from = "/games"
+  query = { id = ":id" }
+  to = "/game-details.html"
+  status = 200
+
+# Points to newswire.html in the root
+[[redirects]]
+  from = "/newswire"
+  query = { id = ":id" }
+  to = "/newswire.html"
+  status = 200
+
+# === 3. Static Page Rewrites ===
+[[redirects]]
+  from = "/games"
+  to = "/games.html"
+  status = 200
 
 [[redirects]]
-from = "/newswire"
-query = { id = ":id" }
-to = "/pages/newswire.html"
-status = 200
-
-# === 3. Static Page Rewrites (Must be placed AFTER detail views) ===
-[[redirects]]
-from = "/games"
-to = "/pages/games.html"
-status = 200
+  from = "/newswire"
+  to = "/newswire.html"
+  status = 200
 
 [[redirects]]
-from = "/newswire"
-to = "/pages/newswire.html"
-status = 200
+  from = "/about"
+  to = "/about.html"
+  status = 200
 
 [[redirects]]
-from = "/about"
-to = "/pages/about.html"
-status = 200
+  from = "/contact"
+  to = "/contact.html"
+  status = 200
 
 [[redirects]]
-from = "/contact"
-to = "/pages/contact.html"
-status = 200
+  from = "/tos"
+  to = "/tos.html"
+  status = 200
 
 [[redirects]]
-from = "/tos"
-to = "/pages/tos.html"
-status = 200
-
-[[redirects]]
-from = "/privacy"
-to = "/pages/privacy.html"
-status = 200
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
 
 # === 4. Launcher Download Redirect ===
 [[redirects]]
-from = "/launcher"
-to = "https://cdn.reflexinteractive.com/launcher-files/win-x64/launcher-latest.zip"
-status = 302
+  from = "/launcher"
+  to = "https://cdn.reflexinteractive.com/launcher-files/win-x64/launcher-latest.zip"
+  status = 302
 
-# === 5. Custom 404 Page Setup (Must be the LAST rule) ===
+# === 5. Custom 404 Page Setup ===
 [[redirects]]
-from = "/*"
-to = "/pages/404.html"
-status = 404
+  from = "/*"
+  to = "/404.html"
+  status = 404
