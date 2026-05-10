@@ -1,3 +1,7 @@
+/**
+ * Reflex Interactive - Main Application Script
+ * Version: 2.1.0
+ */
 (async () => {
     const config = {
         GIST_URLS: {
@@ -16,19 +20,21 @@
         dataCache: new Map(),
     };
 
-    const getCacheBustedUrl = (url) => 
+    // --- Utilities ---
+
+    const getCacheBustedUrl = (url) =>
         config.CACHE_BUST_ENABLED ? `${url}?t=${Date.now()}` : url;
 
     const fetchData = async (url) => {
         if (appState.dataCache.has(url)) return appState.dataCache.get(url);
-        
+
         const isGistUrl = Object.values(config.GIST_URLS).includes(url);
         const fetchUrl = isGistUrl ? url : getCacheBustedUrl(url);
 
         try {
             const response = await fetch(fetchUrl);
             if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
-            
+
             const data = await response.json();
             appState.dataCache.set(url, data);
             return data;
@@ -41,7 +47,7 @@
     const normalizeMediaUrl = (url) => {
         if (!url) return "";
         if (/^https?:\/\//i.test(url)) return url;
-        
+
         let cleaned = url.replace(/\\/g, "/");
         cleaned = cleaned.replace(/^assets\/images\//i, "assets/images/");
         cleaned = cleaned.replace(/^assets\/image\//i, "assets/images/");
@@ -51,7 +57,10 @@
     };
 
     const toggleLoadingSpinner = (id, show) => {
-        document.getElementById(id)?.classList.toggle("d-none", !show);
+        const spinner = document.getElementById(id);
+        if (spinner) {
+            spinner.classList.toggle("d-none", !show);
+        }
     };
 
     const debounce = (func, delayMs = 250) => {
@@ -73,6 +82,8 @@
         };
     };
 
+    // --- Components & UI ---
+
     const loadComponent = async (placeholderId, componentUrl, callback) => {
         const placeholder = document.getElementById(placeholderId);
         if (!placeholder) return;
@@ -83,7 +94,7 @@
         try {
             const response = await fetch(fetchUrl);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
+
             const html = await response.text();
             placeholder.innerHTML = html;
             callback?.(placeholder);
@@ -98,21 +109,21 @@
         const closeBtn = document.getElementById("mobile-menu-close");
         const overlay = document.getElementById("mobile-menu-overlay");
         const links = document.querySelectorAll(".mobile-nav-link");
-        
+
         if (!trigger || !overlay) return;
 
         const toggleMenu = (isOpen) => {
             if (isOpen) {
                 overlay.classList.add("active");
                 overlay.setAttribute("aria-hidden", "false");
-                document.body.style.overflow = "hidden"; // Lock scrolling
+                document.body.style.overflow = "hidden";
             } else {
                 overlay.classList.remove("active");
                 overlay.setAttribute("aria-hidden", "true");
-                document.body.style.overflow = ""; // Unlock scrolling
+                document.body.style.overflow = "";
             }
         };
-        
+
         trigger.addEventListener("click", () => toggleMenu(true));
         closeBtn?.addEventListener("click", () => toggleMenu(false));
         links.forEach((link) => link.addEventListener("click", () => toggleMenu(false)));
@@ -125,7 +136,7 @@
         const scrollHandler = throttle(() => {
             header.classList.toggle("scrolled", window.scrollY > 50);
         }, 10);
-        
+
         window.addEventListener("scroll", scrollHandler);
     };
 
@@ -136,7 +147,7 @@
         const toggle = () => {
             btn.classList.toggle("visible", window.scrollY > 400);
         };
-        
+
         window.addEventListener("scroll", toggle);
         btn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
         toggle();
@@ -145,50 +156,37 @@
     const initDownloadButtons = () => {
         const downloadBtns = document.querySelectorAll(".launcher-download-btn");
         if (!downloadBtns.length) return;
-        
+
         const getDownloadUrl = () => {
             const baseUrl = "https://cdn.reflexinteractive.com/launcher-files";
             const userAgent = window.navigator.userAgent.toLowerCase();
             const platform = window.navigator.platform.toLowerCase();
-            
-            // Default to win-x64 as the safest bet for modern gaming PCs
+
             let rid = "win-x64";
 
-            // 1. MacOS Detection
             if (userAgent.includes("mac") || platform.includes("mac")) {
                 const isArm = (navigator.maxTouchPoints > 0) || userAgent.includes("arm64");
                 rid = isArm ? "osx-arm64" : "osx-x64";
-            } 
-            // 2. Linux Detection
-            else if (userAgent.includes("linux")) {
+            } else if (userAgent.includes("linux")) {
                 rid = "linux-x64";
-            }
-            // 3. Windows 64-bit vs 32-bit Detection
-            else if (userAgent.includes("win")) {
-                // Browsers often report 'Win32' even on 64-bit machines.
-                // We check the userAgent string for 64-bit indicators.
-                const is64 = userAgent.includes("win64") || 
-                             userAgent.includes("wow64") || 
-                             userAgent.includes("x64") || 
-                             platform.includes("x64");
-                
+            } else if (userAgent.includes("win")) {
+                const is64 = userAgent.includes("win64") ||
+                    userAgent.includes("wow64") ||
+                    userAgent.includes("x64") ||
+                    platform.includes("x64");
                 rid = is64 ? "win-x64" : "win-x86";
             }
-        
+
             return `${baseUrl}/${rid}/launcher-latest.zip`;
         };
-    
+
         const finalUrl = getDownloadUrl();
-    
+
         downloadBtns.forEach(btn => {
-            // Update the link to the direct Cloudflare URL
             btn.href = finalUrl;
             btn.setAttribute("download", "ReflexLauncher.zip");
-            
-            // Critical: Force the browser to treat this as a real navigation 
-            // and ignore any smooth-scroll listeners.
             btn.addEventListener("click", (e) => {
-                e.stopPropagation(); // Stops the click from reaching initSmoothScroll
+                e.stopPropagation();
             });
         });
     };
@@ -203,7 +201,7 @@
         appState.revealObserver = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 if (!entry.isIntersecting) return;
-                
+
                 const element = entry.target;
                 const parent = element.parentElement;
                 let delay = 0;
@@ -238,30 +236,25 @@
     };
 
     const initSmoothScroll = () => {
-        // Only target links that start with # and aren't just a placeholder
         document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             anchor.addEventListener("click", (event) => {
                 const href = event.currentTarget.getAttribute("href");
-
-                // 1. Skip if it's just "#"
-                // 2. Skip if the href was changed to a full URL (contains http)
                 if (!href || href === "#" || href.includes("http")) return;
 
                 try {
                     const targetElement = document.querySelector(href);
                     if (targetElement) {
                         event.preventDefault();
-                        targetElement.scrollIntoView({
-                            behavior: "smooth"
-                        });
+                        targetElement.scrollIntoView({ behavior: "smooth" });
                     }
                 } catch (e) {
-                    // Silently ignore if querySelector fails (e.g. it's not a valid ID)
                     console.warn("Smooth scroll target not found:", href);
                 }
             });
         });
     };
+
+    // --- Stats & Search ---
 
     const animateCount = (el, target) => {
         const duration = 900;
@@ -274,7 +267,6 @@
             el.textContent = value.toString();
             if (progress < 1) requestAnimationFrame(step);
         };
-        
         requestAnimationFrame(step);
     };
 
@@ -342,7 +334,7 @@
     const searchIndex = async (query) => {
         const q = query?.trim()?.toLowerCase();
         if (!q) return [];
-        
+
         await buildSearchIndex();
         return appState.searchIndex.filter((item) => item.searchable.includes(q)).slice(0, 8);
     };
@@ -351,7 +343,7 @@
         const input = document.getElementById("global-search-input");
         const container = document.getElementById("search-results-container");
         const list = document.getElementById("global-search-results");
-        
+
         if (!input || !container || !list) return;
 
         const handleInput = debounce(async (e) => {
@@ -370,10 +362,10 @@
                 link.innerHTML = `<strong>${res.title}</strong><br><small class="text-muted">${res.snippet}</small>`;
                 list.appendChild(link);
             });
-            
+
             container.style.display = "block";
         }, config.SEARCH_DEBOUNCE_MS);
-        
+
         input.addEventListener("input", handleInput);
 
         document.addEventListener("click", (e) => {
@@ -393,6 +385,7 @@
     const handleFormSubmission = async (event, form) => {
         event.preventDefault();
         const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
         btn.disabled = true;
         btn.textContent = "Sending...";
 
@@ -402,7 +395,7 @@
                 body: new FormData(form),
                 headers: { Accept: "application/json" },
             });
-            
+
             const success = res.ok;
             form.innerHTML = `<p class="text-${success ? "success" : "danger"} fw-bold text-center">${success ? "Message sent!" : "Error sending message."}</p>`;
         } catch (error) {
@@ -411,10 +404,11 @@
         }
     };
 
+    // --- Content Rendering ---
+
     const createNewsCard = (article) => {
         const col = document.createElement("div");
         col.className = "col";
-        
         const card = document.createElement("div");
         card.className = "card modern-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll";
 
@@ -429,7 +423,7 @@
                 </div>
             </a>
         `;
-        
+
         appState.revealObserver?.observe(card);
         col.appendChild(card);
         return col;
@@ -438,10 +432,9 @@
     const createGameCard = (game) => {
         const col = document.createElement("div");
         col.className = "col";
-        
         const card = document.createElement("div");
         card.className = "card modern-card modern-game-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll";
-        
+
         const imageUrl = normalizeMediaUrl(game.image_url);
 
         card.innerHTML = `
@@ -452,7 +445,7 @@
                 <a href="/games?id=${game.id}" class="modern-game-card-link">Learn More <span class="ms-2">→</span></a>
             </div>
         `;
-        
+
         appState.revealObserver?.observe(card);
         col.appendChild(card);
         return col;
@@ -465,6 +458,7 @@
         try {
             let data = await fetchData(config.GIST_URLS.NEWS);
             if (count) data = data.slice(0, count);
+            container.innerHTML = "";
             container.append(...data.map(createNewsCard));
         } catch (e) {
             container.innerHTML = '<div class="text-center text-danger py-5">Failed to load news.</div>';
@@ -480,6 +474,7 @@
         try {
             let data = await fetchData(config.GIST_URLS.GAMES);
             if (count) data = data.slice(0, count);
+            container.innerHTML = "";
             container.append(...data.map(createGameCard));
         } catch (e) {
             container.innerHTML = '<div class="text-center text-danger py-5">Failed to load games.</div>';
@@ -497,16 +492,17 @@
             const data = await fetchData(config.GIST_URLS.NEWS);
             const article = data.find((i) => i.id == id);
             if (!article) throw new Error("Article not found");
-            
+
             listSec?.classList.add("d-none");
             detailSec?.classList.remove("d-none");
-            
+
             document.getElementById("article-title").textContent = article.title;
             document.getElementById("article-date").textContent = article.date;
             document.getElementById("article-image").src = article.image_url;
             document.getElementById("article-content").innerHTML = article.content.replace(/\n/g, "<br><br>");
             document.title = `${article.title} | Reflex Interactive`;
         } catch (e) {
+            console.error(e);
             document.querySelector("main").innerHTML = '<div class="text-center text-danger pt-5">Failed to load article.</div>';
         } finally {
             toggleLoadingSpinner("loading-spinner", false);
@@ -525,45 +521,58 @@
             const data = await fetchData(config.GIST_URLS.GAMES);
             const game = data.find((i) => i.id == id);
             if (!game) throw new Error("Game not found");
-            
+
+            const safeSetText = (id, text) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text || "";
+            };
+
+            // 1. Titles
             const titleEl = document.getElementById("game-title");
             if (titleEl) titleEl.textContent = `${game.title} | Reflex Interactive`;
             document.title = `${game.title} | Reflex Interactive`;
-            
+
+            // 2. Hero Section
             const hero = document.getElementById("game-hero");
             if (hero) {
                 const heroUrl = normalizeMediaUrl(game.hero_image_url || game.image_url);
                 hero.style.backgroundImage = `url('${heroUrl}')`;
-                Object.assign(hero.style, {
-                    backgroundPosition: "center",
-                    backgroundSize: "cover",
-                });
+                Object.assign(hero.style, { backgroundPosition: "center", backgroundSize: "cover" });
             }
 
-            document.getElementById("game-detail-cover").src = normalizeMediaUrl(game.image_url);
-            document.getElementById("game-detail-title").textContent = game.title;
-            document.getElementById("game-detail-developer").textContent = game.developer;
-            document.getElementById("game-detail-publisher").textContent = game.publisher;
-            document.getElementById("game-detail-genre").textContent = game.genre;
-            document.getElementById("game-detail-description").textContent = game.description;
-            
+            // 3. Info Binding
+            const coverImg = document.getElementById("game-detail-cover");
+            if (coverImg) coverImg.src = normalizeMediaUrl(game.image_url);
+
+            safeSetText("game-detail-title", game.title);
+            safeSetText("game-detail-developer", game.developer);
+            safeSetText("game-detail-publisher", game.publisher);
+            safeSetText("game-detail-genre", game.genre);
+            safeSetText("game-detail-description", game.description);
+
+            // 4. Price & Button
             const btn = document.getElementById("purchase-download-btn");
             const priceEl = document.getElementById("game-detail-price");
 
-            priceEl.textContent = game.price === 0 ? "FREE" : `$${game.price.toFixed(2)}`;
-
-            if (game.price === 0 && game.download_url) {
-                btn.textContent = "Download Now";
-                btn.href = game.download_url;
-                btn.setAttribute("download", "");
-                btn.classList.remove("opacity-50", "cursor-not-allowed");
-            } else {
-                btn.textContent = "Purchase Now";
-                btn.href = "#";
-                btn.removeAttribute("download");
-                btn.classList.add("opacity-50", "cursor-not-allowed");
+            if (priceEl) {
+                priceEl.textContent = game.price === 0 ? "FREE" : `$${Number(game.price).toFixed(2)}`;
             }
 
+            if (btn) {
+                if (game.price === 0 && game.download_url) {
+                    btn.textContent = "Download Now";
+                    btn.href = game.download_url;
+                    btn.setAttribute("download", "");
+                    btn.classList.remove("opacity-50", "cursor-not-allowed");
+                } else {
+                    btn.textContent = "Purchase Now";
+                    btn.href = "#";
+                    btn.removeAttribute("download");
+                    btn.classList.add("opacity-50", "cursor-not-allowed");
+                }
+            }
+
+            // 5. Media Columns
             const screens = document.getElementById("game-detail-screenshots");
             if (screens) {
                 screens.innerHTML = "";
@@ -571,29 +580,28 @@
                 if (game.trailer_url) {
                     const iframe = document.createElement("iframe");
                     iframe.src = game.trailer_url;
-                    iframe.className = "w-full h-auto rounded-lg shadow-md aspect-video";
+                    iframe.className = "col-12 w-full rounded-lg shadow-md aspect-video mb-4";
                     iframe.setAttribute("allowfullscreen", "");
                     screens.appendChild(iframe);
                 }
 
                 if (Array.isArray(game.screenshots)) {
-                    // Change 'src' to 'screenshot' here
-                    game.screenshots.forEach((screenshot) => { 
+                    game.screenshots.forEach((screenshot) => {
+                        const col = document.createElement("div");
+                        col.className = "col";
                         const img = document.createElement("img");
-
-                        // Now 'screenshot.url' will work correctly
-                        img.src = normalizeMediaUrl(screenshot.url); 
-                        img.className = "w-full h-auto rounded-lg shadow-md";
-                    
-                        if (screenshot.caption) {
-                            img.alt = screenshot.caption;
-                        }
-                        screens.appendChild(img);
+                        // Support both string URLs and Objects with .url
+                        img.src = normalizeMediaUrl(screenshot.url || screenshot);
+                        img.className = "img-fluid rounded-lg shadow-md";
+                        img.alt = screenshot.caption || game.title;
+                        col.appendChild(img);
+                        screens.appendChild(col);
                     });
                 }
             }
         } catch (e) {
-            document.querySelector("main").innerHTML = '<div class="text-center text-danger pt-5">Failed to load game details.</div>';
+            console.error("Render Error:", e);
+            document.querySelector("main").innerHTML = `<div class="text-center text-danger pt-5">Failed to load game details: ${e.message}</div>`;
         }
     };
 
@@ -605,7 +613,7 @@
             const data = await fetchData(config.GIST_URLS.GAMES);
             const game = Array.isArray(data) ? data[0] : null;
             if (!game) throw new Error("No games found");
-            
+
             const image = normalizeMediaUrl(game.hero_image_url || game.image_url);
 
             slot.innerHTML = `
@@ -635,9 +643,7 @@
         const gamesEl = document.getElementById("stat-games");
         const newsEl = document.getElementById("stat-news");
         const yearsEl = document.getElementById("stat-years");
-        
-        if (!gamesEl && !newsEl && !yearsEl) return;
-        
+
         const years = Math.max(1, new Date().getFullYear() - 2022);
         if (yearsEl) yearsEl.dataset.count = years.toString();
 
@@ -655,6 +661,8 @@
         }
     };
 
+    // --- Core Lifecycle ---
+
     const initializeApp = async () => {
         await Promise.all([
             loadComponent("navbar-placeholder", "/components/navbar.html", () => {
@@ -669,50 +677,48 @@
             }),
             loadComponent("footer-placeholder", "/components/footer.html", (el) => {
                 const form = el.querySelector("form");
-                form?.addEventListener("submit", (e) => handleFormSubmission(e, form));
+                if (form) form.addEventListener("submit", (e) => handleFormSubmission(e, form));
             }),
         ]);
 
-        initDownloadButtons();
         initScrollReveal();
         initBackToTop();
-        
+
         const path = window.location.pathname;
         const urlId = new URLSearchParams(window.location.search).get("id");
-        
-        // 1. Identify the actual page being viewed
-        const isGameDetailPage = path.includes("game-details.html");
-        const isGamesListPage = path.includes("games.html");
-        const isNewsDetailPage = path.includes("newswire.html") && urlId;
-        const isNewsListPage = path.includes("newswire.html") && !urlId;
+
+        // Routing Logic
+        const isGameDetailPage = path.includes("game-details") || path.includes("game-detail");
+        const isGamesListPage = path.includes("/games") && !isGameDetailPage;
+        const isNewsDetailPage = path.includes("newswire") && urlId;
+        const isNewsListPage = path.includes("newswire") && !urlId;
         const isHomePage = path === "/" || path.endsWith("index.html");
 
-        // 2. Execute logic based on the page
         if (isGameDetailPage && urlId) {
             renderGameDetail();
         } else if (isGamesListPage) {
             const c = document.getElementById("full-games-container");
-            c && renderGameList(c);
+            if (c) renderGameList(c);
         } else if (isNewsDetailPage) {
             renderArticleDetail(urlId);
         } else if (isNewsListPage) {
             const c = document.getElementById("news-container");
-            c && renderNewsList(c);
+            if (c) renderNewsList(c);
         } else if (isHomePage) {
             const latestGames = document.getElementById("latest-games-container");
             const latestNews = document.getElementById("latest-news-container");
-            
-            latestGames && renderGameList(latestGames, config.HOME_PAGE_ITEM_COUNT);
-            latestNews && renderNewsList(latestNews, config.HOME_PAGE_ITEM_COUNT);
+
+            if (latestGames) renderGameList(latestGames, config.HOME_PAGE_ITEM_COUNT);
+            if (latestNews) renderNewsList(latestNews, config.HOME_PAGE_ITEM_COUNT);
             renderFeaturedGame();
             setStudioStats().then(initStatCounters);
         }
 
         const cf = document.getElementById("contact-form");
-        cf?.addEventListener("submit", (e) => handleFormSubmission(e, cf));
-        
+        if (cf) cf.addEventListener("submit", (e) => handleFormSubmission(e, cf));
+
         const nf = document.getElementById("newsletter-form");
-        nf?.addEventListener("submit", (e) => handleFormSubmission(e, nf));
+        if (nf) nf.addEventListener("submit", (e) => handleFormSubmission(e, nf));
     };
 
     if (document.readyState === "loading") {
