@@ -143,42 +143,55 @@
     };
 
     const initDownloadButtons = () => {
+        // Select all buttons with the class
         const downloadBtns = document.querySelectorAll(".launcher-download-btn");
         if (!downloadBtns.length) return;
-
+        
         const getDownloadUrl = () => {
             const baseUrl = "https://cdn.reflexinteractive.com/launcher-files";
             const userAgent = window.navigator.userAgent.toLowerCase();
             const platform = window.navigator.platform.toLowerCase();
             
-            // Default to Windows x64 as it's the most common
+            // Default to Windows x64
             let rid = "win-x64";
-
-            // 1. Detect macOS
+        
+            // 1. Detect MacOS
             if (userAgent.includes("mac") || platform.includes("mac")) {
-                // Check for Apple Silicon (M1/M2/M3) vs Intel
-                // Modern browsers on Apple Silicon usually report 'arm64' in userAgent or via maxTouchPoints trick
-                const isArm = (navigator.maxTouchPoints > 0) || userAgent.includes("arm64") || userAgent.includes("apple");
+                // Check for Silicon (M1/M2/M3)
+                const isArm = (navigator.maxTouchPoints > 0) || 
+                              userAgent.includes("arm64") || 
+                              userAgent.includes("apple");
                 rid = isArm ? "osx-arm64" : "osx-x64";
             } 
             // 2. Detect Linux
             else if (userAgent.includes("linux")) {
                 rid = "linux-x64";
             }
-            // 3. Detect Windows 32-bit vs 64-bit
+            // 3. Detect Windows (Improved 64-bit detection)
             else if (userAgent.includes("win")) {
-                const is32 = userAgent.includes("x86") || userAgent.includes("ia32") || platform === "win32";
-                rid = is32 ? "win-x86" : "win-x64";
+                // Browsers often lie and say 'win32'. 
+                // We check for 'wow64' or 'win64' which indicates a 64-bit OS.
+                const is64 = userAgent.includes("win64") || userAgent.includes("wow64") || userAgent.includes("x64");
+                rid = is64 ? "win-x64" : "win-x86";
             }
-
+        
             return `${baseUrl}/${rid}/launcher-latest.zip`;
         };
-
-        const downloadUrl = getDownloadUrl();
-
+    
+        const finalUrl = getDownloadUrl();
+    
         downloadBtns.forEach(btn => {
-            btn.href = downloadUrl;
-            btn.innerHTML = `Download for ${downloadUrl.split('/')[4]}`; 
+            // Update the href immediately
+            btn.href = finalUrl;
+            
+            // Safety: Force the download if the href update was blocked/delayed
+            btn.addEventListener("click", (e) => {
+                // If for some reason href is still '#' or empty, trigger manually
+                if (btn.getAttribute("href") === "#" || !btn.href) {
+                    e.preventDefault();
+                    window.location.href = finalUrl;
+                }
+            });
         });
     };
 
