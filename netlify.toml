@@ -49,11 +49,11 @@ from = "/privacy"
 to = "/pages/privacy.html"
 status = 200
 
-# === 4. Launcher Download Redirect (MOVED TO BEFORE 404) ===
+# === 4. Launcher Download Redirect ===
 [[redirects]]
 from = "/launcher"
-to = "https://github.com/ReflexInteractive/Reflex-Interactive-Launcher/releases/download/v0.0.1/Reflex.Interactive.Launcher.0.0.1.Beta.zip"
-status = 302 
+to = "https://cdn.reflexinteractive.com/launcher-files/win-x64/launcher-latest.zip"
+status = 302
 
 # === 5. Custom 404 Page Setup (Must be the LAST rule) ===
 [[redirects]]

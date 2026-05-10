@@ -143,36 +143,37 @@
     };
 
     const initDownloadButtons = () => {
-        // Select all buttons with the class
         const downloadBtns = document.querySelectorAll(".launcher-download-btn");
         if (!downloadBtns.length) return;
         
         const getDownloadUrl = () => {
             const baseUrl = "https://cdn.reflexinteractive.com/launcher-files";
             const userAgent = window.navigator.userAgent.toLowerCase();
-            const platform = window.navigator.platform.toLowerCase();
             
-            // Default to Windows x64
+            // Default to Windows 64-bit
             let rid = "win-x64";
         
-            // 1. Detect MacOS
-            if (userAgent.includes("mac") || platform.includes("mac")) {
-                // Check for Silicon (M1/M2/M3)
-                const isArm = (navigator.maxTouchPoints > 0) || 
-                              userAgent.includes("arm64") || 
-                              userAgent.includes("apple");
+            // 1. MacOS Detection
+            if (userAgent.includes("mac")) {
+                const isArm = (navigator.maxTouchPoints > 0) || userAgent.includes("arm64");
                 rid = isArm ? "osx-arm64" : "osx-x64";
             } 
-            // 2. Detect Linux
+            // 2. Linux Detection
             else if (userAgent.includes("linux")) {
                 rid = "linux-x64";
             }
-            // 3. Detect Windows (Improved 64-bit detection)
+            // 3. Windows 64-bit vs 32-bit Detection
             else if (userAgent.includes("win")) {
-                // Browsers often lie and say 'win32'. 
-                // We check for 'wow64' or 'win64' which indicates a 64-bit OS.
+                // Check high-entropy values if available (Chrome/Edge/Brave)
+                if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                    navigator.userAgentData.getHighEntropyValues(["architecture", "bitness"]).then(ua => {
+                        if (ua.bitness === "32") rid = "win-x86";
+                    });
+                }
+                
+                // Standard userAgent check: if it DOES NOT contain 64-bit strings, assume x86
                 const is64 = userAgent.includes("win64") || userAgent.includes("wow64") || userAgent.includes("x64");
-                rid = is64 ? "win-x64" : "win-x86";
+                if (!is64) rid = "win-x86";
             }
         
             return `${baseUrl}/${rid}/launcher-latest.zip`;
@@ -181,13 +182,13 @@
         const finalUrl = getDownloadUrl();
     
         downloadBtns.forEach(btn => {
-            // Update the href immediately
             btn.href = finalUrl;
+            // Explicitly set download attribute to force download instead of navigation
+            btn.setAttribute("download", "ReflexLauncher.zip");
             
-            // Safety: Force the download if the href update was blocked/delayed
+            // Remove the # to prevent SmoothScroll from trying to process it
             btn.addEventListener("click", (e) => {
-                // If for some reason href is still '#' or empty, trigger manually
-                if (btn.getAttribute("href") === "#" || !btn.href) {
+                if (btn.getAttribute("href") === "#") {
                     e.preventDefault();
                     window.location.href = finalUrl;
                 }
@@ -242,11 +243,17 @@
     const initSmoothScroll = () => {
         document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             anchor.addEventListener("click", (event) => {
-                if (event.currentTarget.id !== "purchase-download-btn") {
-                    event.preventDefault();
-                    document.querySelector(event.currentTarget.getAttribute("href"))?.scrollIntoView({
-                        behavior: "smooth"
-                    });
+                const href = event.currentTarget.getAttribute("href");
+
+                // Only proceed if the href is actually an anchor (starts with # and is more than just #)
+                if (href.startsWith("#") && href.length > 1) {
+                    const targetElement = document.querySelector(href);
+                    if (targetElement) {
+                        event.preventDefault();
+                        targetElement.scrollIntoView({
+                            behavior: "smooth"
+                        });
+                    }
                 }
             });
         });
