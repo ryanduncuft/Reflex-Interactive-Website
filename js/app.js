@@ -677,7 +677,7 @@
         
         const isGameRoute = path === "/games" || path === "/pages/games.html";
         const isNewsRoute = path === "/newswire" || path === "/pages/newswire.html";
-        const isGameDetailRoute = path === "/pages/game-details.html";
+        const isGameDetailRoute = path === "/pages/game-detail.html" || path === "/game-details";
 
         if ((isGameRoute && urlId) || (isGameDetailRoute && urlId)) {
             renderGameDetail();
