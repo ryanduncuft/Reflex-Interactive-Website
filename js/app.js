@@ -149,10 +149,10 @@
         const getDownloadUrl = () => {
             const baseUrl = "https://cdn.reflexinteractive.com/launcher-files";
             const userAgent = window.navigator.userAgent.toLowerCase();
+            const platform = window.navigator.platform.toLowerCase();
             
-            // Default to Windows 64-bit
-            let rid = "win-x64";
-        
+            let rid = "win-x64"; // Default to most common
+
             // 1. MacOS Detection
             if (userAgent.includes("mac")) {
                 const isArm = (navigator.maxTouchPoints > 0) || userAgent.includes("arm64");
@@ -162,18 +162,15 @@
             else if (userAgent.includes("linux")) {
                 rid = "linux-x64";
             }
-            // 3. Windows 64-bit vs 32-bit Detection
+            // 3. Windows Detection (Hardened for 64-bit)
             else if (userAgent.includes("win")) {
-                // Check high-entropy values if available (Chrome/Edge/Brave)
-                if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
-                    navigator.userAgentData.getHighEntropyValues(["architecture", "bitness"]).then(ua => {
-                        if (ua.bitness === "32") rid = "win-x86";
-                    });
-                }
+                // If the browser reports x64, wow64, or win64, it is definitely 64-bit
+                const is64 = userAgent.includes("win64") || 
+                             userAgent.includes("wow64") || 
+                             userAgent.includes("x64") ||
+                             platform.includes("win64");
                 
-                // Standard userAgent check: if it DOES NOT contain 64-bit strings, assume x86
-                const is64 = userAgent.includes("win64") || userAgent.includes("wow64") || userAgent.includes("x64");
-                if (!is64) rid = "win-x86";
+                rid = is64 ? "win-x64" : "win-x86";
             }
         
             return `${baseUrl}/${rid}/launcher-latest.zip`;
@@ -182,15 +179,19 @@
         const finalUrl = getDownloadUrl();
     
         downloadBtns.forEach(btn => {
+            // Set the real URL
             btn.href = finalUrl;
-            // Explicitly set download attribute to force download instead of navigation
+            
+            // This forces the browser to treat it as a file download
             btn.setAttribute("download", "ReflexLauncher.zip");
             
-            // Remove the # to prevent SmoothScroll from trying to process it
+            // Important: Remove the smooth-scroll listener effectively by 
+            // stopping the event from bubbling up if it was a '#' link
             btn.addEventListener("click", (e) => {
-                if (btn.getAttribute("href") === "#") {
-                    e.preventDefault();
-                    window.location.href = finalUrl;
+                // If the URL was successfully swapped, let the browser handle the href
+                if (btn.href && btn.href !== window.location.href + "#") {
+                    // Stop event bubbling so SmoothScroll doesn't see the click
+                    e.stopPropagation();
                 }
             });
         });
@@ -245,14 +246,19 @@
             anchor.addEventListener("click", (event) => {
                 const href = event.currentTarget.getAttribute("href");
 
-                // Only proceed if the href is actually an anchor (starts with # and is more than just #)
+                // Only proceed if it is a LOCAL anchor (e.g., #section-name)
+                // If it's just "#" or a full URL, skip it.
                 if (href.startsWith("#") && href.length > 1) {
-                    const targetElement = document.querySelector(href);
-                    if (targetElement) {
-                        event.preventDefault();
-                        targetElement.scrollIntoView({
-                            behavior: "smooth"
-                        });
+                    try {
+                        const targetElement = document.querySelector(href);
+                        if (targetElement) {
+                            event.preventDefault();
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
+                    } catch (e) {
+                        // Silent catch for invalid selectors
                     }
                 }
             });
