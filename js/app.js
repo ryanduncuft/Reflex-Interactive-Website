@@ -577,10 +577,17 @@
                 }
 
                 if (Array.isArray(game.screenshots)) {
-                    game.screenshots.forEach((src) => {
+                    // Change 'src' to 'screenshot' here
+                    game.screenshots.forEach((screenshot) => { 
                         const img = document.createElement("img");
-                        img.src = normalizeMediaUrl(src);
+
+                        // Now 'screenshot.url' will work correctly
+                        img.src = normalizeMediaUrl(screenshot.url); 
                         img.className = "w-full h-auto rounded-lg shadow-md";
+                    
+                        if (screenshot.caption) {
+                            img.alt = screenshot.caption;
+                        }
                         screens.appendChild(img);
                     });
                 }
@@ -672,24 +679,29 @@
         
         const path = window.location.pathname;
         const urlId = new URLSearchParams(window.location.search).get("id");
-        const latestGames = document.getElementById("latest-games-container");
-        const latestNews = document.getElementById("latest-news-container");
         
-        const isGameRoute = path === "/games" || path === "/pages/games.html";
-        const isNewsRoute = path === "/newswire" || path === "/pages/newswire.html";
-        const isGameDetailRoute = path === "/pages/game-detail.html" || path === "/game-details";
+        // 1. Identify the actual page being viewed
+        const isGameDetailPage = path.includes("game-details.html");
+        const isGamesListPage = path.includes("games.html");
+        const isNewsDetailPage = path.includes("newswire.html") && urlId;
+        const isNewsListPage = path.includes("newswire.html") && !urlId;
+        const isHomePage = path === "/" || path.endsWith("index.html");
 
-        if ((isGameRoute && urlId) || (isGameDetailRoute && urlId)) {
+        // 2. Execute logic based on the page
+        if (isGameDetailPage && urlId) {
             renderGameDetail();
-        } else if (isGameRoute) {
+        } else if (isGamesListPage) {
             const c = document.getElementById("full-games-container");
             c && renderGameList(c);
-        } else if (isNewsRoute && urlId) {
+        } else if (isNewsDetailPage) {
             renderArticleDetail(urlId);
-        } else if (isNewsRoute) {
+        } else if (isNewsListPage) {
             const c = document.getElementById("news-container");
             c && renderNewsList(c);
-        } else if (path === "/" || path === "/index.html") {
+        } else if (isHomePage) {
+            const latestGames = document.getElementById("latest-games-container");
+            const latestNews = document.getElementById("latest-news-container");
+            
             latestGames && renderGameList(latestGames, config.HOME_PAGE_ITEM_COUNT);
             latestNews && renderNewsList(latestNews, config.HOME_PAGE_ITEM_COUNT);
             renderFeaturedGame();
