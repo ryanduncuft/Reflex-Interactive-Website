@@ -151,10 +151,11 @@
             const userAgent = window.navigator.userAgent.toLowerCase();
             const platform = window.navigator.platform.toLowerCase();
             
-            let rid = "win-x64"; // Default to most common
+            // Default to win-x64 as the safest bet for modern gaming PCs
+            let rid = "win-x64";
 
             // 1. MacOS Detection
-            if (userAgent.includes("mac")) {
+            if (userAgent.includes("mac") || platform.includes("mac")) {
                 const isArm = (navigator.maxTouchPoints > 0) || userAgent.includes("arm64");
                 rid = isArm ? "osx-arm64" : "osx-x64";
             } 
@@ -162,13 +163,14 @@
             else if (userAgent.includes("linux")) {
                 rid = "linux-x64";
             }
-            // 3. Windows Detection (Hardened for 64-bit)
+            // 3. Windows 64-bit vs 32-bit Detection
             else if (userAgent.includes("win")) {
-                // If the browser reports x64, wow64, or win64, it is definitely 64-bit
+                // Browsers often report 'Win32' even on 64-bit machines.
+                // We check the userAgent string for 64-bit indicators.
                 const is64 = userAgent.includes("win64") || 
                              userAgent.includes("wow64") || 
-                             userAgent.includes("x64") ||
-                             platform.includes("win64");
+                             userAgent.includes("x64") || 
+                             platform.includes("x64");
                 
                 rid = is64 ? "win-x64" : "win-x86";
             }
@@ -179,20 +181,14 @@
         const finalUrl = getDownloadUrl();
     
         downloadBtns.forEach(btn => {
-            // Set the real URL
+            // Update the link to the direct Cloudflare URL
             btn.href = finalUrl;
-            
-            // This forces the browser to treat it as a file download
             btn.setAttribute("download", "ReflexLauncher.zip");
             
-            // Important: Remove the smooth-scroll listener effectively by 
-            // stopping the event from bubbling up if it was a '#' link
+            // Critical: Force the browser to treat this as a real navigation 
+            // and ignore any smooth-scroll listeners.
             btn.addEventListener("click", (e) => {
-                // If the URL was successfully swapped, let the browser handle the href
-                if (btn.href && btn.href !== window.location.href + "#") {
-                    // Stop event bubbling so SmoothScroll doesn't see the click
-                    e.stopPropagation();
-                }
+                e.stopPropagation(); // Stops the click from reaching initSmoothScroll
             });
         });
     };
@@ -242,24 +238,26 @@
     };
 
     const initSmoothScroll = () => {
+        // Only target links that start with # and aren't just a placeholder
         document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             anchor.addEventListener("click", (event) => {
                 const href = event.currentTarget.getAttribute("href");
 
-                // Only proceed if it is a LOCAL anchor (e.g., #section-name)
-                // If it's just "#" or a full URL, skip it.
-                if (href.startsWith("#") && href.length > 1) {
-                    try {
-                        const targetElement = document.querySelector(href);
-                        if (targetElement) {
-                            event.preventDefault();
-                            targetElement.scrollIntoView({
-                                behavior: "smooth"
-                            });
-                        }
-                    } catch (e) {
-                        // Silent catch for invalid selectors
+                // 1. Skip if it's just "#"
+                // 2. Skip if the href was changed to a full URL (contains http)
+                if (!href || href === "#" || href.includes("http")) return;
+
+                try {
+                    const targetElement = document.querySelector(href);
+                    if (targetElement) {
+                        event.preventDefault();
+                        targetElement.scrollIntoView({
+                            behavior: "smooth"
+                        });
                     }
+                } catch (e) {
+                    // Silently ignore if querySelector fails (e.g. it's not a valid ID)
+                    console.warn("Smooth scroll target not found:", href);
                 }
             });
         });
