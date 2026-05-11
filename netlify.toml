@@ -1,20 +1,39 @@
 # === 1. Subdomain & Domain Logic ===
 
-# Rule A: Redirect the ROOT of the subdomain to the contact page
+# A: ROOT of subdomain -> show contact page
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
   to = "/contact.html"
   status = 200
   force = true
 
-# Rule B: Allow the subdomain to access assets (CSS, JS, Images)
-# This ensures support.reflexinteractive.com/css/styles.css actually loads the CSS file
+# B: If on support subdomain but trying to go to other pages, redirect to main site
+# This prevents support.reflexinteractive.com/about from existing
+[[redirects]]
+  from = "https://support.reflexinteractive.com/about"
+  to = "https://www.reflexinteractive.com/about"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://support.reflexinteractive.com/games"
+  to = "https://www.reflexinteractive.com/games"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://support.reflexinteractive.com/newswire"
+  to = "https://www.reflexinteractive.com/newswire"
+  status = 301
+  force = true
+
+# C: Allow assets (CSS/JS) to load on the subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/*"
   to = "/:splat"
   status = 200
 
-# Rule C: Normalization
+# D: Normalization
 [[redirects]]
   from = "https://reflexinteractive.netlify.app/*"
   to = "https://www.reflexinteractive.com/:splat"
@@ -54,8 +73,9 @@
 
 [[redirects]]
   from = "/contact"
-  to = "/contact.html"
-  status = 200
+  to = "https://support.reflexinteractive.com/"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/tos"
@@ -79,3 +99,8 @@
   from = "/*"
   to = "/404.html"
   status = 404
+
+[[headers]]
+  for = "/components/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"

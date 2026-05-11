@@ -82,13 +82,14 @@
         };
     };
 
-    // --- Components & UI ---
-
     const loadComponent = async (placeholderId, componentUrl, callback) => {
         const placeholder = document.getElementById(placeholderId);
         if (!placeholder) return;
+        
+        const url = componentUrl.includes("://") 
+            ? componentUrl 
+            : (componentUrl.startsWith("/") ? componentUrl : `/${componentUrl}`);
 
-        const url = componentUrl.startsWith("/") ? componentUrl : `/${componentUrl}`;
         const fetchUrl = getCacheBustedUrl(url);
 
         try {
@@ -298,7 +299,7 @@
             { url: "/games", title: "Games", snippet: "Browse our games", searchable: "games" },
             { url: "/newswire", title: "Newswire", snippet: "Latest news", searchable: "newswire news" },
             { url: "/about", title: "About", snippet: "About Us", searchable: "about us" },
-            { url: "/contact", title: "Contact", snippet: "Contact Us", searchable: "contact" },
+            { url: "https://support.reflexinteractive.com/", title: "Support & Contact", snippet: "Get in touch with us", searchable: "contact support help" },
         ];
 
         try {
@@ -673,18 +674,22 @@
     // --- Core Lifecycle ---
 
     const initializeApp = async () => {
+        // We use absolute URLs for components to ensure they load correctly on both
+        // www.reflexinteractive.com and support.reflexinteractive.com
+        const baseContentUrl = "https://www.reflexinteractive.com";
+
         await Promise.all([
-            loadComponent("navbar-placeholder", "/components/navbar.html", () => {
+            loadComponent("navbar-placeholder", `${baseContentUrl}/components/navbar.html`, () => {
                 initNavbarScrollEffect();
                 initMobileMenu();
                 initSmoothScroll();
                 initDownloadButtons();
             }),
-            loadComponent("search-placeholder", "/components/searchbar.html", (el) => {
+            loadComponent("search-placeholder", `${baseContentUrl}/components/searchbar.html`, (el) => {
                 initGlobalSearch();
                 el.querySelector(".global-search-wrap")?.classList.add("reveal-on-load");
             }),
-            loadComponent("footer-placeholder", "/components/footer.html", (el) => {
+            loadComponent("footer-placeholder", `${baseContentUrl}/components/footer.html`, (el) => {
                 const form = el.querySelector("form");
                 if (form) form.addEventListener("submit", (e) => handleFormSubmission(e, form));
             }),
@@ -694,10 +699,13 @@
         initBackToTop();
 
         const path = window.location.pathname;
+        const hostname = window.location.hostname;
         const urlId = new URLSearchParams(window.location.search).get("id");
 
-        // --- UNIVERSAL ROUTING LOGIC (Local & Netlify) ---
-        // --- UNIVERSAL ROUTING LOGIC (Final Fix) ---
+        // Identify if we are currently on the support subdomain
+        const isSupportSubdomain = hostname.startsWith("support.");
+
+        // --- UNIVERSAL ROUTING LOGIC ---
         const isGameDetailPage = path.includes("game-details") || (urlId && document.getElementById("game-hero"));
 
         const isGamesListPage = (path.includes("games") && !urlId) || 
@@ -708,7 +716,8 @@
         const isNewsListPage = (path.includes("newswire") && !urlId) || 
                                 (path.includes("newswire") && !document.getElementById("article-detail"));
         
-        const isHomePage = path === "/" || path.endsWith("index.html");
+        // Home page logic only triggers if we are on the main domain root
+        const isHomePage = (path === "/" || path.endsWith("index.html")) && !isSupportSubdomain;
 
         if (isGameDetailPage) {
             renderGameDetail(urlId);
@@ -730,6 +739,8 @@
             setStudioStats().then(initStatCounters);
         }
 
+        // The contact form exists on the root of the support subdomain 
+        // OR the /contact path of the main domain.
         const cf = document.getElementById("contact-form");
         if (cf) cf.addEventListener("submit", (e) => handleFormSubmission(e, cf));
 
