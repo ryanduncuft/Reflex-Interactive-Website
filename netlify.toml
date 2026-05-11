@@ -1,12 +1,12 @@
-# === 1. Domain Normalization (CRITICAL: Must be first) ===
-# Forces naked domain to WWW to prevent CORS mismatches
+# === 1. Domain Normalization ===
+# Forces naked domain to WWW
 [[redirects]]
   from = "https://reflexinteractive.com/*"
   to = "https://www.reflexinteractive.com/:splat"
   status = 301
   force = true
 
-# Normalizes the default netlify.app domain to your primary domain
+# Normalizes Netlify default URL
 [[redirects]]
   from = "https://reflexinteractive.netlify.app/*"
   to = "https://www.reflexinteractive.com/:splat"
@@ -15,14 +15,14 @@
 
 # === 2. Subdomain & Support Logic ===
 
-# ROOT of support subdomain -> show contact page
+# Root of support subdomain -> show contact page
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
   to = "/contact.html"
   status = 200
   force = true
 
-# Redirect support subdomain pages back to main site (prevents duplicate content)
+# Specific page redirects for subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/about"
   to = "https://www.reflexinteractive.com/about"
@@ -38,26 +38,28 @@
   to = "https://www.reflexinteractive.com/newswire"
   status = 301
 
-# Allow assets (CSS/JS/Images) to load on the subdomain
+# Asset handling for support subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/*"
   to = "/:splat"
   status = 200
 
-# === 3. Query Parameter Rewrites (Dynamic Content) ===
+# === 3. Main Site Routing & Clean URLs ===
+
+# Handle dynamic IDs first
 [[redirects]]
   from = "/games"
-  query = { id = ":id" }
+  query = {id = ":id"}
   to = "/game-details.html"
   status = 200
 
 [[redirects]]
   from = "/newswire"
-  query = { id = ":id" }
+  query = {id = ":id"}
   to = "/newswire.html"
   status = 200
 
-# === 4. Static Clean URLs ===
+# Standard Clean URLs
 [[redirects]]
   from = "/games"
   to = "/games.html"
@@ -73,12 +75,11 @@
   to = "/about.html"
   status = 200
 
-# Main domain /contact points to the support subdomain
+# Redirect main domain /contact to subdomain
 [[redirects]]
   from = "/contact"
   to = "https://support.reflexinteractive.com/"
   status = 301
-  force = true
 
 [[redirects]]
   from = "/tos"
@@ -90,23 +91,20 @@
   to = "/privacy.html"
   status = 200
 
-# === 5. External & Fallbacks ===
+# === 4. External & Fallbacks ===
 [[redirects]]
   from = "/launcher"
   to = "https://cdn.reflexinteractive.com/launcher-files/win-x64/launcher-latest.zip"
   status = 302
 
-# Global Fallback (Must remain at the very bottom)
+# Global Fallback
 [[redirects]]
   from = "/*"
   to = "/404.html"
   status = 404
 
-# === 6. Security & CORS Headers ===
-# Allows your subdomains to fetch components from the main domain
+# === 5. Headers ===
 [[headers]]
   for = "/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type"
