@@ -1,12 +1,20 @@
 # === 1. Subdomain & Domain Logic ===
-# This handles your support page first so it doesn't get caught in the main redirect
+
+# Rule A: Redirect the ROOT of the subdomain to the contact page
 [[redirects]]
-  from = "https://support.reflexinteractive.com/*"
+  from = "https://support.reflexinteractive.com/"
   to = "/contact.html"
   status = 200
   force = true
 
-# Redirects the default netlify.app URL to your custom domain
+# Rule B: Allow the subdomain to access assets (CSS, JS, Images)
+# This ensures support.reflexinteractive.com/css/styles.css actually loads the CSS file
+[[redirects]]
+  from = "https://support.reflexinteractive.com/*"
+  to = "/:splat"
+  status = 200
+
+# Rule C: Normalization
 [[redirects]]
   from = "https://reflexinteractive.netlify.app/*"
   to = "https://www.reflexinteractive.com/:splat"
