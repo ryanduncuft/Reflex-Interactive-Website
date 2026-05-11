@@ -665,6 +665,7 @@
                     el.querySelector(".global-search-wrap")?.classList.add("reveal-on-load");
                 }),
                 API.loadComponent("footer-placeholder", "/components/footer.html", (el) => {
+                    // 1. Existing form handling
                     const form = el.querySelector("form");
                     if (form) form.addEventListener("submit", (e) => UI.handleFormSubmission(e, form));
                 })
@@ -752,6 +753,39 @@
 
             const nf = document.getElementById("newsletter-form");
             if (nf) nf.addEventListener("submit", (e) => UI.handleFormSubmission(e, nf));
+
+            // 4. Global Event Delegation for Clear Cache Button
+            // This ensures it works whether the footer is hardcoded or loaded dynamically
+            document.addEventListener("click", (e) => {
+                const cacheBtn = e.target.closest("#clear-cache-link");
+                if (cacheBtn) {
+                    e.preventDefault();
+                    
+                    // Clear Local & Session Storage
+                    try {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                    } catch (err) {
+                        console.warn("Storage clear failed", err);
+                    }
+
+                    // Unregister Service Workers (often the culprit for aggressive caching)
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                            for(let registration of registrations) {
+                                registration.unregister();
+                            }
+                        });
+                    }
+
+                    // Force reload with cache-busting query param
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('nocache', Date.now());
+                
+                    alert("Local site cache cleared. The page will now reload with the latest version.");
+                    window.location.replace(url.toString());
+                }
+            });
         }
     };
 
