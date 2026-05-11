@@ -33,10 +33,8 @@
 
     // --- 2. UTILITIES ---
     const Utils = {
-        /** Appends cache-busting timestamp if enabled */
         getBustedUrl: (url) => Config.SYSTEM.CACHE_BUST ? `${url}?t=${Date.now()}` : url,
 
-        /** Normalizes media paths for local/remote assets */
         normalizeMediaUrl: (url) => {
             if (!url) return "";
             if (/^https?:\/\//i.test(url)) return url;
@@ -46,7 +44,6 @@
             return cleaned;
         },
 
-        /** Performance: Debounce function execution */
         debounce: (func, delayMs = 250) => {
             let timeoutId = null;
             return (...args) => {
@@ -55,7 +52,6 @@
             };
         },
 
-        /** Performance: Throttle function execution */
         throttle: (func, limitMs = 100) => {
             let lastRan = 0;
             return (...args) => {
@@ -75,7 +71,6 @@
 
     // --- 3. DATA SERVICES ---
     const API = {
-        /** Fetches and caches JSON data */
         fetchData: async (url) => {
             if (State.dataCache.has(url)) return State.dataCache.get(url);
 
@@ -94,7 +89,6 @@
             }
         },
 
-        /** Loads HTML components into placeholders */
         loadComponent: async (placeholderId, componentPath, callback) => {
             const placeholder = document.getElementById(placeholderId);
             if (!placeholder) return;
@@ -366,7 +360,7 @@
         }
     };
 
-    // --- 5. RENDERERS (Using DocumentFragments for Performance) ---
+    // --- 5. RENDERERS ---
     const Renderers = {
         newsList: async (containerId, limit = null) => {
             const container = document.getElementById(containerId);
@@ -602,6 +596,36 @@
             }
         },
 
+        supportGameList: async (containerId) => {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+        
+            try {
+                const data = await API.fetchData(Config.API.GAMES);
+                const fragment = document.createDocumentFragment();
+            
+                data.forEach(game => {
+                    const col = document.createElement("div");
+                    col.className = "col";
+                    col.innerHTML = `
+                        <a href="#contact-section" class="card modern-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll text-decoration-none">
+                            <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${game.title}" class="modern-game-card-img support-tile-img" loading="lazy">
+                            <div class="card-img-overlay d-flex align-items-center justify-content-center">
+                                <h3 class="text-white text-uppercase fw-bold m-0" style="text-shadow: 2px 2px 10px rgba(0,0,0,1);">${game.title}</h3>
+                            </div>
+                        </a>`;
+
+                    State.revealObserver?.observe(col.firstElementChild);
+                    fragment.appendChild(col);
+                });
+            
+                container.innerHTML = "";
+                container.appendChild(fragment);
+            } catch (e) {
+                container.innerHTML = '<div class="text-center text-danger py-5">Failed to load game categories.</div>';
+            }
+        },
+
         studioStats: async () => {
             const gamesEl = document.getElementById("stat-games");
             const newsEl = document.getElementById("stat-news");
@@ -658,6 +682,7 @@
             const isNewsDetailPage = path.includes("article-detail") || (path.includes("newswire") && urlId && document.getElementById("article-detail"));
             const isNewsListPage = (path.includes("newswire") && !urlId) || (path.includes("newswire") && !document.getElementById("article-detail"));
             const isHomePage = (path === "/" || path.endsWith("index.html")) && !State.isSupportSubdomain;
+            const isSupportPage = State.isSupportSubdomain || path.includes("contact");
 
             if (isGameDetailPage) {
                 Renderers.gameDetail(urlId);
@@ -672,6 +697,53 @@
                 Renderers.newsList("latest-news-container", Config.UI.HOME_ITEM_COUNT);
                 Renderers.featuredGame();
                 Renderers.studioStats().then(UI.initStatCounters);
+            }
+
+            if (isSupportPage) {
+                Renderers.supportGameList("support-game-grid");
+
+                const updateSupportBadge = () => {
+                    const badge = document.getElementById('status-badge');
+                    if (!badge) return;
+                
+                    const now = new Date();
+                    const day = now.getUTCDay(); 
+                    const hour = now.getUTCHours();
+                
+                    const isOpen = (day >= 1 && day <= 5) && (hour >= 9 && hour < 17);
+                
+                    if (isOpen) {
+                        badge.innerText = "Online";
+                        badge.className = "badge bg-danger text-white text-uppercase py-2 px-3";
+                    } else {
+                        badge.innerText = "Offline";
+                        badge.className = "badge bg-transparent border border-white text-white text-uppercase py-2 px-3";
+                    }
+                };
+                
+                updateSupportBadge();
+            }
+
+            // Tawk.to Logic
+            const chatBtn = document.getElementById("open-live-chat");
+            if (chatBtn) {
+                chatBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (typeof Tawk_API !== "undefined" && Tawk_API.showWidget) {
+                        if (Tawk_API.getStatus() === 'offline') {
+                            Tawk_API.showWidget();
+                            Tawk_API.maximize();
+                        } else {
+                            Tawk_API.showWidget();
+                            Tawk_API.maximize();
+                            if (typeof Tawk_API.isChatDone === 'function' && Tawk_API.isChatDone()) {
+                                Tawk_API.endChat();
+                            }
+                        }
+                    } else {
+                        alert("Live chat is currently loading or offline. Please try again in a moment or use the contact form.");
+                    }
+                });
             }
 
             // 3. Form Bindings
