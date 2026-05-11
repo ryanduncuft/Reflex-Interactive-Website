@@ -637,8 +637,8 @@
                             <h3 class="display-6 fw-bold text-uppercase mb-3">${game.title}</h3>
                             <p class="text-muted mb-4">${game.description}</p>
                             <div class="d-flex flex-wrap gap-3">
-                                <a href="/games?id=${game.id}" class="btn btn-danger text-uppercase fw-bold">Explore</a>
-                                <a href="/games" class="btn btn-outline-light text-uppercase fw-bold">View All</a>
+                                <a href="https://www.reflexinteractive.com/games?id=${game.id}" class="btn btn-danger text-uppercase fw-bold">Explore</a>
+                                <a href="https://www.reflexinteractive.com/games" class="btn btn-outline-light text-uppercase fw-bold">View All</a>
                             </div>
                         </div>
                     </div>
@@ -684,6 +684,24 @@
                 initMobileMenu();
                 initSmoothScroll();
                 initDownloadButtons();
+                        
+                // NEW: Fix cross-domain navigation
+                const mainDomain = "https://www.reflexinteractive.com";
+                const navLinks = document.querySelectorAll('.navbar a, .mobile-nav-link');
+                        
+                navLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    // If it's a relative link and NOT meant for the support root
+                    if (href && href.startsWith('/') && href !== '/') {
+                        // Check if we are currently on the support subdomain
+                        if (window.location.hostname.startsWith('support.')) {
+                            link.href = `${mainDomain}${href}`;
+                        }
+                    } else if (href === '/') {
+                        // Force home link to main domain
+                        link.href = mainDomain;
+                    }
+                });
             }),
             loadComponent("search-placeholder", `${baseContentUrl}/components/searchbar.html`, (el) => {
                 initGlobalSearch();
