@@ -1,52 +1,23 @@
 # === 1. Domain Normalization ===
-# Forces naked domain to WWW
-[[redirects]]
-  from = "https://reflexinteractive.com/*"
-  to = "https://www.reflexinteractive.com/:splat"
-  status = 301
-  force = true
-
-# Normalizes Netlify default URL
+# We let the Netlify Dashboard handle the WWW/Naked swap.
+# This rule only handles the .netlify.app internal URL.
 [[redirects]]
   from = "https://reflexinteractive.netlify.app/*"
   to = "https://www.reflexinteractive.com/:splat"
   status = 301
-  force = true
 
 # === 2. Subdomain & Support Logic ===
-
-# Root of support subdomain -> show contact page
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
   to = "/contact.html"
   status = 200
-  force = true
 
-# Specific page redirects for subdomain
-[[redirects]]
-  from = "https://support.reflexinteractive.com/about"
-  to = "https://www.reflexinteractive.com/about"
-  status = 301
-
-[[redirects]]
-  from = "https://support.reflexinteractive.com/games"
-  to = "https://www.reflexinteractive.com/games"
-  status = 301
-
-[[redirects]]
-  from = "https://support.reflexinteractive.com/newswire"
-  to = "https://www.reflexinteractive.com/newswire"
-  status = 301
-
-# Asset handling for support subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/*"
   to = "/:splat"
   status = 200
 
-# === 3. Main Site Routing & Clean URLs ===
-
-# Handle dynamic IDs first
+# === 3. Clean URLs & Routing ===
 [[redirects]]
   from = "/games"
   query = {id = ":id"}
@@ -59,7 +30,6 @@
   to = "/newswire.html"
   status = 200
 
-# Standard Clean URLs
 [[redirects]]
   from = "/games"
   to = "/games.html"
@@ -75,35 +45,17 @@
   to = "/about.html"
   status = 200
 
-# Redirect main domain /contact to subdomain
 [[redirects]]
   from = "/contact"
   to = "https://support.reflexinteractive.com/"
   status = 301
 
-[[redirects]]
-  from = "/tos"
-  to = "/tos.html"
-  status = 200
-
-[[redirects]]
-  from = "/privacy"
-  to = "/privacy.html"
-  status = 200
-
-# === 4. External & Fallbacks ===
-[[redirects]]
-  from = "/launcher"
-  to = "https://cdn.reflexinteractive.com/launcher-files/win-x64/launcher-latest.zip"
-  status = 302
-
-# Global Fallback
+# === 4. Fallbacks ===
 [[redirects]]
   from = "/*"
   to = "/404.html"
   status = 404
 
-# === 5. Headers ===
 [[headers]]
   for = "/*"
   [headers.values]
