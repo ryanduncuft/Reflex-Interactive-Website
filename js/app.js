@@ -1,6 +1,6 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
- * @version 3.0.0 - Phase 1: Engine Swap
+ * @version 1.1.3
  * @description Highly optimized, modular, and scalable vanilla JS architecture.
  */
 

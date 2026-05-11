@@ -1026,7 +1026,7 @@ footer h4 {
 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
 
 .bg-hero-image {
-    background-image: url('/assets/images/Placeholder.jpg');
+    background-image: url('https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778346188/Box_art_HQ_b9bwwh.png');
     background-size: cover;
     background-position: center;
 }
