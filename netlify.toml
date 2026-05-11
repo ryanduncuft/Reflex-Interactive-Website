@@ -1,6 +1,4 @@
 # === 1. Domain Normalization ===
-# We let the Netlify Dashboard handle the WWW/Naked swap.
-# This rule only handles the .netlify.app internal URL.
 [[redirects]]
   from = "https://reflexinteractive.netlify.app/*"
   to = "https://www.reflexinteractive.com/:splat"
@@ -8,15 +6,19 @@
   force = true
 
 # === 2. Subdomain & Support Logic ===
+# Explicitly map the root of the support domain to contact.html
+# (We check both with and without the trailing slash to be safe)
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
   to = "/contact.html"
   status = 200
+  force = true
 
 [[redirects]]
-  from = "https://support.reflexinteractive.com/*"
-  to = "/:splat"
+  from = "https://support.reflexinteractive.com"
+  to = "/contact.html"
   status = 200
+  force = true
 
 # === 3. Clean URLs & Routing ===
 [[redirects]]
@@ -50,6 +52,7 @@
   from = "/contact"
   to = "https://support.reflexinteractive.com/"
   status = 301
+  force = true
 
 # === 4. Fallbacks ===
 [[redirects]]
