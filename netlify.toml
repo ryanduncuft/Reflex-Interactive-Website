@@ -5,6 +5,7 @@
   from = "https://reflexinteractive.netlify.app/*"
   to = "https://www.reflexinteractive.com/:splat"
   status = 301
+  force = true
 
 # === 2. Subdomain & Support Logic ===
 [[redirects]]

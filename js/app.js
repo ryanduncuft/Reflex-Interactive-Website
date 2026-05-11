@@ -676,7 +676,7 @@
     const initializeApp = async () => {
         // We use absolute URLs for components to ensure they load correctly on both
         // www.reflexinteractive.com and support.reflexinteractive.com
-        const baseContentUrl = window.location.origin;
+        const baseContentUrl = "https://www.reflexinteractive.com";
 
         await Promise.all([
             loadComponent("navbar-placeholder", `${baseContentUrl}/components/navbar.html`, () => {
