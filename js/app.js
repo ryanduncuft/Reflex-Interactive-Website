@@ -702,27 +702,6 @@
 
             if (isSupportPage) {
                 Renderers.supportGameList("support-game-grid");
-
-                const updateSupportBadge = () => {
-                    const badge = document.getElementById('status-badge');
-                    if (!badge) return;
-                
-                    const now = new Date();
-                    const day = now.getUTCDay(); 
-                    const hour = now.getUTCHours();
-                
-                    const isOpen = (day >= 1 && day <= 5) && (hour >= 9 && hour < 17);
-                
-                    if (isOpen) {
-                        badge.innerText = "Online";
-                        badge.className = "badge bg-danger text-white text-uppercase py-2 px-3";
-                    } else {
-                        badge.innerText = "Offline";
-                        badge.className = "badge bg-transparent border border-white text-white text-uppercase py-2 px-3";
-                    }
-                };
-                
-                updateSupportBadge();
             }
 
             // Tawk.to Logic
