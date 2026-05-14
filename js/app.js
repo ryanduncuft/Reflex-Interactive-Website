@@ -37,6 +37,10 @@
 
         normalizeMediaUrl: (url) => {
             if (!url) return "";
+            if (url.includes("cloudinary.com") && !url.includes("q_auto")) {
+                return url.replace("/upload/", "/upload/q_auto,f_auto/");
+            }
+            return url;
             if (/^https?:\/\//i.test(url)) return url;
             let cleaned = url.replace(/\\/g, "/");
             if (!cleaned.startsWith("/") && !cleaned.startsWith("assets/")) cleaned = `/${cleaned}`;
@@ -443,6 +447,29 @@
                 const article = data.find((i) => i.id == id);
                 if (!article) throw new Error("Article not found");
 
+                // --- SEO & META UPDATES ---
+                const pageTitle = `${article.title} | Reflex Interactive`;
+                document.title = pageTitle;
+                
+                document.querySelector('meta[name="description"]')?.setAttribute("content", article.summary.slice(0, 160));
+                document.querySelector('meta[property="og:title"]')?.setAttribute("content", pageTitle);
+                document.querySelector('meta[property="og:description"]')?.setAttribute("content", article.summary.slice(0, 160));
+                document.querySelector('meta[property="og:image"]')?.setAttribute("content", article.image_url);
+
+                const schemaEl = document.getElementById("news-schema");
+                if (schemaEl) {
+                    schemaEl.text = JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "NewsArticle",
+                        "headline": article.title,
+                        "datePublished": article.date,
+                        "image": article.image_url,
+                        "description": article.summary,
+                        "author": { "@type": "Organization", "name": "Reflex Interactive" }
+                    });
+                }
+                // --- END SEO UPDATES ---
+
                 listSec?.classList.add("d-none");
                 detailSec?.classList.remove("d-none");
 
@@ -450,7 +477,10 @@
                     const el = document.getElementById(elId);
                     if (el) {
                         if (isHtml) el.innerHTML = article[prop].replace(/\n/g, "<br><br>");
-                        else if (prop === 'image_url') el.src = article[prop];
+                        else if (prop === 'image_url') {
+                            el.src = article[prop];
+                            el.alt = `Newswire: ${article.title}`; // SEO Alt tag
+                        }
                         else el.textContent = article[prop];
                     }
                 };
@@ -460,7 +490,6 @@
                 safeSet("article-image", "image_url");
                 safeSet("article-content", "content", true);
                 
-                document.title = `${article.title} | Reflex Interactive`;
             } catch (e) {
                 console.error(e);
                 const main = document.querySelector("main");
@@ -482,14 +511,30 @@
                 const game = data.find((i) => i.id == id);
                 if (!game) throw new Error("Game not found");
 
+                // --- SEO & META UPDATES ---
+                const pageTitle = `${game.title} | Reflex Interactive`;
+                document.title = pageTitle;
+
+                document.querySelector('meta[name="description"]')?.setAttribute("content", game.description.slice(0, 160));
+                document.querySelector('meta[property="og:title"]')?.setAttribute("content", pageTitle);
+                document.querySelector('meta[property="og:description"]')?.setAttribute("content", game.description.slice(0, 160));
+                document.querySelector('meta[property="og:image"]')?.setAttribute("content", Utils.normalizeMediaUrl(game.image_url));
+
+                const schemaEl = document.getElementById("game-json-ld");
+                if (schemaEl) {
+                    const schema = JSON.parse(schemaEl.text);
+                    schema.name = game.title;
+                    schema.description = game.description;
+                    schema.genre = game.genre;
+                    schema.image = Utils.normalizeMediaUrl(game.image_url);
+                    schemaEl.text = JSON.stringify(schema);
+                }
+                // --- END SEO UPDATES ---
+
                 const safeSetText = (elId, text) => {
                     const el = document.getElementById(elId);
                     if (el) el.textContent = text || "";
                 };
-
-                const titleEl = document.getElementById("game-title");
-                if (titleEl) titleEl.textContent = `${game.title} | Reflex Interactive`;
-                document.title = `${game.title} | Reflex Interactive`;
 
                 const hero = document.getElementById("game-hero");
                 if (hero) {
@@ -499,7 +544,10 @@
                 }
 
                 const coverImg = document.getElementById("game-detail-cover");
-                if (coverImg) coverImg.src = Utils.normalizeMediaUrl(game.image_url);
+                if (coverImg) {
+                    coverImg.src = Utils.normalizeMediaUrl(game.image_url);
+                    coverImg.alt = `${game.title} Official Cover Art`;
+                }
 
                 safeSetText("game-detail-title", game.title);
                 safeSetText("game-detail-developer", game.developer);
@@ -548,7 +596,7 @@
                             const img = document.createElement("img");
                             img.src = Utils.normalizeMediaUrl(screenshot.url || screenshot);
                             img.className = "img-fluid rounded-lg shadow-md";
-                            img.alt = screenshot.caption || game.title;
+                            img.alt = screenshot.caption || `${game.title} Screenshot`;
                             col.appendChild(img);
                             fragment.appendChild(col);
                         });
@@ -584,8 +632,8 @@
                                 <h3 class="display-6 fw-bold text-uppercase mb-3">${game.title}</h3>
                                 <p class="text-muted mb-4">${game.description}</p>
                                 <div class="d-flex flex-wrap gap-3">
-                                    <a href="https://www.reflexinteractive.com/games?id=${game.id}" class="btn btn-danger text-uppercase fw-bold">Explore</a>
-                                    <a href="https://www.reflexinteractive.com/games" class="btn btn-outline-light text-uppercase fw-bold">View All</a>
+                                    <a href="/games?id=${game.id}" class="btn btn-danger text-uppercase fw-bold">Explore</a>
+                                    <a href="/games" class="btn btn-outline-light text-uppercase fw-bold">View All</a>
                                 </div>
                             </div>
                         </div>
@@ -702,28 +750,6 @@
 
             if (isSupportPage) {
                 Renderers.supportGameList("support-game-grid");
-            }
-
-            // Tawk.to Logic
-            const chatBtn = document.getElementById("open-live-chat");
-            if (chatBtn) {
-                chatBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    if (typeof Tawk_API !== "undefined" && Tawk_API.showWidget) {
-                        if (Tawk_API.getStatus() === 'offline') {
-                            Tawk_API.showWidget();
-                            Tawk_API.maximize();
-                        } else {
-                            Tawk_API.showWidget();
-                            Tawk_API.maximize();
-                            if (typeof Tawk_API.isChatDone === 'function' && Tawk_API.isChatDone()) {
-                                Tawk_API.endChat();
-                            }
-                        }
-                    } else {
-                        alert("Live chat is currently loading or offline. Please try again in a moment or use the contact form.");
-                    }
-                });
             }
 
             // 3. Form Bindings
