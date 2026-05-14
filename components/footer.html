@@ -39,19 +39,38 @@
                 </ul>
             </div>
 
-            <div class="col-12 col-md-4">
-                <h4 class="h6 fw-bold text-uppercase mb-3">Get in touch</h4>
-                <form id="footer-contact-form" name="footer-contact-form" action="https://formspree.io/f/myzdgoop" method="post">
-                    <div class="mb-2">
-                        <label for="email-footer" class="visually-hidden">Your Email</label>
-                        <input type="email" id="email-footer" name="email" placeholder="Your Email" required autocomplete="email" class="form-control form-control-sm">
-                    </div>
-                    <div class="mb-2">
-                        <label for="message-footer" class="visually-hidden">Your Message</label>
-                        <textarea id="message-footer" name="message" placeholder="Message" required rows="3" class="form-control form-control-sm"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-danger btn-sm fw-bold text-uppercase">Send</button>
-                </form>
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <h3 class="fw-bold text-uppercase">Still need help?</h3>
+                    <p class="text-muted mb-5">Send us a detailed ticket and we will get back to you.</p>
+                    
+                    <form id="contact-form" action="https://formspree.io/f/mnjwyzov" method="POST" class="text-start">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted small text-uppercase">Name</label>
+                                <input type="text" name="name" required class="form-control bg-dark border-secondary text-white">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted small text-uppercase">Email</label>
+                                <input type="email" name="_replyto" required class="form-control bg-dark border-secondary text-white">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small text-uppercase">Issue Category</label>
+                            <select name="category" class="form-select bg-dark border-secondary text-white">
+                                <option>Technical Issue</option>
+                                <option>Account Inquiry</option>
+                                <option>Billing</option>
+                                <option>Game Feedback</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small text-uppercase">Message</label>
+                            <textarea name="message" required rows="5" class="form-control bg-dark border-secondary text-white"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 fw-bold text-uppercase">Submit Ticket</button>
+                    </form>
+                </div>
             </div>
         </div>
 
