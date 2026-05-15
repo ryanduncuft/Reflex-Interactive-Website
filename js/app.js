@@ -697,9 +697,21 @@
         }
     };
 
+    const initMailerLite = () => {
+        (function(w,d,e,u,f,l,n){
+            w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);},
+            l=d.createElement(e),l.async=1,l.src=u,
+            n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);
+        })(window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+
+        ml('account', '2349360');
+    };
+
     // --- 6. ROUTER & INITIALIZATION ---
     const App = {
         init: async () => {
+            initMailerLite();
+            
             // 1. Load Global Components
             await Promise.all([
                 API.loadComponent("navbar-placeholder", "/components/navbar.html", () => {
@@ -716,6 +728,11 @@
                     // 1. Existing form handling
                     const form = el.querySelector("form");
                     if (form) form.addEventListener("submit", (e) => UI.handleFormSubmission(e, form));
+
+                    // 2. TRIGGER MAILERLITE RENDER
+                    if (typeof ml !== 'undefined') {
+                        ml('render'); 
+                    }
                 })
             ]);
 
