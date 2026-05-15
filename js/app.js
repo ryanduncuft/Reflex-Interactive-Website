@@ -40,7 +40,6 @@
             if (url.includes("cloudinary.com") && !url.includes("q_auto")) {
                 return url.replace("/upload/", "/upload/q_auto,f_auto/");
             }
-            return url;
             if (/^https?:\/\//i.test(url)) return url;
             let cleaned = url.replace(/\\/g, "/");
             if (!cleaned.startsWith("/") && !cleaned.startsWith("assets/")) cleaned = `/${cleaned}`;
@@ -698,6 +697,8 @@
     };
 
     const initMailerLite = () => {
+        if (window.ml) return; // Prevent duplicate injections if called multiple times
+
         (function(w,d,e,u,f,l,n){
             w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);},
             l=d.createElement(e),l.async=1,l.src=u,
@@ -710,8 +711,6 @@
     // --- 6. ROUTER & INITIALIZATION ---
     const App = {
         init: async () => {
-            initMailerLite();
-            
             // 1. Load Global Components
             await Promise.all([
                 API.loadComponent("navbar-placeholder", "/components/navbar.html", () => {
@@ -730,9 +729,8 @@
                     if (form) form.addEventListener("submit", (e) => UI.handleFormSubmission(e, form));
 
                     // 2. TRIGGER MAILERLITE RENDER
-                    if (typeof ml !== 'undefined') {
-                        ml('render'); 
-                    }
+                    // We call this AFTER the footer HTML is injected into the DOM
+                    initMailerLite();
                 })
             ]);
 
@@ -777,7 +775,6 @@
             if (nf) nf.addEventListener("submit", (e) => UI.handleFormSubmission(e, nf));
 
             // 4. Global Event Delegation for Clear Cache Button
-            // This ensures it works whether the footer is hardcoded or loaded dynamically
             document.addEventListener("click", (e) => {
                 const cacheBtn = e.target.closest("#clear-cache-link");
                 if (cacheBtn) {
@@ -791,7 +788,7 @@
                         console.warn("Storage clear failed", err);
                     }
 
-                    // Unregister Service Workers (often the culprit for aggressive caching)
+                    // Unregister Service Workers
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.getRegistrations().then(function(registrations) {
                             for(let registration of registrations) {
