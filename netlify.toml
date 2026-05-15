@@ -31,7 +31,7 @@
   to = "/account.html"
   status = 200
   force = true
-  
+
 # === 3. Clean URLs & Routing ===
 [[redirects]]
   from = "/games"
@@ -63,6 +63,18 @@
 [[redirects]]
   from = "/contact"
   to = "https://support.reflexinteractive.com/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/careers"
+  to = "https://careers.reflexinteractive.com/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/account"
+  to = "https://account.reflexinteractive.com/"
   status = 301
   force = true
 

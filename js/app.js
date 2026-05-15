@@ -20,7 +20,9 @@
         },
         SYSTEM: {
             CACHE_BUST: true,
-            BASE_URL: "https://www.reflexinteractive.com"
+            BASE_URL: window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+            ? "" // Use relative paths locally so Five Server works
+            : "https://www.reflexinteractive.com" // Use absolute paths on the web for subdomains
         }
     };
 
