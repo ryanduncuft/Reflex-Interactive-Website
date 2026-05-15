@@ -17,19 +17,19 @@
 # (We check both with and without the trailing slash to be safe)
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
-  to = "/contact.html"
+  to = "./contact.html"
   status = 200
   force = true
 
 [[redirects]]
   from = "https://careers.reflexinteractive.com/"
-  to = "/careers.html"
+  to = "./careers.html"
   status = 200
   force = true
 
 [[redirects]]
   from = "https://account.reflexinteractive.com/"
-  to = "/account.html"
+  to = "./account.html"
   status = 200
   force = true
 
@@ -37,28 +37,28 @@
 [[redirects]]
   from = "/games"
   query = {id = ":id"}
-  to = "/game-details.html"
+  to = "./game-details.html"
   status = 200
 
 [[redirects]]
   from = "/newswire"
   query = {id = ":id"}
-  to = "/newswire.html"
+  to = "./newswire.html"
   status = 200
 
 [[redirects]]
   from = "/games"
-  to = "/games.html"
+  to = "./games.html"
   status = 200
 
 [[redirects]]
   from = "/newswire"
-  to = "/newswire.html"
+  to = "./newswire.html"
   status = 200
 
 [[redirects]]
   from = "/about"
-  to = "/about.html"
+  to = "./about.html"
   status = 200
 
 [[redirects]]
@@ -82,7 +82,7 @@
 # === 4. Fallbacks ===
 [[redirects]]
   from = "/*"
-  to = "/404.html"
+  to = "./404.html"
   status = 404
 
 [[headers]]
