@@ -183,7 +183,7 @@
                 const href = link.getAttribute('href');
                 if (href && href.startsWith('/') && href !== '/') {
                     if (State.isSupportSubdomain) link.href = `${Config.SYSTEM.BASE_URL}${href}`;
-                } else if (href === '/') {
+                } else if (href === './') {
                     link.href = Config.SYSTEM.BASE_URL;
                 }
             });
@@ -216,18 +216,18 @@
             const buildIndex = async () => {
                 if (State.searchIndex) return State.searchIndex;
                 let index = [
-                    { url: "/", title: "Home", snippet: "Reflex Interactive homepage", searchable: "home reflex" },
-                    { url: "/games", title: "Games", snippet: "Browse our games", searchable: "games" },
-                    { url: "/newswire", title: "Newswire", snippet: "Latest news", searchable: "newswire news" },
-                    { url: "/about", title: "About", snippet: "About Us", searchable: "about us" },
-                    { url: "/support", title: "Support", snippet: "Get in touch", searchable: "contact support help" },
-                    { url: "/careers", title: "Careers", snippet: "Join our team", searchable: "careers job employment" },
+                    { url: "./", title: "Home", snippet: "Reflex Interactive homepage", searchable: "home reflex" },
+                    { url: "./games", title: "Games", snippet: "Browse our games", searchable: "games" },
+                    { url: "./newswire", title: "Newswire", snippet: "Latest news", searchable: "newswire news" },
+                    { url: "./about", title: "About", snippet: "About Us", searchable: "about us" },
+                    { url: "./support", title: "Support", snippet: "Get in touch", searchable: "contact support help" },
+                    { url: "./careers", title: "Careers", snippet: "Join our team", searchable: "careers job employment" },
                 ];
 
                 try {
                     const [news, games] = await Promise.all([API.fetchData(Config.API.NEWS), API.fetchData(Config.API.GAMES)]);
-                    news?.forEach(item => index.push({ url: `/newswire?id=${item.id}`, title: item.title, snippet: item.summary.slice(0, 100), searchable: `${item.title} ${item.summary}`.toLowerCase() }));
-                    games?.forEach(item => index.push({ url: `/games?id=${item.id}`, title: item.title, snippet: item.description.slice(0, 100), searchable: `${item.title} ${item.description}`.toLowerCase() }));
+                    news?.forEach(item => index.push({ url: `./newswire?id=${item.id}`, title: item.title, snippet: item.summary.slice(0, 100), searchable: `${item.title} ${item.summary}`.toLowerCase() }));
+                    games?.forEach(item => index.push({ url: `./games?id=${item.id}`, title: item.title, snippet: item.description.slice(0, 100), searchable: `${item.title} ${item.description}`.toLowerCase() }));
                 } catch (e) { console.warn("Search index build failed", e); }
                 
                 return (State.searchIndex = index);
