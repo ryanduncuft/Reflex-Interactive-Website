@@ -1,7 +1,14 @@
 # === 1. Domain Normalization ===
+# Redirect WWW to Naked Domain (The new studio standard)
+[[redirects]]
+  from = "https://www.reflexinteractive.com/*"
+  to = "https://reflexinteractive.com/:splat"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "https://reflexinteractive.netlify.app/*"
-  to = "https://www.reflexinteractive.com/:splat"
+  to = "https://reflexinteractive.com/:splat"
   status = 301
   force = true
 

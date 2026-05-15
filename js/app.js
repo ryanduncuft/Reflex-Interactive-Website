@@ -22,7 +22,7 @@
             CACHE_BUST: true,
             BASE_URL: window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
             ? "" // Use relative paths locally so Five Server works
-            : "https://www.reflexinteractive.com" // Use absolute paths on the web for subdomains
+            : "https://reflexinteractive.com" // Use absolute paths on the web for subdomains
         }
     };
 
@@ -32,7 +32,7 @@
         dataCache: new Map(),
         isSupportSubdomain: window.location.hostname.startsWith("support."),
         // Updated check to cover all your new subdomains
-        isSubdomain: window.location.hostname !== "www.reflexinteractive.com" && 
+        isSubdomain: window.location.hostname !== "reflexinteractive.com" && 
                      window.location.hostname !== "reflexinteractive.com" &&
                      window.location.hostname !== "localhost"
     };
