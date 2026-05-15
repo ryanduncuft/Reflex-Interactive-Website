@@ -1,5 +1,5 @@
 # === 1. Domain Normalization ===
-# Redirect WWW to Naked Domain (The new studio standard)
+# Redirect WWW and Netlify subdomain to Naked Domain
 [[redirects]]
   from = "https://www.reflexinteractive.com/*"
   to = "https://reflexinteractive.com/:splat"
@@ -12,57 +12,52 @@
   status = 301
   force = true
 
-# === 2. Subdomain & Support Logic ===
-# Explicitly map the root of the support domain to contact.html
-# (We check both with and without the trailing slash to be safe)
+# === 2. Subdomain Logic ===
+# SUPPORT SUBDOMAIN
+# 1. Serve contact.html at the root of the support subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
-  to = "./contact.html"
+  to = "/support.html"
   status = 200
   force = true
 
+# 2. If a user clicks a link like "/games" while on the support subdomain, force them back to the main domain
+[[redirects]]
+  from = "https://support.reflexinteractive.com/*"
+  to = "https://reflexinteractive.com/:splat"
+  status = 301
+  force = true
+
+# CAREERS SUBDOMAIN
 [[redirects]]
   from = "https://careers.reflexinteractive.com/"
-  to = "./careers.html"
+  to = "/careers.html"
   status = 200
   force = true
 
+[[redirects]]
+  from = "https://careers.reflexinteractive.com/*"
+  to = "https://reflexinteractive.com/:splat"
+  status = 301
+  force = true
+
+# ACCOUNT SUBDOMAIN
 [[redirects]]
   from = "https://account.reflexinteractive.com/"
-  to = "./account.html"
+  to = "/account.html"
   status = 200
   force = true
 
-# === 3. Clean URLs & Routing ===
 [[redirects]]
-  from = "/games"
-  query = {id = ":id"}
-  to = "./game-details.html"
-  status = 200
+  from = "https://account.reflexinteractive.com/*"
+  to = "https://reflexinteractive.com/:splat"
+  status = 301
+  force = true
 
+# === 3. Main Domain to Subdomain Redirects ===
+# When users click /support, /careers, or /account on the main site, send them to the subdomains
 [[redirects]]
-  from = "/newswire"
-  query = {id = ":id"}
-  to = "./newswire.html"
-  status = 200
-
-[[redirects]]
-  from = "/games"
-  to = "./games.html"
-  status = 200
-
-[[redirects]]
-  from = "/newswire"
-  to = "./newswire.html"
-  status = 200
-
-[[redirects]]
-  from = "/about"
-  to = "./about.html"
-  status = 200
-
-[[redirects]]
-  from = "/contact"
+  from = "/support"
   to = "https://support.reflexinteractive.com/"
   status = 301
   force = true
@@ -79,10 +74,38 @@
   status = 301
   force = true
 
-# === 4. Fallbacks ===
+# === 4. Clean URLs & Routing ===
+[[redirects]]
+  from = "/games"
+  query = {id = ":id"}
+  to = "/game-details.html"
+  status = 200
+
+[[redirects]]
+  from = "/newswire"
+  query = {id = ":id"}
+  to = "/newswire.html"
+  status = 200
+
+[[redirects]]
+  from = "/games"
+  to = "/games.html"
+  status = 200
+
+[[redirects]]
+  from = "/newswire"
+  to = "/newswire.html"
+  status = 200
+
+[[redirects]]
+  from = "/about"
+  to = "/about.html"
+  status = 200
+
+# === 5. Fallbacks & Headers ===
 [[redirects]]
   from = "/*"
-  to = "./404.html"
+  to = "/404.html"
   status = 404
 
 [[headers]]

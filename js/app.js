@@ -1,6 +1,6 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
- * @version 1.1.3
+ * @version 1.1.4
  * @description Highly optimized, modular, and scalable vanilla JS architecture.
  */
 
@@ -19,22 +19,20 @@
             REVEAL_DELAY_MS: 80,
         },
         SYSTEM: {
-            CACHE_BUST: true,
-            BASE_URL: window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-            ? "" // Use relative paths locally so Five Server works
-            : "https://reflexinteractive.com" // Use absolute paths on the web for subdomains
+            CACHE_BUST: true
         }
     };
 
+    const hostname = window.location.hostname;
     const State = {
         searchIndex: null,
         revealObserver: null,
         dataCache: new Map(),
-        isSupportSubdomain: window.location.hostname.startsWith("support."),
-        // Updated check to cover all your new subdomains
-        isSubdomain: window.location.hostname !== "reflexinteractive.com" && 
-                     window.location.hostname !== "reflexinteractive.com" &&
-                     window.location.hostname !== "localhost"
+        isSupportSubdomain: hostname.startsWith("support."),
+        isSubdomain: hostname !== "reflexinteractive.com" && 
+                     hostname !== "www.reflexinteractive.com" &&
+                     hostname !== "localhost" &&
+                     hostname !== "127.0.0.1"
     };
 
     // --- 2. UTILITIES ---
@@ -47,9 +45,10 @@
                 return url.replace("/upload/", "/upload/q_auto,f_auto/");
             }
             if (/^https?:\/\//i.test(url)) return url;
+            
             let cleaned = url.replace(/\\/g, "/");
-            if (!cleaned.startsWith("/") && !cleaned.startsWith("assets/")) cleaned = `/${cleaned}`;
-            if (cleaned.startsWith("assets/")) cleaned = `/${cleaned}`;
+            // Ensure absolute path formatting for local assets
+            if (!cleaned.startsWith("/")) cleaned = `/${cleaned}`;
             return cleaned;
         },
 
@@ -84,14 +83,7 @@
             if (State.dataCache.has(url)) return State.dataCache.get(url);
 
             const isGist = Object.values(Config.API).includes(url);
-
-            // Ensure we use the absolute URL if we are on a subdomain
-            let fetchUrl = url;
-            if (!isGist && !url.startsWith("http")) {
-                fetchUrl = `${Config.SYSTEM.BASE_URL}${url}`;
-            }
-        
-            const finalUrl = isGist ? fetchUrl : Utils.getBustedUrl(fetchUrl);
+            const finalUrl = isGist ? url : Utils.getBustedUrl(url);
 
             try {
                 const response = await fetch(finalUrl);
@@ -105,20 +97,12 @@
             }
         },
 
-        // --- Inside API.loadComponent ---
         loadComponent: async (placeholderId, componentPath, callback) => {
             const placeholder = document.getElementById(placeholderId);
             if (!placeholder) return;
 
-            // Determine the full URL
-            // If we're local, it stays "/components/..."
-            // If we're live, it becomes "https://www.reflexinteractive.com/components/..."
-            const url = (Config.SYSTEM.BASE_URL && !componentPath.startsWith('http')) 
-                ? `${Config.SYSTEM.BASE_URL}${componentPath}` 
-                : componentPath;
-
             try {
-                const response = await fetch(Utils.getBustedUrl(url));
+                const response = await fetch(Utils.getBustedUrl(componentPath));
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 placeholder.innerHTML = await response.text();
                 if (callback) callback(placeholder);
@@ -178,15 +162,6 @@
                     header.classList.toggle("scrolled", window.scrollY > 50);
                 }, 10));
             }
-
-            document.querySelectorAll('.navbar a, .mobile-nav-link').forEach(link => {
-                const href = link.getAttribute('href');
-                if (href && href.startsWith('/') && href !== '/') {
-                    if (State.isSupportSubdomain) link.href = `${Config.SYSTEM.BASE_URL}${href}`;
-                } else if (href === './') {
-                    link.href = Config.SYSTEM.BASE_URL;
-                }
-            });
         },
 
         initMobileMenu: () => {
@@ -205,72 +180,6 @@
             document.querySelectorAll(".mobile-nav-link").forEach(link => 
                 link.addEventListener("click", () => toggleMenu(false))
             );
-        },
-
-        initSearch: () => {
-            const input = document.getElementById("global-search-input");
-            const container = document.getElementById("search-results-container");
-            const list = document.getElementById("global-search-results");
-            if (!input || !container || !list) return;
-
-            const buildIndex = async () => {
-                if (State.searchIndex) return State.searchIndex;
-                let index = [
-                    { url: "./", title: "Home", snippet: "Reflex Interactive homepage", searchable: "home reflex" },
-                    { url: "./games", title: "Games", snippet: "Browse our games", searchable: "games" },
-                    { url: "./newswire", title: "Newswire", snippet: "Latest news", searchable: "newswire news" },
-                    { url: "./about", title: "About", snippet: "About Us", searchable: "about us" },
-                    { url: "./support", title: "Support", snippet: "Get in touch", searchable: "contact support help" },
-                    { url: "./careers", title: "Careers", snippet: "Join our team", searchable: "careers job employment" },
-                ];
-
-                try {
-                    const [news, games] = await Promise.all([API.fetchData(Config.API.NEWS), API.fetchData(Config.API.GAMES)]);
-                    news?.forEach(item => index.push({ url: `./newswire?id=${item.id}`, title: item.title, snippet: item.summary.slice(0, 100), searchable: `${item.title} ${item.summary}`.toLowerCase() }));
-                    games?.forEach(item => index.push({ url: `./games?id=${item.id}`, title: item.title, snippet: item.description.slice(0, 100), searchable: `${item.title} ${item.description}`.toLowerCase() }));
-                } catch (e) { console.warn("Search index build failed", e); }
-                
-                return (State.searchIndex = index);
-            };
-
-            input.addEventListener("input", Utils.debounce(async (e) => {
-                const q = e.target.value.trim().toLowerCase();
-                list.innerHTML = "";
-                
-                if (!q) {
-                    container.style.display = "none";
-                    return;
-                }
-
-                const index = await buildIndex();
-                const results = index.filter(item => item.searchable.includes(q)).slice(0, 8);
-
-                if (results.length) {
-                    const fragment = document.createDocumentFragment();
-                    results.forEach(res => {
-                        const link = document.createElement("a");
-                        link.href = res.url;
-                        link.className = "list-group-item list-group-item-action bg-dark text-light border-secondary";
-                        link.innerHTML = `<strong>${res.title}</strong><br><small class="text-muted">${res.snippet}</small>`;
-                        fragment.appendChild(link);
-                    });
-                    list.appendChild(fragment);
-                    container.style.display = "block";
-                } else {
-                    container.style.display = "none";
-                }
-            }, Config.UI.SEARCH_DEBOUNCE_MS));
-
-            document.addEventListener("click", (e) => {
-                if (!input.contains(e.target) && !container.contains(e.target)) container.style.display = "none";
-            });
-
-            input.addEventListener("keydown", (e) => {
-                if (e.key === "Escape") {
-                    container.style.display = "none";
-                    input.value = "";
-                }
-            });
         },
 
         initSmoothScroll: () => {
@@ -486,7 +395,6 @@
                         "author": { "@type": "Organization", "name": "Reflex Interactive" }
                     });
                 }
-                // --- END SEO UPDATES ---
 
                 listSec?.classList.add("d-none");
                 detailSec?.classList.remove("d-none");
@@ -497,7 +405,7 @@
                         if (isHtml) el.innerHTML = article[prop].replace(/\n/g, "<br><br>");
                         else if (prop === 'image_url') {
                             el.src = article[prop];
-                            el.alt = `Newswire: ${article.title}`; // SEO Alt tag
+                            el.alt = `Newswire: ${article.title}`;
                         }
                         else el.textContent = article[prop];
                     }
@@ -547,7 +455,6 @@
                     schema.image = Utils.normalizeMediaUrl(game.image_url);
                     schemaEl.text = JSON.stringify(schema);
                 }
-                // --- END SEO UPDATES ---
 
                 const safeSetText = (elId, text) => {
                     const el = document.getElementById(elId);
@@ -691,40 +598,6 @@
                 container.innerHTML = '<div class="text-center text-danger py-5">Failed to load game categories.</div>';
             }
         },
-
-        studioStats: async () => {
-            const gamesEl = document.getElementById("stat-games");
-            const newsEl = document.getElementById("stat-news");
-            const yearsEl = document.getElementById("stat-years");
-
-            const years = Math.max(1, new Date().getFullYear() - 2022);
-            if (yearsEl) yearsEl.dataset.count = years.toString();
-
-            try {
-                const [news, games] = await Promise.all([
-                    API.fetchData(Config.API.NEWS),
-                    API.fetchData(Config.API.GAMES),
-                ]);
-
-                if (gamesEl) gamesEl.dataset.count = `${games?.length ?? 0}`;
-                if (newsEl) newsEl.dataset.count = `${news?.length ?? 0}`;
-            } catch (e) {
-                if (gamesEl) gamesEl.dataset.count = "0";
-                if (newsEl) newsEl.dataset.count = "0";
-            }
-        }
-    };
-
-    const initMailerLite = () => {
-        if (window.ml) return; // Prevent duplicate injections if called multiple times
-
-        (function(w,d,e,u,f,l,n){
-            w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);},
-            l=d.createElement(e),l.async=1,l.src=u,
-            n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);
-        })(window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
-
-        ml('account', '2349360');
     };
 
     // --- 6. ROUTER & INITIALIZATION ---
@@ -732,24 +605,14 @@
         init: async () => {
             // 1. Load Global Components
             await Promise.all([
-                API.loadComponent("navbar-placeholder", "/components/navbar.html", () => {
+                API.loadComponent("navbar", "/components/navbar.html", () => {
                     UI.initNavbar();
                     UI.initMobileMenu();
                     UI.initSmoothScroll();
                     UI.initDownloadButtons();
                 }),
-                API.loadComponent("search-placeholder", "/components/searchbar.html", (el) => {
-                    UI.initSearch();
-                    el.querySelector(".global-search-wrap")?.classList.add("reveal-on-load");
-                }),
-                API.loadComponent("footer-placeholder", "/components/footer.html", (el) => {
-                    // 1. Existing form handling
+                API.loadComponent("footer", "/components/footer.html", (el) => {
                     const form = el.querySelector("form");
-                    if (form) form.addEventListener("submit", (e) => UI.handleFormSubmission(e, form));
-
-                    // 2. TRIGGER MAILERLITE RENDER
-                    // We call this AFTER the footer HTML is injected into the DOM
-                    initMailerLite();
                 })
             ]);
 
@@ -765,7 +628,7 @@
             const isNewsDetailPage = path.includes("article-detail") || (path.includes("newswire") && urlId && document.getElementById("article-detail"));
             const isNewsListPage = (path.includes("newswire") && !urlId) || (path.includes("newswire") && !document.getElementById("article-detail"));
             const isHomePage = (path === "/" || path.endsWith("index.html")) && !State.isSupportSubdomain;
-            const isSupportPage = State.isSupportSubdomain || path.includes("contact");
+            const isSupportPage = State.isSupportSubdomain || path.includes("support");
 
             if (isGameDetailPage) {
                 Renderers.gameDetail(urlId);
@@ -779,16 +642,11 @@
                 Renderers.gameList("latest-games-container", Config.UI.HOME_ITEM_COUNT);
                 Renderers.newsList("latest-news-container", Config.UI.HOME_ITEM_COUNT);
                 Renderers.featuredGame();
-                Renderers.studioStats().then(UI.initStatCounters);
             }
 
             if (isSupportPage) {
                 Renderers.supportGameList("support-game-grid");
             }
-
-            // 3. Form Bindings
-            const cf = document.getElementById("contact-form");
-            if (cf) cf.addEventListener("submit", (e) => UI.handleFormSubmission(e, cf));
 
             const nf = document.getElementById("newsletter-form");
             if (nf) nf.addEventListener("submit", (e) => UI.handleFormSubmission(e, nf));
@@ -799,7 +657,6 @@
                 if (cacheBtn) {
                     e.preventDefault();
                     
-                    // Clear Local & Session Storage
                     try {
                         localStorage.clear();
                         sessionStorage.clear();
@@ -807,7 +664,6 @@
                         console.warn("Storage clear failed", err);
                     }
 
-                    // Unregister Service Workers
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.getRegistrations().then(function(registrations) {
                             for(let registration of registrations) {
@@ -816,7 +672,6 @@
                         });
                     }
 
-                    // Force reload with cache-busting query param
                     const url = new URL(window.location.href);
                     url.searchParams.set('nocache', Date.now());
                 

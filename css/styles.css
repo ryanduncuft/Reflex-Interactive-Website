@@ -84,6 +84,13 @@ p { margin-bottom: 1.25rem; }
 /* ==========================================================================
    4. LAYOUT & GRID
    ========================================================================== */
+
+.bg-hero-image {
+    background-image: url('https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778346188/Box_art_HQ_b9bwwh.png');
+    background-size: cover;
+    background-position: center;
+}
+
 .container {
     max-width: 1400px;
     padding-left: 1.5rem;
@@ -612,148 +619,6 @@ section {
     padding: 2.5rem;
 }
 
-/* Search */
-.global-search-wrap {
-    background: #000000;
-    border-bottom: 1px solid var(--color-border);
-    padding: 1.25rem 0;
-}
-
-.global-search-container {
-    width: 100%;
-    max-width: 400px;
-    position: relative;
-}
-
-.search-input-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.search-icon {
-    background: transparent;
-    border: none;
-    color: var(--color-text-muted);
-    padding: 0.65rem 0.85rem;
-    transition: color 0.3s ease, transform 0.3s ease;
-    cursor: pointer;
-}
-
-#global-search-input {
-    background: var(--color-surface);
-    border: 1.5px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    color: #FFFFFF;
-    flex: 1;
-    width: 100%;
-}
-
-#global-search-input::placeholder {
-    color: var(--color-text-muted);
-}
-
-#global-search-input:focus {
-    background: var(--color-surface-alt);
-    border-color: var(--color-primary);
-    outline: none;
-}
-
-#global-search-input:focus ~ .search-icon {
-    color: var(--color-primary);
-    transform: scale(1.1);
-}
-
-.search-results-wrapper {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    margin-top: 0.75rem;
-    z-index: 2000;
-}
-
-.search-results-list {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    max-height: 55vh;
-    overflow-y: auto;
-    box-shadow: var(--shadow-xl);
-}
-
-.search-results-list .list-group-item {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--color-border);
-    padding: 1rem;
-    color: #FFFFFF;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.search-results-list .list-group-item:last-child {
-    border-bottom: none;
-}
-
-.search-results-list .list-group-item:hover {
-    background-color: var(--color-surface-alt);
-    padding-left: 1.25rem;
-}
-
-.search-results-list strong {
-    color: var(--color-primary);
-    font-weight: 700;
-    display: block;
-    margin-bottom: 0.35rem;
-}
-
-.search-results-list small {
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-/* Forms */
-.form-control, .form-select {
-    background-color: var(--color-surface) !important;
-    border: 1.5px solid var(--color-border) !important;
-    border-radius: var(--radius-md);
-    color: #FFFFFF !important;
-    padding: 0.875rem 1.125rem;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.form-control::placeholder {
-    color: var(--color-text-muted);
-}
-
-.form-control:focus, .form-select:focus {
-    background-color: var(--color-surface-alt) !important;
-    border-color: var(--color-primary) !important;
-    color: #FFFFFF !important;
-    outline: none;
-    box-shadow: none;
-}
-
-.form-control:hover, .form-select:hover {
-    border-color: #444444 !important;
-}
-
-textarea.form-control {
-    resize: vertical;
-    min-height: 120px;
-}
-
-.form-control-sm {
-    padding: 0.6rem 0.85rem;
-    font-size: 0.9rem;
-}
-
 /* Footer Overrides */
 footer {
     background-color: #000 !important;
@@ -805,18 +670,6 @@ footer {
     max-width: 400px; /* Limits the width so it doesn't stretch across the whole screen */
     margin: 0 auto;   /* Centres it */
     padding: 20px;
-}
-
-/* Force MailerLite form to match your dark theme */
-.ml-embedded {
-    background-color: transparent !important;
-    color: #fff !important;
-}
-
-/* Optional: Center it if it looks off-balance */
-.ml-form-embedContainer {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
 }
 
 /* Error Page */
@@ -1046,12 +899,6 @@ footer {
 .z-0 { z-index: 0; }
 .z-3 { z-index: 3; }
 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
-
-.bg-hero-image {
-    background-image: url('https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778346188/Box_art_HQ_b9bwwh.png');
-    background-size: cover;
-    background-position: center;
-}
 
 /* ==========================================================================
    7. MEDIA QUERIES

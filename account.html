@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Account | Reflex Interactive</title>
+
+    <meta name="description" content="Manage your Reflex Interactive account, track your games, and update your security settings.">
+    <link rel="canonical" href="https://careers.reflexinteractive.com/account"> <meta property="og:title" content="Account | Reflex Interactive">
+    <meta property="og:description" content="Manage your profile and games at Reflex Interactive.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://careers.reflexinteractive.com/account">
+    <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png">
+
+    <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="bg-black text-white overflow-x-hidden">
+    
+    <div id="navbar"></div>
+    
+    <main>
+        <section class="hero-section position-relative d-flex align-items-center justify-content-center text-center" role="region" aria-label="Account Dashboard">
+            <div class="position-absolute inset-0 bg-hero-image" style="opacity: 0.2;" aria-hidden="true"></div>
+            <div class="hero-overlay" aria-hidden="true"></div>
+            <div class="position-relative z-3 px-3 px-md-4 container">
+                <p class="section-kicker text-danger mb-3 hero-entry">Player Dashboard</p>
+                <h1 class="display-1 fw-black text-shadow-lg mb-4 hero-entry">My Account</h1>
+                <p class="fs-4 fw-light text-light hero-entry">Welcome back, <span class="text-danger fw-bold">Player123</span></p>
+            </div>
+        </section>
+
+        <section id="account-details" class="py-5" role="region" aria-labelledby="account-heading">
+            <div class="container">
+                <div class="row g-5">
+                    
+                    <div class="col-12 col-lg-6">
+                        <p class="section-kicker mb-3">Identity</p>
+                        <h2 id="account-heading" class="display-4 fw-bold text-uppercase mb-4">
+                            Profile <span class="text-danger">Details</span>
+                        </h2>
+                        
+                        <form class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="username" class="form-label text-uppercase small fw-bold text-muted">Display Name</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" id="username" value="Player123" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="email" class="form-label text-uppercase small fw-bold text-muted">Email Address</label>
+                                <input type="email" class="form-control bg-dark text-white border-secondary" id="email" value="player123@reflexinteractive.com" required>
+                            </div>
+                            <button type="submit" class="btn btn-danger text-uppercase fw-bold px-4">
+                                Update Profile
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="col-12 col-lg-6">
+                        <p class="section-kicker mb-3">Overview</p>
+                        <h2 class="display-4 fw-bold text-uppercase mb-4">Status</h2>
+                        
+                        <div class="row row-cols-1 g-3">
+                            <div class="col">
+                                <div class="feature-card reveal-on-scroll">
+                                    <h3 class="text-danger text-uppercase fs-5">Game Library</h3>
+                                    <p class="text-muted mb-0">You currently own 0 titles. Access keys or playtests will appear here.</p>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="feature-card reveal-on-scroll">
+                                    <h3 class="text-danger text-uppercase fs-5">Security</h3>
+                                    <p class="text-muted mb-2">Password last changed: 2 weeks ago.</p>
+                                    <a href="#" class="btn btn-sm btn-outline-light text-uppercase fw-bold px-3">Change Password</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section class="py-5 bg-darker">
+            <div class="container text-center py-4">
+                <h2 class="display-6 fw-bold text-uppercase mb-3">Finished Gaming?</h2>
+                <p class="fs-5 text-muted mb-4">Make sure to log out if you are on a shared device.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="./logout" class="btn btn-outline-danger btn-lg px-5 fw-bold text-uppercase">Log Out</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+</html>
