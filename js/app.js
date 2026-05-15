@@ -109,14 +109,14 @@
         loadComponent: async (placeholderId, componentPath, callback) => {
             const placeholder = document.getElementById(placeholderId);
             if (!placeholder) return;
-                
+
             // Determine the full URL
             // If we're local, it stays "/components/..."
             // If we're live, it becomes "https://www.reflexinteractive.com/components/..."
             const url = (Config.SYSTEM.BASE_URL && !componentPath.startsWith('http')) 
                 ? `${Config.SYSTEM.BASE_URL}${componentPath}` 
                 : componentPath;
-                
+
             try {
                 const response = await fetch(Utils.getBustedUrl(url));
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -220,7 +220,8 @@
                     { url: "/games", title: "Games", snippet: "Browse our games", searchable: "games" },
                     { url: "/newswire", title: "Newswire", snippet: "Latest news", searchable: "newswire news" },
                     { url: "/about", title: "About", snippet: "About Us", searchable: "about us" },
-                    { url: "https://support.reflexinteractive.com/", title: "Support", snippet: "Get in touch", searchable: "contact support help" },
+                    { url: "/support", title: "Support", snippet: "Get in touch", searchable: "contact support help" },
+                    { url: "/careers", title: "Careers", snippet: "Join our team", searchable: "careers job employment" },
                 ];
 
                 try {
