@@ -801,6 +801,24 @@ footer {
     letter-spacing: 1px;
 }
 
+.footer-signup {
+    max-width: 400px; /* Limits the width so it doesn't stretch across the whole screen */
+    margin: 0 auto;   /* Centres it */
+    padding: 20px;
+}
+
+/* Force MailerLite form to match your dark theme */
+.ml-embedded {
+    background-color: transparent !important;
+    color: #fff !important;
+}
+
+/* Optional: Center it if it looks off-balance */
+.ml-form-embedContainer {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
 /* Error Page */
 .error-page {
     min-height: calc(100vh - 120px);
