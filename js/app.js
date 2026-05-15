@@ -28,7 +28,11 @@
         searchIndex: null,
         revealObserver: null,
         dataCache: new Map(),
-        isSupportSubdomain: window.location.hostname.startsWith("support.")
+        isSupportSubdomain: window.location.hostname.startsWith("support."),
+        // Updated check to cover all your new subdomains
+        isSubdomain: window.location.hostname !== "www.reflexinteractive.com" && 
+                     window.location.hostname !== "reflexinteractive.com" &&
+                     window.location.hostname !== "localhost"
     };
 
     // --- 2. UTILITIES ---
@@ -78,10 +82,17 @@
             if (State.dataCache.has(url)) return State.dataCache.get(url);
 
             const isGist = Object.values(Config.API).includes(url);
-            const fetchUrl = isGist ? url : Utils.getBustedUrl(url);
+
+            // Ensure we use the absolute URL if we are on a subdomain
+            let fetchUrl = url;
+            if (!isGist && !url.startsWith("http")) {
+                fetchUrl = `${Config.SYSTEM.BASE_URL}${url}`;
+            }
+        
+            const finalUrl = isGist ? fetchUrl : Utils.getBustedUrl(fetchUrl);
 
             try {
-                const response = await fetch(fetchUrl);
+                const response = await fetch(finalUrl);
                 if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
                 const data = await response.json();
                 State.dataCache.set(url, data);
@@ -92,14 +103,17 @@
             }
         },
 
+        // --- Inside API.loadComponent ---
         loadComponent: async (placeholderId, componentPath, callback) => {
             const placeholder = document.getElementById(placeholderId);
             if (!placeholder) return;
+        
+            // FIX: Remove the duplicate 'const url' line. 
+            // This version ensures subdomains always fetch from the main domain.
+            const url = componentPath.startsWith("http") 
+                ? componentPath 
+                : `${Config.SYSTEM.BASE_URL}${componentPath}`;
 
-            const url = `${Config.SYSTEM.BASE_URL}${componentPath}`;
-
-            const url = componentPath.startsWith("http") ? componentPath : `${Config.SYSTEM.BASE_URL}${componentPath}`;
-            
             try {
                 const response = await fetch(Utils.getBustedUrl(url));
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
