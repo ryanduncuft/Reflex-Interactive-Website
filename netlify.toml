@@ -20,6 +20,18 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "https://careers.reflexinteractive.com/*"
+  to = "/careers.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://account.reflexinteractive.com/*"
+  to = "/account.html"
+  status = 200
+  force = true
+  
 # === 3. Clean URLs & Routing ===
 [[redirects]]
   from = "/games"

@@ -96,6 +96,8 @@
             const placeholder = document.getElementById(placeholderId);
             if (!placeholder) return;
 
+            const url = `${Config.SYSTEM.BASE_URL}${componentPath}`;
+
             const url = componentPath.startsWith("http") ? componentPath : `${Config.SYSTEM.BASE_URL}${componentPath}`;
             
             try {
