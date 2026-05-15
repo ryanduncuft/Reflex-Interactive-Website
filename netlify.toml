@@ -15,19 +15,13 @@
   force = true
 
 [[redirects]]
-  from = "https://support.reflexinteractive.com"
-  to = "/contact.html"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "https://careers.reflexinteractive.com/*"
+  from = "https://careers.reflexinteractive.com/"
   to = "/careers.html"
   status = 200
   force = true
 
 [[redirects]]
-  from = "https://account.reflexinteractive.com/*"
+  from = "https://account.reflexinteractive.com/"
   to = "/account.html"
   status = 200
   force = true
