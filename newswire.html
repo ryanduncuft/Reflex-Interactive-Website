@@ -4,16 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>Newswire & Dev Blog | Reflex Interactive</title>
+    <title>Newswire | Reflex Interactive</title>
 
-    <meta name="description" id="news-meta-description" content="Official Reflex Interactive Newswire. Get the latest indie game updates, patch notes, developer blogs, and studio announcements.">
-    <link rel="canonical" href="https://www.reflexinteractive.com/newswire">
+    <meta name="description" id="news-meta-description" content="Read the official Reflex Interactive Newswire for studio announcements, game updates, patch notes, development blogs, and release news.">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://reflexinteractive.com/newswire">
     
-    <meta property="og:title" id="og-title" content="Newswire | Reflex Interactive Updates">
-    <meta property="og:description" id="og-description" content="Stay up to date with the latest news and game announcements from Reflex Interactive.">
+    <meta property="og:title" id="og-title" content="Newswire | Reflex Interactive">
+    <meta property="og:description" id="og-description" content="Studio news, release updates, patch notes, and development stories from Reflex Interactive.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.reflexinteractive.com/newswire">
+    <meta property="og:url" content="https://reflexinteractive.com/newswire">
     <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_512px_ovsgi1.jpg">
+    <meta property="og:site_name" content="Reflex Interactive">
+    <meta property="og:locale" content="en_GB">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@MadeByReflex">
+    <meta name="twitter:title" content="Newswire | Reflex Interactive">
+    <meta name="twitter:description" content="Read Reflex Interactive studio news, game updates, patch notes, and development blogs.">
+    <meta name="twitter:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_512px_ovsgi1.jpg">
 
     <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -24,7 +33,8 @@
         "@context": "https://schema.org",
         "@type": "Blog",
         "name": "Reflex Interactive Newswire",
-        "description": "Developer blogs and news updates from Reflex Interactive indie game studio.",
+        "url": "https://reflexinteractive.com/newswire",
+        "description": "Studio announcements, development blogs, game updates, patch notes, and release news from Reflex Interactive.",
         "publisher": {
             "@type": "Organization",
             "name": "Reflex Interactive"
@@ -39,32 +49,21 @@
 
     <main class="min-vh-100 pt-4 pt-md-5" role="main">
         <section class="container py-5 page-hero" role="region" aria-labelledby="news-heading">
-            
-            <div id="article-list-section">
-                <div class="mb-5 text-center">
-                    <h1 id="news-heading" class="display-3 fw-bold text-center mb-3 text-uppercase reveal-on-load">
-                        Latest <span class="text-danger">News</span>
-                    </h1>
-                    <p class="fs-5 text-muted reveal-on-scroll content-max">
-                        Stay informed with the latest updates and announcements from Reflex Interactive
-                    </p>
-                </div>
-                
-                <div id="loading-spinner" class="d-flex justify-content-center align-items-center" style="min-height: 12rem;" role="status" aria-live="polite" aria-label="Loading news articles. Please wait.">
-                    <div class="loading-animation"></div>
-                </div>
-                
-                <div id="news-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5"></div>
+            <div class="page-intro text-center mx-auto mb-5">
+                <p class="section-kicker mb-3 reveal-on-load">Newswire</p>
+                <h1 id="news-heading" class="display-3 fw-bold text-uppercase reveal-on-load">
+                    Latest <span class="text-danger">News</span>
+                </h1>
+                <p class="fs-5 text-muted reveal-on-scroll mb-0">
+                    Studio updates, release notes, development logs, and announcements from Reflex Interactive.
+                </p>
             </div>
-            
-            <article id="article-detail" class="d-none" style="max-width: 900px; margin: 0 auto;">
-                <a href="./newswire" class="text-danger text-decoration-none mb-4 d-inline-block fw-bold" aria-label="Back to the main Newswire page">&larr; Back to Newswire</a>
-                
-                <h2 id="article-title" class="fs-2 fw-bold mb-3 mb-4 reveal-on-load"></h2>
-                <p id="article-date" class="text-muted small mb-4 reveal-on-load"></p>
-                <img id="article-image" src="" alt="" class="img-fluid rounded-lg shadow-md mb-5 reveal-on-load" style="max-height: 60vh; object-fit: cover; width: 100%;">
-                <div id="article-content" class="fs-5 lh-lg text-light"></div>
-            </article>
+
+            <div id="loading-spinner" class="d-flex justify-content-center align-items-center" style="min-height: 12rem;" role="status" aria-live="polite" aria-label="Loading news articles. Please wait.">
+                <div class="loading-animation"></div>
+            </div>
+
+            <div id="news-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5"></div>
         </section>
     </main>
     

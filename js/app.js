@@ -1,551 +1,428 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
- * @version 1.1.4
- * @description Highly optimized, modular, and scalable vanilla JS architecture.
+ * @version 1.2.0
+ * @description Stable vanilla JS runtime for routing, data rendering, components, and interaction.
  */
 
-(async () => {
+(() => {
     "use strict";
 
-    // --- 1. CONFIGURATION & STATE ---
     const Config = {
         API: {
             NEWS: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
             GAMES: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
         },
         UI: {
-            HOME_ITEM_COUNT: 3,
-            SEARCH_DEBOUNCE_MS: 200,
             REVEAL_DELAY_MS: 80,
+            NAV_SCROLL_Y: 50,
+            BACK_TO_TOP_Y: 400,
+            RAIL_SCROLL_RATIO: 0.85,
         },
         SYSTEM: {
-            CACHE_BUST: true
-        }
+            CACHE_BUST_COMPONENTS: false,
+        },
     };
 
-    const hostname = window.location.hostname;
     const State = {
-        searchIndex: null,
+        cache: new Map(),
         revealObserver: null,
-        dataCache: new Map(),
-        isSupportSubdomain: hostname.startsWith("support."),
-        isSubdomain: hostname !== "reflexinteractive.com" && 
-                     hostname !== "www.reflexinteractive.com" &&
-                     hostname !== "localhost" &&
-                     hostname !== "127.0.0.1"
+        isSupportSubdomain: window.location.hostname.startsWith("support."),
     };
 
-    // --- 2. UTILITIES ---
-    const Utils = {
-        getBustedUrl: (url) => Config.SYSTEM.CACHE_BUST ? `${url}?t=${Date.now()}` : url,
+    const DOM = {
+        qs: (selector, root = document) => root.querySelector(selector),
+        qsa: (selector, root = document) => Array.from(root.querySelectorAll(selector)),
+        byId: (id) => id ? document.getElementById(id) : null,
+        setText: (id, value = "") => {
+            const el = DOM.byId(id);
+            if (el) el.textContent = value || "";
+        },
+        setHTML: (id, value = "") => {
+            const el = DOM.byId(id);
+            if (el) el.innerHTML = value || "";
+        },
+        setMeta: (selector, value = "") => {
+            const el = DOM.qs(selector);
+            if (el) el.setAttribute("content", value || "");
+        },
+        setCanonical: (value = "") => {
+            const el = DOM.qs('link[rel="canonical"]');
+            if (el) el.setAttribute("href", value || "");
+        },
+    };
 
-        normalizeMediaUrl: (url) => {
+    const Utils = {
+        withCacheBust: (url) => {
+            if (!Config.SYSTEM.CACHE_BUST_COMPONENTS) return url;
+            const joiner = url.includes("?") ? "&" : "?";
+            return `${url}${joiner}t=${Date.now()}`;
+        },
+
+        escapeHTML: (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+        }[char])),
+
+        textToHTML: (value = "") => {
+            const normalized = String(value)
+                .replace(/<br\s*\/?>/gi, "\n")
+                .replace(/&lt;br\s*\/?&gt;/gi, "\n")
+                .replace(/\r\n/g, "\n")
+                .trim();
+
+            if (!normalized) return "";
+
+            return normalized
+                .split(/\n{2,}/)
+                .map((block) => `<p>${Utils.escapeHTML(block).replace(/\n/g, "<br>")}</p>`)
+                .join("");
+        },
+
+        normalizeMediaUrl: (url = "") => {
             if (!url) return "";
             if (url.includes("cloudinary.com") && !url.includes("q_auto")) {
                 return url.replace("/upload/", "/upload/q_auto,f_auto/");
             }
             if (/^https?:\/\//i.test(url)) return url;
-            
-            let cleaned = url.replace(/\\/g, "/");
-            // Ensure absolute path formatting for local assets
-            if (!cleaned.startsWith("/")) cleaned = `/${cleaned}`;
-            return cleaned;
+
+            const cleaned = url.replace(/\\/g, "/");
+            return cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
         },
 
-        debounce: (func, delayMs = 250) => {
-            let timeoutId = null;
-            return (...args) => {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => func(...args), delayMs);
-            };
+        detailHref: (page, id) => `/${page}?id=${encodeURIComponent(id)}`,
+
+        sortNewestFirst: (items = []) => [...items].sort((a, b) => {
+            const aTime = Date.parse(a.date || a.release_date || "");
+            const bTime = Date.parse(b.date || b.release_date || "");
+            if (Number.isNaN(aTime) || Number.isNaN(bTime)) return 0;
+            return bTime - aTime;
+        }),
+
+        parseJSON: (value, fallback = {}) => {
+            try {
+                return JSON.parse(value || "{}");
+            } catch (error) {
+                console.warn("[JSON] Invalid embedded schema", error);
+                return fallback;
+            }
         },
 
-        throttle: (func, limitMs = 100) => {
-            let lastRan = 0;
+        throttle: (fn, waitMs = 100) => {
+            let lastRun = 0;
             return (...args) => {
                 const now = Date.now();
-                if (now - lastRan >= limitMs) {
-                    lastRan = now;
-                    func(...args);
-                }
+                if (now - lastRun < waitMs) return;
+                lastRun = now;
+                fn(...args);
             };
         },
 
-        toggleSpinner: (id, show) => {
-            const spinner = document.getElementById(id);
-            if (spinner) spinner.classList.toggle("d-none", !show);
-        }
+        toggleSpinner: (id, show) => DOM.byId(id)?.classList.toggle("d-none", !show),
     };
 
-    // --- 3. DATA SERVICES ---
-    const API = {
-        fetchData: async (url) => {
-            if (State.dataCache.has(url)) return State.dataCache.get(url);
+    const Data = {
+        fetchJSON: async (url) => {
+            if (State.cache.has(url)) return State.cache.get(url);
 
-            const isGist = Object.values(Config.API).includes(url);
-            const finalUrl = isGist ? url : Utils.getBustedUrl(url);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
+
+            const data = await response.json();
+            State.cache.set(url, data);
+            return data;
+        },
+
+        loadComponent: async (placeholderId, path, onLoad) => {
+            const placeholder = DOM.byId(placeholderId);
+            if (!placeholder) return null;
 
             try {
-                const response = await fetch(finalUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
-                const data = await response.json();
-                State.dataCache.set(url, data);
-                return data;
+                const response = await fetch(Utils.withCacheBust(path));
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                placeholder.innerHTML = await response.text();
+                onLoad?.(placeholder);
+                return placeholder;
             } catch (error) {
-                console.error("[API Error]", error);
-                throw error;
+                console.error(`[Component] Failed to load ${path}`, error);
+                return null;
             }
         },
 
-        loadComponent: async (placeholderId, componentPath, callback) => {
-            const placeholder = document.getElementById(placeholderId);
-            if (!placeholder) return;
-
-            try {
-                const response = await fetch(Utils.getBustedUrl(componentPath));
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                placeholder.innerHTML = await response.text();
-                if (callback) callback(placeholder);
-            } catch (error) {
-                console.error(`[Component Error] Failed to load ${placeholderId}:`, error);
-            }
-        }
+        games: async () => Utils.sortNewestFirst(await Data.fetchJSON(Config.API.GAMES)),
+        news: async () => Utils.sortNewestFirst(await Data.fetchJSON(Config.API.NEWS)),
     };
 
-    // --- 4. UI COMPONENTS & ANIMATIONS ---
+    const Templates = {
+        newsCard: (article) => `
+            <article class="card modern-card news-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll">
+                <a href="${Utils.detailHref("newswire-details", article.id)}" class="text-decoration-none d-block h-100 d-flex flex-column">
+                    <img src="${Utils.escapeHTML(article.image_url)}" alt="${Utils.escapeHTML(article.title)}" class="card-img-top modern-card-img" loading="lazy">
+                    <div class="card-body d-flex flex-column flex-grow-1">
+                        <p class="card-text modern-card-date">${Utils.escapeHTML(article.date)}</p>
+                        <h3 class="card-title modern-card-title">${Utils.escapeHTML(article.title)}</h3>
+                        <p class="card-text modern-card-summary">${Utils.escapeHTML(article.summary)}</p>
+                        <span class="modern-card-cta mt-auto">Read More <span class="ms-2" aria-hidden="true">&rarr;</span></span>
+                    </div>
+                </a>
+            </article>
+        `,
+
+        gameCard: (game) => `
+            <div class="card modern-card modern-game-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll">
+                <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${Utils.escapeHTML(game.title)}" class="modern-game-card-img" loading="lazy">
+                <div class="modern-game-card-overlay">
+                    <h3 class="modern-game-card-title">${Utils.escapeHTML(game.title)}</h3>
+                    <p class="modern-game-card-desc">${Utils.escapeHTML(game.description)}</p>
+                    <a href="${Utils.detailHref("game-details", game.id)}" class="modern-game-card-link">Learn More <span class="ms-2" aria-hidden="true">&rarr;</span></a>
+                </div>
+            </div>
+        `,
+
+        navbarGame: (game) => `
+            <a class="navbar-game-tile text-decoration-none" href="${Utils.detailHref("game-details", game.id)}">
+                <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${Utils.escapeHTML(game.title)}" loading="lazy">
+                <span class="text-white fw-bold text-uppercase">${Utils.escapeHTML(game.title)}</span>
+            </a>
+        `,
+
+        supportGame: (game) => `
+            <a href="#contact-section" class="card modern-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll text-decoration-none">
+                <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${Utils.escapeHTML(game.title)}" class="modern-game-card-img support-tile-img" loading="lazy">
+                <div class="card-img-overlay d-flex align-items-center justify-content-center">
+                    <h3 class="text-white text-uppercase fw-bold m-0" style="text-shadow: 2px 2px 10px rgba(0,0,0,1);">${Utils.escapeHTML(game.title)}</h3>
+                </div>
+            </a>
+        `,
+    };
+
     const UI = {
+        observeReveal: (element) => {
+            if (!element || element.closest(".navbar")) return;
+            element.classList.add("reveal-on-scroll");
+            State.revealObserver?.observe(element);
+        },
+
         initScrollReveal: () => {
             const selectors = [
-                ".reveal-on-scroll", ".card", ".article-grid > .col", ".row .col",
-                ".display-4", ".display-1", "h1", "h2", "h3", ".game-card",
-                ".hero-section h1", ".hero-section p", ".btn", ".navbar-brand"
+                ".reveal-on-scroll",
+                ".card",
+                ".row .col",
+                ".display-4",
+                ".display-1",
+                "h1",
+                "h2",
+                "h3",
+                ".hero-section h1",
+                ".hero-section p",
+                ".btn",
+                ".navbar-brand",
             ];
+
+            if (!("IntersectionObserver" in window)) {
+                DOM.qsa(".reveal-on-scroll, .reveal-on-load, .hero-entry").forEach((el) => el.classList.add("visible"));
+                return;
+            }
 
             State.revealObserver = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (!entry.isIntersecting) return;
+
                     const el = entry.target;
-                    const parent = el.parentElement;
-                    let delay = 0;
+                    const siblings = Array.from(el.parentElement?.children || []).filter((child) => child.tagName === el.tagName);
+                    const index = Math.max(siblings.indexOf(el), 0);
 
-                    if (parent) {
-                        const siblings = Array.from(parent.children).filter(e => e.tagName === el.tagName);
-                        const index = siblings.indexOf(el);
-                        if (index > 0) delay = index * Config.UI.REVEAL_DELAY_MS;
-                    }
-
-                    el.style.transitionDelay = `${delay}ms`;
+                    el.style.transitionDelay = `${index * Config.UI.REVEAL_DELAY_MS}ms`;
                     el.classList.add("visible");
                     State.revealObserver.unobserve(el);
                 });
             }, { threshold: 0.08 });
 
-            document.querySelectorAll(selectors.join(", ")).forEach((el) => {
-                if (!el.closest(".navbar")) {
-                    el.classList.add("reveal-on-scroll");
-                    State.revealObserver.observe(el);
-                }
-            });
+            DOM.qsa(selectors.join(", ")).forEach(UI.observeReveal);
 
             requestAnimationFrame(() => {
-                document.querySelectorAll(".reveal-on-load, .hero-entry").forEach((el, i) => {
-                    const delay = el.classList.contains("hero-entry") ? 120 : 0;
-                    setTimeout(() => el.classList.add("visible"), delay + i * Config.UI.REVEAL_DELAY_MS);
+                DOM.qsa(".reveal-on-load, .hero-entry").forEach((el, index) => {
+                    const baseDelay = el.classList.contains("hero-entry") ? 120 : 0;
+                    window.setTimeout(() => el.classList.add("visible"), baseDelay + index * Config.UI.REVEAL_DELAY_MS);
                 });
             });
         },
 
         initNavbar: () => {
-            const header = document.querySelector(".navbar");
-            if (header) {
-                window.addEventListener("scroll", Utils.throttle(() => {
-                    header.classList.toggle("scrolled", window.scrollY > 50);
-                }, 10));
-            }
+            const header = DOM.qs(".navbar");
+            if (!header) return;
+
+            const update = () => header.classList.toggle("scrolled", window.scrollY > Config.UI.NAV_SCROLL_Y);
+            window.addEventListener("scroll", Utils.throttle(update, 40), { passive: true });
+            update();
         },
 
         initMobileMenu: () => {
-            const trigger = document.getElementById("mobile-menu-trigger");
-            const overlay = document.getElementById("mobile-menu-overlay");
+            const trigger = DOM.byId("mobile-menu-trigger");
+            const overlay = DOM.byId("mobile-menu-overlay");
             if (!trigger || !overlay) return;
 
-            const toggleMenu = (isOpen) => {
+            const setOpen = (isOpen) => {
                 overlay.classList.toggle("active", isOpen);
-                overlay.setAttribute("aria-hidden", !isOpen);
+                overlay.setAttribute("aria-hidden", String(!isOpen));
                 document.body.style.overflow = isOpen ? "hidden" : "";
             };
 
-            trigger.addEventListener("click", () => toggleMenu(true));
-            document.getElementById("mobile-menu-close")?.addEventListener("click", () => toggleMenu(false));
-            document.querySelectorAll(".mobile-nav-link").forEach(link => 
-                link.addEventListener("click", () => toggleMenu(false))
-            );
+            trigger.addEventListener("click", () => setOpen(true));
+            DOM.byId("mobile-menu-close")?.addEventListener("click", () => setOpen(false));
+            DOM.qsa(".mobile-nav-link", overlay).forEach((link) => link.addEventListener("click", () => setOpen(false)));
         },
 
-        initSmoothScroll: () => {
-            document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-                anchor.addEventListener("click", (event) => {
-                    const href = event.currentTarget.getAttribute("href");
-                    if (!href || href === "#" || href.includes("http")) return;
-                    try {
-                        const targetElement = document.querySelector(href);
-                        if (targetElement) {
-                            event.preventDefault();
-                            targetElement.scrollIntoView({ behavior: "smooth" });
-                        }
-                    } catch (e) {
-                        console.warn("Smooth scroll target not found:", href);
-                    }
-                });
+        initDownloadButtons: () => {
+            const buttons = DOM.qsa(".launcher-download-btn");
+            if (!buttons.length) return;
+
+            const userAgent = navigator.userAgent.toLowerCase();
+            const platform = navigator.platform.toLowerCase();
+            let runtime = "win-x64";
+
+            if (userAgent.includes("mac") || platform.includes("mac")) {
+                runtime = navigator.maxTouchPoints > 0 || userAgent.includes("arm64") ? "osx-arm64" : "osx-x64";
+            } else if (userAgent.includes("linux")) {
+                runtime = "linux-x64";
+            } else if (userAgent.includes("win")) {
+                runtime = userAgent.includes("win64") || userAgent.includes("wow64") || userAgent.includes("x64") || platform.includes("x64") ? "win-x64" : "win-x86";
+            }
+
+            const href = `https://cdn.reflexinteractive.com/launcher-files/${runtime}/launcher-latest.zip`;
+            buttons.forEach((button) => {
+                button.href = href;
+                button.setAttribute("download", "ReflexLauncher.zip");
             });
         },
 
         initBackToTop: () => {
-            const btn = document.getElementById("scroll-to-top");
-            if (!btn) return;
-            const toggle = () => btn.classList.toggle("visible", window.scrollY > 400);
-            window.addEventListener("scroll", toggle);
-            btn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-            toggle();
+            const button = DOM.byId("scroll-to-top");
+            if (!button) return;
+
+            const update = () => button.classList.toggle("visible", window.scrollY > Config.UI.BACK_TO_TOP_Y);
+            window.addEventListener("scroll", Utils.throttle(update, 100), { passive: true });
+            button.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+            update();
         },
 
-        initDownloadButtons: () => {
-            const downloadBtns = document.querySelectorAll(".launcher-download-btn");
-            if (!downloadBtns.length) return;
+        initCounters: () => {
+            const counters = DOM.qsa("[data-count]");
+            if (!counters.length || !("IntersectionObserver" in window)) return;
 
-            const getDownloadUrl = () => {
-                const baseUrl = "https://cdn.reflexinteractive.com/launcher-files";
-                const userAgent = window.navigator.userAgent.toLowerCase();
-                const platform = window.navigator.platform.toLowerCase();
-                let rid = "win-x64";
-
-                if (userAgent.includes("mac") || platform.includes("mac")) {
-                    const isArm = (navigator.maxTouchPoints > 0) || userAgent.includes("arm64");
-                    rid = isArm ? "osx-arm64" : "osx-x64";
-                } else if (userAgent.includes("linux")) {
-                    rid = "linux-x64";
-                } else if (userAgent.includes("win")) {
-                    const is64 = userAgent.includes("win64") || userAgent.includes("wow64") || userAgent.includes("x64") || platform.includes("x64");
-                    rid = is64 ? "win-x64" : "win-x86";
-                }
-                return `${baseUrl}/${rid}/launcher-latest.zip`;
-            };
-
-            const finalUrl = getDownloadUrl();
-            downloadBtns.forEach(btn => {
-                btn.href = finalUrl;
-                btn.setAttribute("download", "ReflexLauncher.zip");
-                btn.addEventListener("click", (e) => e.stopPropagation());
-            });
-        },
-
-        handleFormSubmission: async (event, form) => {
-            event.preventDefault();
-            const btn = form.querySelector('button[type="submit"]');
-            if (!btn) return;
-            btn.disabled = true;
-            btn.textContent = "Sending...";
-
-            try {
-                const res = await fetch(form.action, {
-                    method: form.method,
-                    body: new FormData(form),
-                    headers: { Accept: "application/json" },
-                });
-                const success = res.ok;
-                form.innerHTML = `<p class="text-${success ? "success" : "danger"} fw-bold text-center">${success ? "Message sent!" : "Error sending message."}</p>`;
-            } catch (error) {
-                console.error(error);
-                form.innerHTML = '<p class="text-danger fw-bold text-center">Something went wrong.</p>';
-            }
-        },
-
-        animateCount: (el, target) => {
-            const duration = 900;
-            const start = performance.now();
-            const step = (now) => {
-                const progress = Math.min((now - start) / duration, 1);
-                el.textContent = Math.floor(target * progress).toString();
-                if (progress < 1) requestAnimationFrame(step);
-            };
-            requestAnimationFrame(step);
-        },
-
-        initStatCounters: () => {
-            const counters = Array.from(document.querySelectorAll("[data-count]"));
-            if (!counters.length) return;
-
-            const obs = new IntersectionObserver((entries) => {
+            const observer = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (!entry.isIntersecting) return;
-                    const el = entry.target;
-                    UI.animateCount(el, Number(el.dataset.count || "0"));
-                    obs.unobserve(el);
+                    UI.animateCount(entry.target, Number(entry.target.dataset.count || "0"));
+                    observer.unobserve(entry.target);
                 });
             }, { threshold: 0.4 });
 
-            counters.forEach((el) => {
-                el.textContent = "0";
-                obs.observe(el);
+            counters.forEach((counter) => {
+                counter.textContent = "0";
+                observer.observe(counter);
             });
-        }
+        },
+
+        animateCount: (element, target) => {
+            const start = performance.now();
+            const duration = 900;
+
+            const step = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                element.textContent = Math.floor(target * progress).toString();
+                if (progress < 1) requestAnimationFrame(step);
+            };
+
+            requestAnimationFrame(step);
+        },
+
+        scrollRail: (railId, direction) => {
+            const rail = DOM.byId(railId);
+            if (!rail) return;
+
+            const distance = Math.max(rail.clientWidth * Config.UI.RAIL_SCROLL_RATIO, 280);
+            rail.scrollBy({ left: direction * distance, behavior: "smooth" });
+        },
     };
 
-    // --- 5. RENDERERS ---
-    const Renderers = {
-        newsList: async (containerId, limit = null) => {
-            const container = document.getElementById(containerId);
+    const Render = {
+        collection: async ({ containerId, spinnerId, loader, template, emptyMessage, limit = null }) => {
+            const container = DOM.byId(containerId);
             if (!container) return;
-            Utils.toggleSpinner(containerId.includes("latest") ? "homepage-loading-spinner" : "loading-spinner", true);
+
+            Utils.toggleSpinner(spinnerId, true);
 
             try {
-                let data = await API.fetchData(Config.API.NEWS);
-                if (limit) data = data.slice(0, limit);
-                
+                const items = await loader();
+                const visibleItems = limit ? items.slice(0, limit) : items;
+                const isRail = container.classList.contains("content-rail");
                 const fragment = document.createDocumentFragment();
-                data.forEach(article => {
-                    const col = document.createElement("div");
-                    col.className = "col";
-                    col.innerHTML = `
-                        <div class="card modern-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll">
-                            <a href="/newswire?id=${article.id}" class="text-decoration-none d-block h-100 d-flex flex-column">
-                                <img src="${article.image_url}" alt="${article.title}" class="card-img-top modern-card-img" loading="lazy">
-                                <div class="card-body d-flex flex-column flex-grow-1">
-                                    <h3 class="card-title modern-card-title">${article.title}</h3>
-                                    <p class="card-text modern-card-date">${article.date}</p>
-                                    <p class="card-text modern-card-summary">${article.summary}</p>
-                                    <span class="modern-card-cta mt-auto">Read More <span class="ms-2">→</span></span>
-                                </div>
-                            </a>
-                        </div>`;
-                    State.revealObserver?.observe(col.firstElementChild);
-                    fragment.appendChild(col);
+
+                visibleItems.forEach((item) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = isRail ? "rail-item" : "col";
+                    wrapper.innerHTML = template(item);
+                    UI.observeReveal(wrapper.firstElementChild);
+                    fragment.appendChild(wrapper);
                 });
-                container.innerHTML = "";
-                container.appendChild(fragment);
-            } catch (e) {
-                container.innerHTML = '<div class="text-center text-danger py-5">Failed to load news.</div>';
+
+                container.replaceChildren(fragment);
+            } catch (error) {
+                console.error(`[Render] ${containerId}`, error);
+                container.innerHTML = `<div class="text-center text-danger py-5">${emptyMessage}</div>`;
             } finally {
-                Utils.toggleSpinner(containerId.includes("latest") ? "homepage-loading-spinner" : "loading-spinner", false);
+                Utils.toggleSpinner(spinnerId, false);
             }
         },
 
-        gameList: async (containerId, limit = null) => {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            Utils.toggleSpinner(containerId.includes("latest") ? "homepage-games-loading-spinner" : "games-loading-spinner", true);
+        newsList: (containerId) => Render.collection({
+            containerId,
+            spinnerId: containerId.includes("latest") ? "homepage-loading-spinner" : "loading-spinner",
+            loader: Data.news,
+            template: Templates.newsCard,
+            emptyMessage: "Failed to load news.",
+        }),
+
+        gameList: (containerId) => Render.collection({
+            containerId,
+            spinnerId: containerId.includes("latest") ? "homepage-games-loading-spinner" : "games-loading-spinner",
+            loader: Data.games,
+            template: Templates.gameCard,
+            emptyMessage: "Failed to load games.",
+        }),
+
+        navbarGameRail: async () => {
+            const rail = DOM.byId("navbar-games-rail");
+            if (!rail) return;
 
             try {
-                let data = await API.fetchData(Config.API.GAMES);
-                if (limit) data = data.slice(0, limit);
-
-                const fragment = document.createDocumentFragment();
-                data.forEach(game => {
-                    const col = document.createElement("div");
-                    col.className = "col";
-                    col.innerHTML = `
-                        <div class="card modern-card modern-game-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll">
-                            <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${game.title}" class="modern-game-card-img" loading="lazy">
-                            <div class="modern-game-card-overlay">
-                                <h3 class="modern-game-card-title">${game.title}</h3>
-                                <p class="modern-game-card-desc">${game.description}</p>
-                                <a href="/game-details?id=${game.id}" class="modern-game-card-link">Learn More <span class="ms-2">→</span></a>
-                            </div>
-                        </div>`;
-                    State.revealObserver?.observe(col.firstElementChild);
-                    fragment.appendChild(col);
-                });
-                container.innerHTML = "";
-                container.appendChild(fragment);
-            } catch (e) {
-                container.innerHTML = '<div class="text-center text-danger py-5">Failed to load games.</div>';
-            } finally {
-                Utils.toggleSpinner(containerId.includes("latest") ? "homepage-games-loading-spinner" : "games-loading-spinner", false);
+                const games = await Data.games();
+                rail.innerHTML = games.map(Templates.navbarGame).join("");
+            } catch (error) {
+                console.error("[Render] navbar games", error);
+                rail.innerHTML = '<p class="text-danger mb-0">Games unavailable.</p>';
             }
         },
 
-        articleDetail: async (id) => {
-            const listSec = document.getElementById("article-list-section");
-            const detailSec = document.getElementById("article-detail");
-            Utils.toggleSpinner("loading-spinner", true);
-
-            try {
-                const data = await API.fetchData(Config.API.NEWS);
-                const article = data.find((i) => i.id == id);
-                if (!article) throw new Error("Article not found");
-
-                // --- SEO & META UPDATES ---
-                const pageTitle = `${article.title} | Reflex Interactive`;
-                document.title = pageTitle;
-                
-                document.querySelector('meta[name="description"]')?.setAttribute("content", article.summary.slice(0, 160));
-                document.querySelector('meta[property="og:title"]')?.setAttribute("content", pageTitle);
-                document.querySelector('meta[property="og:description"]')?.setAttribute("content", article.summary.slice(0, 160));
-                document.querySelector('meta[property="og:image"]')?.setAttribute("content", article.image_url);
-
-                const schemaEl = document.getElementById("news-schema");
-                if (schemaEl) {
-                    schemaEl.text = JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "NewsArticle",
-                        "headline": article.title,
-                        "datePublished": article.date,
-                        "image": article.image_url,
-                        "description": article.summary,
-                        "author": { "@type": "Organization", "name": "Reflex Interactive" }
-                    });
-                }
-
-                listSec?.classList.add("d-none");
-                detailSec?.classList.remove("d-none");
-
-                const safeSet = (elId, prop, isHtml = false) => {
-                    const el = document.getElementById(elId);
-                    if (el) {
-                        if (isHtml) el.innerHTML = article[prop].replace(/\n/g, "<br><br>");
-                        else if (prop === 'image_url') {
-                            el.src = article[prop];
-                            el.alt = `Newswire: ${article.title}`;
-                        }
-                        else el.textContent = article[prop];
-                    }
-                };
-
-                safeSet("article-title", "title");
-                safeSet("article-date", "date");
-                safeSet("article-image", "image_url");
-                safeSet("article-content", "content", true);
-                
-            } catch (e) {
-                console.error(e);
-                const main = document.querySelector("main");
-                if (main) main.innerHTML = '<div class="text-center text-danger pt-5">Failed to load article.</div>';
-            } finally {
-                Utils.toggleSpinner("loading-spinner", false);
-            }
-        },
-
-        gameDetail: async (id) => {
-            if (!id) {
-                const main = document.querySelector("main");
-                if (main) main.innerHTML = '<div class="text-center text-danger pt-5">Game not found.</div>';
-                return;
-            }
-
-            try {
-                const data = await API.fetchData(Config.API.GAMES);
-                const game = data.find((i) => i.id == id);
-                if (!game) throw new Error("Game not found");
-
-                // --- SEO & META UPDATES ---
-                const pageTitle = `${game.title} | Reflex Interactive`;
-                document.title = pageTitle;
-
-                document.querySelector('meta[name="description"]')?.setAttribute("content", game.description.slice(0, 160));
-                document.querySelector('meta[property="og:title"]')?.setAttribute("content", pageTitle);
-                document.querySelector('meta[property="og:description"]')?.setAttribute("content", game.description.slice(0, 160));
-                document.querySelector('meta[property="og:image"]')?.setAttribute("content", Utils.normalizeMediaUrl(game.image_url));
-
-                const schemaEl = document.getElementById("game-json-ld");
-                if (schemaEl) {
-                    const schema = JSON.parse(schemaEl.text);
-                    schema.name = game.title;
-                    schema.description = game.description;
-                    schema.genre = game.genre;
-                    schema.image = Utils.normalizeMediaUrl(game.image_url);
-                    schemaEl.text = JSON.stringify(schema);
-                }
-
-                const safeSetText = (elId, text) => {
-                    const el = document.getElementById(elId);
-                    if (el) el.textContent = text || "";
-                };
-
-                const hero = document.getElementById("game-hero");
-                if (hero) {
-                    const heroUrl = Utils.normalizeMediaUrl(game.hero_image_url || game.image_url);
-                    hero.style.backgroundImage = `url('${heroUrl}')`;
-                    Object.assign(hero.style, { backgroundPosition: "center", backgroundSize: "cover" });
-                }
-
-                const coverImg = document.getElementById("game-detail-cover");
-                if (coverImg) {
-                    coverImg.src = Utils.normalizeMediaUrl(game.image_url);
-                    coverImg.alt = `${game.title} Official Cover Art`;
-                }
-
-                safeSetText("game-detail-title", game.title);
-                safeSetText("game-detail-developer", game.developer);
-                safeSetText("game-detail-publisher", game.publisher);
-                safeSetText("game-detail-genre", game.genre);
-                safeSetText("game-detail-description", game.description);
-
-                const btn = document.getElementById("purchase-download-btn");
-                const priceEl = document.getElementById("game-detail-price");
-
-                if (priceEl) {
-                    priceEl.textContent = game.price === 0 ? "FREE" : `$${Number(game.price).toFixed(2)}`;
-                }
-
-                if (btn) {
-                    if (game.price === 0 && game.download_url) {
-                        btn.textContent = "Download Now";
-                        btn.href = game.download_url;
-                        btn.setAttribute("download", "");
-                        btn.classList.remove("opacity-50", "cursor-not-allowed");
-                    } else {
-                        btn.textContent = "Purchase Now";
-                        btn.href = "#";
-                        btn.removeAttribute("download");
-                        btn.classList.add("opacity-50", "cursor-not-allowed");
-                    }
-                }
-
-                const screens = document.getElementById("game-detail-screenshots");
-                if (screens) {
-                    screens.innerHTML = "";
-                    const fragment = document.createDocumentFragment();
-
-                    if (game.trailer_url) {
-                        const iframe = document.createElement("iframe");
-                        iframe.src = game.trailer_url;
-                        iframe.className = "col-12 w-full rounded-lg shadow-md aspect-video mb-4";
-                        iframe.setAttribute("allowfullscreen", "");
-                        fragment.appendChild(iframe);
-                    }
-
-                    if (Array.isArray(game.screenshots)) {
-                        game.screenshots.forEach((screenshot) => {
-                            const col = document.createElement("div");
-                            col.className = "col";
-                            const img = document.createElement("img");
-                            img.src = Utils.normalizeMediaUrl(screenshot.url || screenshot);
-                            img.className = "img-fluid rounded-lg shadow-md";
-                            img.alt = screenshot.caption || `${game.title} Screenshot`;
-                            col.appendChild(img);
-                            fragment.appendChild(col);
-                        });
-                    }
-                    screens.appendChild(fragment);
-                }
-            } catch (e) {
-                console.error("Render Error:", e);
-                const main = document.querySelector("main");
-                if (main) main.innerHTML = `<div class="text-center text-danger pt-5">Failed to load game details: ${e.message}</div>`;
-            }
-        },
+        supportGameList: async () => Render.collection({
+            containerId: "support-game-grid",
+            loader: Data.games,
+            template: Templates.supportGame,
+            emptyMessage: "Failed to load game categories.",
+        }),
 
         featuredGame: async () => {
-            const slot = document.getElementById("featured-game-slot");
+            const slot = DOM.byId("featured-game-slot");
             if (!slot) return;
 
             try {
-                const data = await API.fetchData(Config.API.GAMES);
-                const game = Array.isArray(data) ? data[0] : null;
+                const [game] = await Data.games();
                 if (!game) throw new Error("No games found");
 
                 const image = Utils.normalizeMediaUrl(game.hero_image_url || game.image_url);
-
                 slot.innerHTML = `
                     <div class="row g-0 align-items-stretch">
                         <div class="col-12 col-lg-6">
@@ -554,139 +431,365 @@
                         <div class="col-12 col-lg-6">
                             <div class="featured-body">
                                 <p class="section-kicker mb-3">Featured Game</p>
-                                <h3 class="display-6 fw-bold text-uppercase mb-3">${game.title}</h3>
-                                <p class="text-muted mb-4">${game.description}</p>
+                                <h3 class="display-6 fw-bold text-uppercase mb-3">${Utils.escapeHTML(game.title)}</h3>
+                                <p class="text-muted mb-4">${Utils.escapeHTML(game.description)}</p>
                                 <div class="d-flex flex-wrap gap-3">
-                                    <a href="/games?id=${game.id}" class="btn btn-danger text-uppercase fw-bold">Explore</a>
+                                    <a href="${Utils.detailHref("game-details", game.id)}" class="btn btn-danger text-uppercase fw-bold">Explore</a>
                                     <a href="/games" class="btn btn-outline-light text-uppercase fw-bold">View All</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
-            } catch (e) {
+            } catch (error) {
+                console.error("[Render] featured game", error);
                 slot.innerHTML = '<div class="featured-body text-center text-muted">Featured game unavailable.</div>';
             }
         },
 
-        supportGameList: async (containerId) => {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-        
-            try {
-                const data = await API.fetchData(Config.API.GAMES);
-                const fragment = document.createDocumentFragment();
-            
-                data.forEach(game => {
-                    const col = document.createElement("div");
-                    col.className = "col";
-                    col.innerHTML = `
-                        <a href="#contact-section" class="card modern-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll text-decoration-none">
-                            <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${game.title}" class="modern-game-card-img support-tile-img" loading="lazy">
-                            <div class="card-img-overlay d-flex align-items-center justify-content-center">
-                                <h3 class="text-white text-uppercase fw-bold m-0" style="text-shadow: 2px 2px 10px rgba(0,0,0,1);">${game.title}</h3>
-                            </div>
-                        </a>`;
+        articleDetail: async (id) => {
+            if (!id) {
+                App.showMessage("Article not found.", "/newswire", "Back to Newswire");
+                return;
+            }
 
-                    State.revealObserver?.observe(col.firstElementChild);
+            try {
+                const articles = await Data.news();
+                const article = articles.find((item) => String(item.id) === String(id));
+                if (!article) throw new Error("Article not found");
+
+                const title = `${article.title} | Reflex Interactive`;
+                const url = Utils.detailHref("newswire-details", article.id);
+                const absoluteUrl = `https://reflexinteractive.com${url}`;
+                document.title = title;
+                DOM.setCanonical(absoluteUrl);
+                DOM.setMeta('meta[name="description"]', article.summary?.slice(0, 160));
+                DOM.setMeta('meta[property="og:title"]', title);
+                DOM.setMeta('meta[property="og:description"]', article.summary?.slice(0, 160));
+                DOM.setMeta('meta[property="og:image"]', article.image_url);
+                DOM.setMeta('meta[property="og:url"]', absoluteUrl);
+                DOM.setMeta('meta[name="twitter:title"]', title);
+                DOM.setMeta('meta[name="twitter:description"]', article.summary?.slice(0, 160));
+                DOM.setMeta('meta[name="twitter:image"]', article.image_url);
+
+                const schema = DOM.byId("news-schema");
+                if (schema) {
+                    schema.text = JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "NewsArticle",
+                        mainEntityOfPage: absoluteUrl,
+                        headline: article.title,
+                        datePublished: article.date,
+                        image: article.image_url,
+                        description: article.summary,
+                        author: { "@type": "Organization", name: "Reflex Interactive" },
+                        publisher: {
+                            "@type": "Organization",
+                            name: "Reflex Interactive",
+                            logo: {
+                                "@type": "ImageObject",
+                                url: "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+                            },
+                        },
+                    });
+                }
+
+                DOM.setText("article-title", article.title);
+                DOM.setText("article-date", article.date);
+                DOM.setHTML("article-content", Utils.textToHTML(article.content));
+
+                const image = DOM.byId("article-image");
+                if (image) {
+                    image.src = article.image_url;
+                    image.alt = `Newswire: ${article.title}`;
+                }
+            } catch (error) {
+                console.error("[Render] article detail", error);
+                App.showMessage("Failed to load article.", "/newswire", "Back to Newswire");
+            }
+        },
+
+        gameDetail: async (id) => {
+            if (!id) {
+                App.showMessage("Game not found.", "/games", "Back to Games");
+                return;
+            }
+
+            try {
+                const games = await Data.games();
+                const game = games.find((item) => String(item.id) === String(id));
+                if (!game) throw new Error("Game not found");
+
+                const imageUrl = Utils.normalizeMediaUrl(game.image_url);
+                const title = `${game.title} | Reflex Interactive`;
+                const url = Utils.detailHref("game-details", game.id);
+                const absoluteUrl = `https://reflexinteractive.com${url}`;
+                document.title = title;
+                DOM.setCanonical(absoluteUrl);
+
+                DOM.setMeta('meta[name="description"]', game.description?.slice(0, 160));
+                DOM.setMeta('meta[property="og:title"]', title);
+                DOM.setMeta('meta[property="og:description"]', game.description?.slice(0, 160));
+                DOM.setMeta('meta[property="og:image"]', imageUrl);
+                DOM.setMeta('meta[property="og:url"]', absoluteUrl);
+                DOM.setMeta('meta[name="twitter:title"]', title);
+                DOM.setMeta('meta[name="twitter:description"]', game.description?.slice(0, 160));
+                DOM.setMeta('meta[name="twitter:image"]', imageUrl);
+
+                const schema = DOM.byId("game-json-ld");
+                if (schema) {
+                    const data = Utils.parseJSON(schema.text);
+                    Object.assign(data, {
+                        name: game.title,
+                        description: game.description,
+                        genre: game.genre,
+                        image: imageUrl,
+                        url: absoluteUrl,
+                    });
+                    schema.text = JSON.stringify(data);
+                }
+
+                const hero = DOM.byId("game-hero");
+                if (hero) hero.style.backgroundImage = `url('${Utils.normalizeMediaUrl(game.hero_image_url || game.image_url)}')`;
+
+                const cover = DOM.byId("game-detail-cover");
+                if (cover) {
+                    cover.src = imageUrl;
+                    cover.alt = `${game.title} Official Cover Art`;
+                }
+
+                DOM.setText("game-detail-title", game.title);
+                DOM.setText("game-detail-developer", game.developer);
+                DOM.setText("game-detail-publisher", game.publisher);
+                DOM.setText("game-detail-genre", game.genre);
+                DOM.setText("game-detail-description", game.description);
+                DOM.setText("game-detail-price", Number(game.price) === 0 ? "FREE" : `$${Number(game.price || 0).toFixed(2)}`);
+
+                const button = DOM.byId("purchase-download-btn");
+                if (button) {
+                    const isFreeDownload = Number(game.price) === 0 && game.download_url;
+                    button.textContent = isFreeDownload ? "Download Now" : "Purchase Now";
+                    button.href = isFreeDownload ? game.download_url : "#";
+                    button.classList.toggle("opacity-50", !isFreeDownload);
+                    button.classList.toggle("cursor-not-allowed", !isFreeDownload);
+                    if (isFreeDownload) button.setAttribute("download", "");
+                    else button.removeAttribute("download");
+                }
+
+                Render.gameMedia(game);
+            } catch (error) {
+                console.error("[Render] game detail", error);
+                App.showMessage(`Failed to load game details: ${error.message}`, "/games", "Back to Games");
+            }
+        },
+
+        gameMedia: (game) => {
+            const media = DOM.byId("game-detail-screenshots");
+            if (!media) return;
+
+            const fragment = document.createDocumentFragment();
+
+            if (game.trailer_url) {
+                const iframe = document.createElement("iframe");
+                iframe.src = game.trailer_url;
+                iframe.className = "col-12 w-100 rounded-lg shadow-md aspect-video mb-4";
+                iframe.setAttribute("allowfullscreen", "");
+                iframe.title = `${game.title} trailer`;
+                fragment.appendChild(iframe);
+            }
+
+            if (Array.isArray(game.screenshots)) {
+                game.screenshots.forEach((screenshot) => {
+                    const col = document.createElement("div");
+                    const img = document.createElement("img");
+                    const src = screenshot.url || screenshot;
+
+                    col.className = "col";
+                    img.src = Utils.normalizeMediaUrl(src);
+                    img.className = "img-fluid rounded-lg shadow-md";
+                    img.alt = screenshot.caption || `${game.title} Screenshot`;
+                    img.loading = "lazy";
+
+                    col.appendChild(img);
                     fragment.appendChild(col);
                 });
-            
-                container.innerHTML = "";
-                container.appendChild(fragment);
-            } catch (e) {
-                container.innerHTML = '<div class="text-center text-danger py-5">Failed to load game categories.</div>';
+            }
+
+            media.replaceChildren(fragment);
+        },
+    };
+
+    const Router = {
+        get route() {
+            const path = window.location.pathname.replace(/\/$/, "") || "/";
+            const params = new URLSearchParams(window.location.search);
+            return { path, id: params.get("id") };
+        },
+
+        run: () => {
+            const { path, id } = Router.route;
+            const hasGameHero = Boolean(DOM.byId("game-hero"));
+            const hasArticleDetail = Boolean(DOM.byId("article-detail"));
+
+            if (path.includes("game-details") || (id && hasGameHero)) {
+                Render.gameDetail(id);
+                return;
+            }
+
+            if (path.includes("newswire-details") || (id && hasArticleDetail)) {
+                Render.articleDetail(id);
+                return;
+            }
+
+            if (path.includes("games")) {
+                Render.gameList("full-games-container");
+                return;
+            }
+
+            if (path.includes("newswire")) {
+                Render.newsList("news-container");
+                return;
+            }
+
+            if ((path === "/" || path.endsWith("index.html")) && !State.isSupportSubdomain) {
+                Render.newsList("latest-news-container");
+                Render.featuredGame();
+                Render.gameList("latest-games-container");
+            }
+
+            if (State.isSupportSubdomain || path.includes("support")) {
+                Render.supportGameList();
             }
         },
     };
 
-    // --- 6. ROUTER & INITIALIZATION ---
+    const Events = {
+        init: () => {
+            document.addEventListener("click", Events.handleDocumentClick);
+
+            const newsletter = DOM.byId("newsletter-form");
+            if (newsletter) newsletter.addEventListener("submit", Events.handleFormSubmit);
+        },
+
+        handleDocumentClick: (event) => {
+            const hashLink = event.target.closest('a[href^="#"]');
+            const prevRail = event.target.closest("[data-rail-prev]");
+            const nextRail = event.target.closest("[data-rail-next]");
+            const cacheButton = event.target.closest("#clear-cache-link");
+
+            if (prevRail || nextRail) {
+                event.preventDefault();
+                const control = prevRail || nextRail;
+                UI.scrollRail(control.dataset.railPrev || control.dataset.railNext, prevRail ? -1 : 1);
+                return;
+            }
+
+            if (hashLink) {
+                Events.handleHashLink(event, hashLink);
+                return;
+            }
+
+            if (cacheButton) {
+                Events.clearSiteCache(event);
+            }
+        },
+
+        handleHashLink: (event, link) => {
+            const href = link.getAttribute("href");
+            if (!href || href === "#") return;
+
+            try {
+                const target = DOM.qs(href);
+                if (!target) return;
+                event.preventDefault();
+                target.scrollIntoView({ behavior: "smooth" });
+            } catch (error) {
+                console.warn("[Navigation] Invalid hash target", href);
+            }
+        },
+
+        handleFormSubmit: async (event) => {
+            event.preventDefault();
+
+            const form = event.currentTarget;
+            const button = form.querySelector('button[type="submit"]');
+            if (!button) return;
+
+            button.disabled = true;
+            button.textContent = "Sending...";
+
+            try {
+                const response = await fetch(form.action, {
+                    method: form.method,
+                    body: new FormData(form),
+                    headers: { Accept: "application/json" },
+                });
+
+                form.innerHTML = `<p class="text-${response.ok ? "success" : "danger"} fw-bold text-center">${response.ok ? "Message sent!" : "Error sending message."}</p>`;
+            } catch (error) {
+                console.error("[Form] Submit failed", error);
+                form.innerHTML = '<p class="text-danger fw-bold text-center">Something went wrong.</p>';
+            }
+        },
+
+        clearSiteCache: (event) => {
+            event.preventDefault();
+
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (error) {
+                console.warn("[Cache] Storage clear failed", error);
+            }
+
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.getRegistrations()
+                    .then((registrations) => registrations.forEach((registration) => registration.unregister()))
+                    .catch((error) => console.warn("[Cache] Service worker clear failed", error));
+            }
+
+            const url = new URL(window.location.href);
+            url.searchParams.set("nocache", Date.now());
+            alert("Local site cache cleared. The page will now reload with the latest version.");
+            window.location.replace(url.toString());
+        },
+    };
+
     const App = {
         init: async () => {
-            // 1. Load Global Components
             await Promise.all([
-                API.loadComponent("navbar", "/components/navbar.html", () => {
+                Data.loadComponent("navbar", "/components/navbar.html", () => {
                     UI.initNavbar();
                     UI.initMobileMenu();
-                    UI.initSmoothScroll();
                     UI.initDownloadButtons();
+                    Render.navbarGameRail();
                 }),
-                API.loadComponent("footer", "/components/footer.html", (el) => {
-                    const form = el.querySelector("form");
-                })
+                Data.loadComponent("footer", "/components/footer.html"),
             ]);
 
             UI.initScrollReveal();
             UI.initBackToTop();
+            UI.initCounters();
+            Events.init();
+            Router.run();
+        },
 
-            // 2. Route Handling
-            const path = window.location.pathname;
-            const urlId = new URLSearchParams(window.location.search).get("id");
+        showMessage: (message, href = "/", label = "Return Home") => {
+            const main = DOM.qs("main");
+            if (!main) return;
 
-            const isGameDetailPage = path.includes("game-details") || (urlId && document.getElementById("game-hero"));
-            const isGamesListPage = (path.includes("games") && !urlId) || (path.includes("games") && !document.getElementById("game-hero") && !path.includes("game-details"));
-            const isNewsDetailPage = path.includes("article-detail") || (path.includes("newswire") && urlId && document.getElementById("article-detail"));
-            const isNewsListPage = (path.includes("newswire") && !urlId) || (path.includes("newswire") && !document.getElementById("article-detail"));
-            const isHomePage = (path === "/" || path.endsWith("index.html")) && !State.isSupportSubdomain;
-            const isSupportPage = State.isSupportSubdomain || path.includes("support");
-
-            if (isGameDetailPage) {
-                Renderers.gameDetail(urlId);
-            } else if (isGamesListPage) {
-                Renderers.gameList("full-games-container");
-            } else if (isNewsDetailPage) {
-                Renderers.articleDetail(urlId);
-            } else if (isNewsListPage) {
-                Renderers.newsList("news-container");
-            } else if (isHomePage) {
-                Renderers.gameList("latest-games-container", Config.UI.HOME_ITEM_COUNT);
-                Renderers.newsList("latest-news-container", Config.UI.HOME_ITEM_COUNT);
-                Renderers.featuredGame();
-            }
-
-            if (isSupportPage) {
-                Renderers.supportGameList("support-game-grid");
-            }
-
-            const nf = document.getElementById("newsletter-form");
-            if (nf) nf.addEventListener("submit", (e) => UI.handleFormSubmission(e, nf));
-
-            // 4. Global Event Delegation for Clear Cache Button
-            document.addEventListener("click", (e) => {
-                const cacheBtn = e.target.closest("#clear-cache-link");
-                if (cacheBtn) {
-                    e.preventDefault();
-                    
-                    try {
-                        localStorage.clear();
-                        sessionStorage.clear();
-                    } catch (err) {
-                        console.warn("Storage clear failed", err);
-                    }
-
-                    if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                            for(let registration of registrations) {
-                                registration.unregister();
-                            }
-                        });
-                    }
-
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('nocache', Date.now());
-                
-                    alert("Local site cache cleared. The page will now reload with the latest version.");
-                    window.location.replace(url.toString());
-                }
-            });
-        }
+            main.innerHTML = `
+                <div class="container text-center py-5">
+                    <p class="text-danger fw-bold text-uppercase">${Utils.escapeHTML(message)}</p>
+                    <a class="btn btn-danger text-uppercase fw-bold" href="${href}">${Utils.escapeHTML(label)}</a>
+                </div>
+            `;
+        },
     };
 
-    // Boot Engine
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", App.init);
+        document.addEventListener("DOMContentLoaded", App.init, { once: true });
     } else {
         App.init();
     }
-
 })();

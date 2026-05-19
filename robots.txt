@@ -1,16 +1,4 @@
 User-agent: *
 Allow: /
-# Allow search engines to index your specific games and news articles
-Allow: /games?id=
-Allow: /newswire?id=
 
-# Keep these private to prevent crawlers from wasting time on raw code
-Disallow: /components/
-Disallow: /css/
-Disallow: /js/
-
-# Optional: Disallow legal pages if you don't want them in search results
-Disallow: /privacy
-Disallow: /tos
-
-Sitemap: https://www.reflexinteractive.com/sitemap.xml
+Sitemap: https://reflexinteractive.com/sitemap.xml

@@ -8,9 +8,25 @@
 
             <div class="d-none d-md-flex mx-auto">
                 <ul class="navbar-nav d-flex flex-row gap-2">
-                    <li class="nav-item"><a class="nav-link text-uppercase" href="/games">Games</a></li>
+                    <li class="nav-item dropdown position-static">
+                        <a class="nav-link dropdown-toggle text-uppercase" href="/games" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Games
+                        </a>
+                        <div class="dropdown-menu navbar-games-menu bg-black border-secondary shadow-lg mt-0 w-100">
+                            <div class="container py-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <a href="/games" class="text-danger text-decoration-none fw-bold text-uppercase small">View all games</a>
+                                    <div class="d-flex gap-2">
+                                        <button class="rail-control" type="button" data-rail-prev="navbar-games-rail" aria-label="Previous games">&larr;</button>
+                                        <button class="rail-control" type="button" data-rail-next="navbar-games-rail" aria-label="Next games">&rarr;</button>
+                                    </div>
+                                </div>
+                                <div id="navbar-games-rail" class="content-rail navbar-game-rail" aria-label="Featured games"></div>
+                            </div>
+                        </div>
+                    </li>
                     <li class="nav-item"><a class="nav-link text-uppercase" href="/newswire">Newswire</a></li>
-                    <li class="nav-item"><a class="nav-link text-uppercase d-inline-flex align-items-center" href="/support" target="_blank">Support<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-box-arrow-up-right ms-1.5" viewBox="0 0 16 16" style="margin-left: 5px; opacity: 0.8;"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 Met.5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>
+                    <li class="nav-item"><a class="nav-link text-uppercase d-inline-flex align-items-center" href="/support" target="_blank" rel="noopener">Support<span class="ms-1" aria-hidden="true">&nearr;</span></a></li>
                     <li class="nav-item"><a class="nav-link text-uppercase" href="/about">About</a></li>
                     <li class="nav-item"><a class="nav-link text-uppercase" href="/careers">Careers</a></li>
                 </ul>
@@ -32,7 +48,7 @@
         <button id="mobile-menu-close" aria-label="Close menu">&times;</button>
         <a class="mobile-nav-link" href="/games">Games</a>
         <a class="mobile-nav-link" href="/newswire">Newswire</a>
-        <a class="mobile-nav-link" href="/support" target="_blank">Support<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-box-arrow-up-right ms-1.5" viewBox="0 0 16 16" style="margin-left: 5px; opacity: 0.8;"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 Met.5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg></a>
+        <a class="mobile-nav-link" href="/support" target="_blank" rel="noopener">Support<span class="ms-1" aria-hidden="true">&nearr;</span></a>
         <a class="mobile-nav-link" href="/about">About</a>
         <a class="mobile-nav-link" href="/careers">Careers</a>
     </div>

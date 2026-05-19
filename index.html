@@ -4,22 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>Home | Reflex Interactive</title>
+    <title>Reflex Interactive | Independent Game Studio</title>
 
-    <meta name="description" content="Reflex Interactive is an independent game studio specializing in narrative action and precision gameplay. Discover our latest indie titles, news, and immersive gaming experiences.">
-    <link rel="canonical" href="https://www.reflexinteractive.com/">
+    <meta name="description" content="Reflex Interactive is an independent game studio crafting narrative action games, precision gameplay systems, studio news, and player-first interactive worlds.">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="author" content="Reflex Interactive">
+    <meta name="theme-color" content="#000000">
+    <link rel="canonical" href="https://reflexinteractive.com/">
     <meta name="google-site-verification" content="nnOo6NCUWjihJnKmPbcQWO8iGx4NLUSQTw_ajNQHSak" />
     
-    <meta property="og:title" content="Home | Reflex Interactive">
-    <meta property="og:description" content="Where every shot counts. Explore action-packed indie games and the latest updates from Reflex Interactive.">
+    <meta property="og:title" content="Reflex Interactive | Independent Game Studio">
+    <meta property="og:description" content="Where every shot counts. Explore Reflex Interactive games, studio updates, and high-polish indie experiences built around precision and atmosphere.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.reflexinteractive.com/">
+    <meta property="og:url" content="https://reflexinteractive.com/">
     <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png">
+    <meta property="og:site_name" content="Reflex Interactive">
     <meta property="og:locale" content="en_GB">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Home | Reflex Interactive">
-    <meta name="twitter:description" content="Independent game development focused on narrative action and competitive systems.">
+    <meta name="twitter:site" content="@MadeByReflex">
+    <meta name="twitter:title" content="Reflex Interactive | Independent Game Studio">
+    <meta name="twitter:description" content="Independent game development focused on narrative action, precision gameplay, and immersive worlds.">
     <meta name="twitter:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png">
 
     <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
@@ -32,24 +37,22 @@
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Reflex Interactive",
-        "url": "https://www.reflexinteractive.com/",
+        "url": "https://reflexinteractive.com/",
         "logo": "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
-        "description": "An independent game development studio creating immersive narrative action games.",
+        "description": "Reflex Interactive is an independent game studio creating narrative action games, precision gameplay systems, and immersive interactive worlds.",
         "sameAs": [
-          "https://twitter.com/MadeByReflex",
-          "https://www.youtube.com/@YourChannel"
+          "https://www.x.com/MadeByReflex",
+          "https://www.youtube.com/@ReflexInteractiveDev",
+          "https://www.instagram.com/reflexinteractive",
+          "https://www.facebook.com/reflexinteractivedev",
+          "https://discord.gg/NHmgpUm8UU"
         ]
       },
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Reflex Interactive",
-        "url": "https://www.reflexinteractive.com/",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://www.reflexinteractive.com/search?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
+        "url": "https://reflexinteractive.com/"
       }
     ]
     </script>
@@ -102,7 +105,11 @@
                     <div class="loading-animation"></div>
                 </div>
 
-                <div id="latest-news-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5"></div>
+                <div class="rail-shell mb-5">
+                    <button class="rail-control rail-control-left" type="button" data-rail-prev="latest-news-container" aria-label="Previous news">&larr;</button>
+                    <div id="latest-news-container" class="content-rail" aria-label="Latest news"></div>
+                    <button class="rail-control rail-control-right" type="button" data-rail-next="latest-news-container" aria-label="Next news">&rarr;</button>
+                </div>
                 
                 <div class="text-center mt-5">
                     <a href="./newswire" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View the full Newswire archive">
@@ -145,7 +152,11 @@
                     <div class="loading-animation"></div>
                 </div>
 
-                <div id="latest-games-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5"></div>
+                <div class="rail-shell mb-5">
+                    <button class="rail-control rail-control-left" type="button" data-rail-prev="latest-games-container" aria-label="Previous games">&larr;</button>
+                    <div id="latest-games-container" class="content-rail" aria-label="Latest games"></div>
+                    <button class="rail-control rail-control-right" type="button" data-rail-next="latest-games-container" aria-label="Next games">&rarr;</button>
+                </div>
                 
                 <div class="text-center mt-5">
                     <a href="./games" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View all games from Reflex Interactive">

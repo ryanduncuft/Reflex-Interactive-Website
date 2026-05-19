@@ -6,39 +6,45 @@
             http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
   <url>
-    <loc>https://www.reflexinteractive.com/</loc>
-    <lastmod>2026-05-14T00:00:00+00:00</lastmod>
+    <loc>https://reflexinteractive.com/</loc>
+    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.00</priority>
   </url>
 
   <url>
-    <loc>https://www.reflexinteractive.com/games</loc>
-    <lastmod>2026-05-14T00:00:00+00:00</lastmod>
+    <loc>https://reflexinteractive.com/games</loc>
+    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
 
   <url>
-    <loc>https://www.reflexinteractive.com/newswire</loc>
-    <lastmod>2026-05-14T00:00:00+00:00</lastmod>
+    <loc>https://reflexinteractive.com/newswire</loc>
+    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
 
   <url>
-    <loc>https://support.reflexinteractive.com/</loc>
-    <lastmod>2026-05-14T00:00:00+00:00</lastmod>
-    <priority>0.60</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reflexinteractive.com/about</loc>
-    <lastmod>2026-05-14T00:00:00+00:00</lastmod>
+    <loc>https://reflexinteractive.com/about</loc>
+    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
 
   <url>
-    <loc>https://careers.reflexinteractive.com/</loc>
-    <lastmod>2026-05-14T00:00:00+00:00</lastmod>
+    <loc>https://support.reflexinteractive.com/</loc>
+    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.60</priority>
+  </url>
+
+  <url>
+    <loc>https://careers.reflexinteractive.com/</loc>
+    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
   </url>
 
 </urlset>

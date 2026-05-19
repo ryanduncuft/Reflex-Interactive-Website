@@ -28,18 +28,6 @@
   status = 301
   force = true
 
-[[redirects]]
-  from = "https://careers.reflexinteractive.com/*"
-  to = "https://reflexinteractive.com/:splat"
-  status = 301
-  force = true
-
-[[redirects]]
-  from = "https://account.reflexinteractive.com/*"
-  to = "https://reflexinteractive.com/:splat"
-  status = 301
-  force = true
-
 # CAREERS SUBDOMAIN
 [[redirects]]
   from = "https://careers.reflexinteractive.com/"
@@ -52,6 +40,18 @@
   from = "https://account.reflexinteractive.com/"
   to = "/account.html"
   status = 200
+  force = true
+
+[[redirects]]
+  from = "https://careers.reflexinteractive.com/*"
+  to = "https://reflexinteractive.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://account.reflexinteractive.com/*"
+  to = "https://reflexinteractive.com/:splat"
+  status = 301
   force = true
 
 # === 3. Main Domain to Subdomain Redirects ===
@@ -84,7 +84,13 @@
 [[redirects]]
   from = "/newswire"
   query = {id = ":id"}
-  to = "/newswire.html"
+  to = "/newswire-details?id=:id"
+  status = 301
+
+[[redirects]]
+  from = "/newswire-details"
+  query = {id = ":id"}
+  to = "/newswire-details.html"
   status = 200
 
 [[redirects]]
@@ -95,6 +101,11 @@
 [[redirects]]
   from = "/newswire"
   to = "/newswire.html"
+  status = 200
+
+[[redirects]]
+  from = "/newswire-details"
+  to = "/newswire-details.html"
   status = 200
 
 [[redirects]]
