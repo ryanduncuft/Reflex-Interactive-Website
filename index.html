@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Reflex Interactive | Independent Game Studio</title>
+
+    <meta name="description" content="Reflex Interactive is an independent game studio crafting narrative action games, precision gameplay systems, studio news, and player-first interactive worlds.">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="author" content="Reflex Interactive">
+    <meta name="theme-color" content="#000000">
+    <link rel="canonical" href="https://reflexinteractive.com/">
+    <meta name="google-site-verification" content="nnOo6NCUWjihJnKmPbcQWO8iGx4NLUSQTw_ajNQHSak" />
+    
+    <meta property="og:title" content="Reflex Interactive | Independent Game Studio">
+    <meta property="og:description" content="Where every shot counts. Explore Reflex Interactive games, studio updates, and high-polish indie experiences built around precision and atmosphere.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://reflexinteractive.com/">
+    <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png">
+    <meta property="og:site_name" content="Reflex Interactive">
+    <meta property="og:locale" content="en_GB">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@MadeByReflex">
+    <meta name="twitter:title" content="Reflex Interactive | Independent Game Studio">
+    <meta name="twitter:description" content="Independent game development focused on narrative action, precision gameplay, and immersive worlds.">
+    <meta name="twitter:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png">
+
+    <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
+
+    <script type="application/ld+json">
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Reflex Interactive",
+        "url": "https://reflexinteractive.com/",
+        "logo": "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+        "description": "Reflex Interactive is an independent game studio creating narrative action games, precision gameplay systems, and immersive interactive worlds.",
+        "sameAs": [
+          "https://www.x.com/MadeByReflex",
+          "https://www.youtube.com/@ReflexInteractiveDev",
+          "https://www.instagram.com/reflexinteractive",
+          "https://www.facebook.com/reflexinteractivedev",
+          "https://discord.gg/NHmgpUm8UU"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Reflex Interactive",
+        "url": "https://reflexinteractive.com/"
+      }
+    ]
+    </script>
+</head>
+<body class="bg-black text-white overflow-x-hidden">
+    
+    <div id="navbar"></div>
+    
+    <main>
+        <section class="hero-section position-relative d-flex align-items-center justify-content-center text-center" role="region" aria-label="Hero Introduction">
+            <div class="position-absolute inset-0 bg-hero-image" aria-hidden="true"></div>
+            <div class="hero-overlay" aria-hidden="true"></div>
+            <div class="position-relative z-3 px-3 px-md-4 container">
+                <h1 class="display-1 fw-black text-shadow-lg mb-4 hero-entry">Reflex Interactive</h1>
+                <p class="fs-4 fw-light text-light hero-entry">Where every shot counts.</p>
+                <a href="#newswire" class="btn btn-danger btn-lg mt-4 px-5 py-3 text-uppercase fw-bold hero-entry" aria-label="Discover our latest news and updates">
+                    Discover More
+                </a>
+            </div>
+        </section>
+
+        <section id="studio-pulse" class="py-5" role="region" aria-labelledby="studio-pulse-heading">
+            <div class="container">
+                <div class="row g-4 align-items-center">
+                    <div class="col-12 col-lg-6">
+                        <p class="section-kicker mb-3">Studio Pulse</p>
+                        <h2 id="studio-pulse-heading" class="display-4 fw-bold text-uppercase mb-3">
+                            Indie by design. <span class="text-danger">Relentless</span> by craft.
+                        </h2>
+                        <p class="fs-5 text-muted mb-4">
+                            Reflex Interactive is built on tight gameplay loops, moody worlds, and the kind of polish that keeps players coming back. We ship with focus, listen to our community, and iterate fast.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="newswire" class="py-5" role="region" aria-labelledby="latest-news-heading">
+            <div class="container">
+                <div class="mb-5 text-center">
+                    <h2 id="latest-news-heading" class="display-4 fw-bold text-uppercase mb-3">
+                        Latest <span class="text-danger">News</span>
+                    </h2>
+                    <p class="fs-5 text-muted content-mid">
+                        Stay informed with the latest updates from Reflex Interactive
+                    </p>
+                </div>
+                
+                <div id="homepage-loading-spinner" class="d-flex justify-content-center align-items-center" style="min-height: 12rem;" aria-label="Loading latest news">
+                    <div class="loading-animation"></div>
+                </div>
+
+                <div class="rail-shell mb-5">
+                    <button class="rail-control rail-control-left" type="button" data-rail-prev="latest-news-container" aria-label="Previous news">&larr;</button>
+                    <div id="latest-news-container" class="content-rail" aria-label="Latest news"></div>
+                    <button class="rail-control rail-control-right" type="button" data-rail-next="latest-news-container" aria-label="Next news">&rarr;</button>
+                </div>
+                
+                <div class="text-center mt-5">
+                    <a href="./newswire" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View the full Newswire archive">
+                        View the full Newswire
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="featured-game" class="py-5" role="region" aria-labelledby="featured-game-heading">
+            <div class="container">
+                <div class="mb-5 text-center">
+                    <h2 id="featured-game-heading" class="display-4 fw-bold text-uppercase mb-3">
+                        Featured <span class="text-danger">Release</span>
+                    </h2>
+                    <p class="fs-5 text-muted content-mid">
+                        A spotlight on the title that defines our current creative momentum
+                    </p>
+                </div>
+                <div id="featured-game-slot" class="featured-game reveal-on-scroll">
+                    <div class="featured-body text-center">
+                        <p class="text-muted mb-0">Loading featured game...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="games" class="py-5" role="region" aria-labelledby="our-games-heading">
+            <div class="container">
+                <div class="mb-5 text-center">
+                    <h2 id="our-games-heading" class="display-4 fw-bold text-uppercase mb-3">
+                        Our <span class="text-danger">Games</span>
+                    </h2>
+                    <p class="fs-5 text-muted content-mid">
+                        Explore our collection of immersive gaming experiences
+                    </p>
+                </div>
+                
+                <div id="homepage-games-loading-spinner" class="d-flex justify-content-center align-items-center" style="min-height: 12rem;" aria-label="Loading latest games">
+                    <div class="loading-animation"></div>
+                </div>
+
+                <div class="rail-shell mb-5">
+                    <button class="rail-control rail-control-left" type="button" data-rail-prev="latest-games-container" aria-label="Previous games">&larr;</button>
+                    <div id="latest-games-container" class="content-rail" aria-label="Latest games"></div>
+                    <button class="rail-control rail-control-right" type="button" data-rail-next="latest-games-container" aria-label="Next games">&rarr;</button>
+                </div>
+                
+                <div class="text-center mt-5">
+                    <a href="./games" class="btn btn-danger btn-lg px-5 py-3 text-uppercase fw-bold" aria-label="View all games from Reflex Interactive">
+                        View all Games
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+</html>

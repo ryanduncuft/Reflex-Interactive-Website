@@ -1,0 +1,55 @@
+<header>
+    <nav class="navbar navbar-expand-md fixed-top navbar-custom">
+        <div class="container px-4">
+            
+            <a class="navbar-brand" href="/" aria-label="Reflex Interactive Home">
+                <span class="text-white">Reflex</span><span class="text-danger">Interactive</span>
+            </a>
+
+            <div class="d-none d-md-flex mx-auto">
+                <ul class="navbar-nav d-flex flex-row gap-2">
+                    <li class="nav-item dropdown position-static">
+                        <a class="nav-link dropdown-toggle text-uppercase" href="/games" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            Games
+                        </a>
+                        <div class="dropdown-menu navbar-games-menu bg-black border-secondary shadow-lg mt-0 w-100">
+                            <div class="container py-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <a href="/games" class="text-danger text-decoration-none fw-bold text-uppercase small">View all games</a>
+                                    <div class="d-flex gap-2">
+                                        <button class="rail-control" type="button" data-rail-prev="navbar-games-rail" aria-label="Previous games">&larr;</button>
+                                        <button class="rail-control" type="button" data-rail-next="navbar-games-rail" aria-label="Next games">&rarr;</button>
+                                    </div>
+                                </div>
+                                <div id="navbar-games-rail" class="content-rail navbar-game-rail" aria-label="Featured games"></div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-item"><a class="nav-link text-uppercase" href="/newswire">Newswire</a></li>
+                    <li class="nav-item"><a class="nav-link text-uppercase d-inline-flex align-items-center" href="/support" target="_blank" rel="noopener">Support<span class="ms-1" aria-hidden="true">&nearr;</span></a></li>
+                    <li class="nav-item"><a class="nav-link text-uppercase" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link text-uppercase" href="/careers">Careers</a></li>
+                </ul>
+            </div>
+
+            <div class="d-flex align-items-center">
+                <a href="#" class="btn btn-primary btn-launcher text-uppercase d-none d-md-inline-block launcher-download-btn">
+                    Get Launcher
+                </a>
+
+                <button class="menu-trigger d-md-none" id="mobile-menu-trigger" aria-label="Open menu">
+                    <span class="menu-lines" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="mobile-menu-overlay" aria-hidden="true">
+        <button id="mobile-menu-close" aria-label="Close menu">&times;</button>
+        <a class="mobile-nav-link" href="/games">Games</a>
+        <a class="mobile-nav-link" href="/newswire">Newswire</a>
+        <a class="mobile-nav-link" href="/support" target="_blank" rel="noopener">Support<span class="ms-1" aria-hidden="true">&nearr;</span></a>
+        <a class="mobile-nav-link" href="/about">About</a>
+        <a class="mobile-nav-link" href="/careers">Careers</a>
+    </div>
+</header>
