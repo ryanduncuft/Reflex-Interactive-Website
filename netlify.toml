@@ -1,3 +1,7 @@
+[build]
+  publish = "."
+  command = "./scripts/write-firebase-config.sh"
+
 # === 1. Domain Normalization ===
 # Redirect WWW and Netlify subdomain to Naked Domain
 [[redirects]]
@@ -89,13 +93,13 @@
   force = true
 
 [[redirects]]
-  from = "https://careers.reflexinteractive.com/*"
-  to = "https://reflexinteractive.com/:splat"
-  status = 301
+  from = "https://account.reflexinteractive.com/*"
+  to = "/account.html"
+  status = 200
   force = true
 
 [[redirects]]
-  from = "https://account.reflexinteractive.com/*"
+  from = "https://careers.reflexinteractive.com/*"
   to = "https://reflexinteractive.com/:splat"
   status = 301
   force = true

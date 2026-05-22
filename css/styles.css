@@ -266,6 +266,30 @@ p {
     transition: transform 160ms var(--ri-ease), background-color 160ms var(--ri-ease), border-color 160ms var(--ri-ease), box-shadow 160ms var(--ri-ease), color 160ms var(--ri-ease);
 }
 
+.account-hero {
+    min-height: min(72vh, 720px);
+}
+
+.account-library-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.account-library-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--ri-line);
+    border-radius: var(--ri-radius-xs);
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.account-library-item span {
+    color: var(--ri-muted-2);
+    font-size: 0.86rem;
+}
+
 .btn:active {
     transform: translateY(1px);
 }
