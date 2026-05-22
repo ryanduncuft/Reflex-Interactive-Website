@@ -599,10 +599,13 @@
                 dom.setMeta('meta[property="og:title"]', title);
                 dom.setMeta('meta[property="og:description"]', description);
                 dom.setMeta('meta[property="og:image"]', image);
+                dom.setMeta('meta[property="og:image:secure_url"]', image);
+                dom.setMeta('meta[property="og:image:alt"]', `Newswire key art for ${article.title}`);
                 dom.setMeta('meta[property="og:url"]', url);
                 dom.setMeta('meta[name="twitter:title"]', title);
                 dom.setMeta('meta[name="twitter:description"]', description);
                 dom.setMeta('meta[name="twitter:image"]', image);
+                dom.setMeta('meta[name="twitter:image:alt"]', `Newswire key art for ${article.title}`);
 
                 const schema = dom.id("news-schema");
                 if (schema) {
@@ -615,11 +618,20 @@
                         image,
                         datePublished: article.date,
                         dateModified: article.date,
-                        author: { "@type": "Organization", name: "Reflex Interactive" },
+                        inLanguage: "en-GB",
+                        author: { "@type": "Organization", "@id": "https://reflexinteractive.com/#organization", name: "Reflex Interactive" },
                         publisher: {
                             "@type": "Organization",
+                            "@id": "https://reflexinteractive.com/#organization",
                             name: "Reflex Interactive",
                             logo: { "@type": "ImageObject", url: CONFIG.logo },
+                            address: {
+                                "@type": "PostalAddress",
+                                streetAddress: "Bartle House, 9 Oxford Court",
+                                addressLocality: "Manchester",
+                                postalCode: "M2 3WQ",
+                                addressCountry: "GB",
+                            },
                         },
                     });
                 }
@@ -659,10 +671,13 @@
                 dom.setMeta('meta[property="og:title"]', title);
                 dom.setMeta('meta[property="og:description"]', description);
                 dom.setMeta('meta[property="og:image"]', image);
+                dom.setMeta('meta[property="og:image:secure_url"]', image);
+                dom.setMeta('meta[property="og:image:alt"]', `${game.title} official cover art`);
                 dom.setMeta('meta[property="og:url"]', url);
                 dom.setMeta('meta[name="twitter:title"]', title);
                 dom.setMeta('meta[name="twitter:description"]', description);
                 dom.setMeta('meta[name="twitter:image"]', image);
+                dom.setMeta('meta[name="twitter:image:alt"]', `${game.title} official cover art`);
 
                 const schema = dom.id("game-json-ld");
                 if (schema) {
@@ -673,6 +688,25 @@
                         genre: game.genre,
                         image,
                         url,
+                        inLanguage: "en-GB",
+                        publisher: {
+                            "@type": "Organization",
+                            "@id": "https://reflexinteractive.com/#organization",
+                            name: "Reflex Interactive",
+                            logo: { "@type": "ImageObject", url: CONFIG.logo },
+                            address: {
+                                "@type": "PostalAddress",
+                                streetAddress: "Bartle House, 9 Oxford Court",
+                                addressLocality: "Manchester",
+                                postalCode: "M2 3WQ",
+                                addressCountry: "GB",
+                            },
+                        },
+                        author: {
+                            "@type": "Organization",
+                            "@id": "https://reflexinteractive.com/#organization",
+                            name: "Reflex Interactive",
+                        },
                         offers: {
                             "@type": "Offer",
                             price: Number(game.price || 0).toFixed(2),

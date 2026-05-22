@@ -6,26 +6,38 @@
     
     <title>About Reflex Interactive | Independent Game Studio</title>
 
-    <meta name="description" content="Learn about Reflex Interactive, an independent game studio founded in 2022 and focused on narrative action, precision gameplay, and atmospheric worlds.">
-    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="description" content="Learn about Reflex Interactive, an independent game studio in Manchester founded in 2022 and focused on narrative action, precision gameplay, and atmospheric worlds.">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="author" content="Reflex Interactive">
+    <meta name="publisher" content="Reflex Interactive">
+    <meta name="application-name" content="Reflex Interactive">
     <meta name="theme-color" content="#000000">
     <meta name="format-detection" content="telephone=no">
+    <meta name="geo.region" content="GB-MAN">
+    <meta name="geo.placename" content="Manchester">
     <link rel="canonical" href="https://reflexinteractive.com/about">
+    <link rel="alternate" hreflang="en-gb" href="https://reflexinteractive.com/about">
+    <link rel="alternate" hreflang="x-default" href="https://reflexinteractive.com/about">
     
     <meta property="og:title" content="About Reflex Interactive | Independent Game Studio">
     <meta property="og:description" content="Meet the independent studio behind Reflex Interactive games, built around sharp mechanics, immersive worlds, and transparent development.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://reflexinteractive.com/about">
     <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
+    <meta property="og:image:secure_url" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
+    <meta property="og:image:alt" content="Reflex Interactive studio key art">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="675">
     <meta property="og:site_name" content="Reflex Interactive">
     <meta property="og:locale" content="en_GB">
     
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@MadeByReflex">
+    <meta name="twitter:creator" content="@MadeByReflex">
     <meta name="twitter:title" content="About Reflex Interactive | Independent Game Studio">
     <meta name="twitter:description" content="Learn about the mission, values, and craft behind Reflex Interactive games.">
     <meta name="twitter:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
+    <meta name="twitter:image:alt" content="Reflex Interactive studio key art">
 
     <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -39,16 +51,74 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "AboutPage",
-      "mainEntity": {
-        "@type": "Organization",
-        "name": "Reflex Interactive",
-        "url": "https://reflexinteractive.com/about",
-        "foundingDate": "2022",
-        "description": "An independent game studio focused on narrative action, precision gameplay, atmospheric worlds, and transparent development.",
-        "areaServed": "Worldwide",
-        "knowsAbout": ["Game Development", "Indie Games", "Narrative Design", "Software Engineering"]
-      }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://reflexinteractive.com/#organization",
+          "name": "Reflex Interactive",
+          "url": "https://reflexinteractive.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+            "width": 512,
+            "height": 512
+          },
+          "description": "An independent game studio in Manchester focused on narrative action, precision gameplay, atmospheric worlds, and transparent development.",
+          "foundingDate": "2022",
+          "foundingLocation": {
+            "@type": "Place",
+            "name": "Manchester, United Kingdom"
+          },
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Bartle House, 9 Oxford Court",
+            "addressLocality": "Manchester",
+            "postalCode": "M2 3WQ",
+            "addressCountry": "GB"
+          },
+          "areaServed": "Worldwide",
+          "knowsAbout": ["Game Development", "Indie Games", "Narrative Design", "Software Engineering", "Precision Gameplay"]
+        },
+        {
+          "@type": "AboutPage",
+          "@id": "https://reflexinteractive.com/about#webpage",
+          "name": "About Reflex Interactive | Independent Game Studio",
+          "url": "https://reflexinteractive.com/about",
+          "description": "Learn about Reflex Interactive, an independent game studio in Manchester founded in 2022 and focused on narrative action, precision gameplay, and atmospheric worlds.",
+          "inLanguage": "en-GB",
+          "dateModified": "2026-05-22",
+          "mainEntity": {
+            "@id": "https://reflexinteractive.com/#organization"
+          },
+          "isPartOf": {
+            "@type": "WebSite",
+            "@id": "https://reflexinteractive.com/#website",
+            "name": "Reflex Interactive",
+            "url": "https://reflexinteractive.com/"
+          },
+          "breadcrumb": {
+            "@id": "https://reflexinteractive.com/about#breadcrumb"
+          }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://reflexinteractive.com/about#breadcrumb",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://reflexinteractive.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "About",
+              "item": "https://reflexinteractive.com/about"
+            }
+          ]
+        }
+      ]
     }
     </script>
 </head>
@@ -63,7 +133,7 @@
                 About <span class="text-danger">Reflex Interactive</span>
             </h1>
             <p class="fs-5 lh-lg reveal-on-scroll content-max">
-                Founded in 2022, Reflex Interactive is an independent game development studio dedicated to crafting immersive and impactful gaming experiences. We believe in the power of interactive storytelling and the thrill of strategic gameplay.
+                Founded in Manchester in 2022, Reflex Interactive is an independent game development studio dedicated to crafting immersive and impactful gaming experiences. We believe in the power of interactive storytelling and the thrill of strategic gameplay.
             </p>
         </section>
 
