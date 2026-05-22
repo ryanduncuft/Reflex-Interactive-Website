@@ -328,8 +328,7 @@
             const platform = navigator.platform.toLowerCase();
             let runtime = "win-x64";
 
-            if (ua.includes("mac") || platform.includes("mac")) runtime = navigator.maxTouchPoints > 0 || ua.includes("arm64") ? "osx-arm64" : "osx-x64";
-            else if (ua.includes("linux")) runtime = "linux-x64";
+            if (ua.includes("linux")) runtime = "linux-x64";
             else if (ua.includes("win")) runtime = ua.includes("win64") || ua.includes("wow64") || ua.includes("x64") || platform.includes("x64") ? "win-x64" : "win-x86";
 
             buttons.forEach((button) => {
