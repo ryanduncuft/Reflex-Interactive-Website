@@ -14,7 +14,53 @@
 
 # === 2. Subdomain Logic ===
 # SUPPORT SUBDOMAIN
-# 1. Serve contact.html at the root of the support subdomain
+# Serve shared static assets directly on app subdomains to avoid dev/prod surprises.
+[[redirects]]
+  from = "https://support.reflexinteractive.com/css/*"
+  to = "/css/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://support.reflexinteractive.com/js/*"
+  to = "/js/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://support.reflexinteractive.com/components/*"
+  to = "/components/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://careers.reflexinteractive.com/css/*"
+  to = "/css/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://careers.reflexinteractive.com/js/*"
+  to = "/js/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://careers.reflexinteractive.com/components/*"
+  to = "/components/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://account.reflexinteractive.com/css/*"
+  to = "/css/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://account.reflexinteractive.com/js/*"
+  to = "/js/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://account.reflexinteractive.com/components/*"
+  to = "/components/:splat"
+  status = 200
+
+# 1. Serve support.html at the root of the support subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
   to = "/support.html"
@@ -82,6 +128,12 @@
   status = 200
 
 [[redirects]]
+  from = "/game-details"
+  query = {id = ":id"}
+  to = "/game-details.html"
+  status = 200
+
+[[redirects]]
   from = "/newswire"
   query = {id = ":id"}
   to = "/newswire-details?id=:id"
@@ -96,6 +148,11 @@
 [[redirects]]
   from = "/games"
   to = "/games.html"
+  status = 200
+
+[[redirects]]
+  from = "/game-details"
+  to = "/game-details.html"
   status = 200
 
 [[redirects]]
@@ -123,3 +180,21 @@
   for = "/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/components/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
