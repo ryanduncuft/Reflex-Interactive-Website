@@ -1,70 +1,112 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
- * @version 1.2.0
- * @description Stable vanilla JS runtime for routing, data rendering, components, and interaction.
+ * @version 1.2.1
+ * @description Stable vanilla JS runtime for routing, data rendering, components, and interaction. Optimised for performance, accessibility, and SEO with minimal dependencies. Implemented 3d elements and interactivity.
  */
-
 (() => {
     "use strict";
 
-    const Config = {
-        API: {
-            NEWS: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
-            GAMES: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
+    const CONFIG = {
+        api: {
+            news: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
+            games: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
         },
-        UI: {
-            REVEAL_DELAY_MS: 80,
-            NAV_SCROLL_Y: 50,
-            BACK_TO_TOP_Y: 400,
-            RAIL_SCROLL_RATIO: 0.85,
+        siteUrl: "https://reflexinteractive.com",
+        logo: "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+        revealDelay: 70,
+        navScrollY: 24,
+        railRatio: 0.86,
+        subdomains: {
+            support: "https://support.reflexinteractive.com/",
+            careers: "https://careers.reflexinteractive.com/",
+            account: "https://account.reflexinteractive.com/",
         },
-        SYSTEM: {
-            CACHE_BUST_COMPONENTS: false,
+        localRoutes: {
+            "/about": "/about.html",
+            "/account": "/account.html",
+            "/careers": "/careers.html",
+            "/game-details": "/game-details.html",
+            "/games": "/games.html",
+            "/newswire": "/newswire.html",
+            "/newswire-details": "/newswire-details.html",
+            "/privacy": "/privacy.html",
+            "/support": "/support.html",
+            "/tos": "/tos.html",
         },
     };
 
-    const State = {
+    const state = {
         cache: new Map(),
         revealObserver: null,
-        isSupportSubdomain: window.location.hostname.startsWith("support."),
+        supportHost: window.location.hostname.startsWith("support."),
     };
 
-    const DOM = {
+    const dom = {
         qs: (selector, root = document) => root.querySelector(selector),
         qsa: (selector, root = document) => Array.from(root.querySelectorAll(selector)),
-        byId: (id) => id ? document.getElementById(id) : null,
+        id: (id) => document.getElementById(id),
         setText: (id, value = "") => {
-            const el = DOM.byId(id);
-            if (el) el.textContent = value || "";
+            const node = dom.id(id);
+            if (node) node.textContent = value || "";
         },
         setHTML: (id, value = "") => {
-            const el = DOM.byId(id);
-            if (el) el.innerHTML = value || "";
+            const node = dom.id(id);
+            if (node) node.innerHTML = value || "";
         },
         setMeta: (selector, value = "") => {
-            const el = DOM.qs(selector);
-            if (el) el.setAttribute("content", value || "");
+            const node = dom.qs(selector);
+            if (node && value) node.setAttribute("content", value);
         },
-        setCanonical: (value = "") => {
-            const el = DOM.qs('link[rel="canonical"]');
-            if (el) el.setAttribute("href", value || "");
+        setCanonical: (href) => {
+            const node = dom.qs('link[rel="canonical"]');
+            if (node && href) node.setAttribute("href", href);
         },
     };
 
-    const Utils = {
-        withCacheBust: (url) => {
-            if (!Config.SYSTEM.CACHE_BUST_COMPONENTS) return url;
-            const joiner = url.includes("?") ? "&" : "?";
-            return `${url}${joiner}t=${Date.now()}`;
-        },
-
-        escapeHTML: (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
+    const utils = {
+        escape: (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#39;",
         }[char])),
+
+        clampDescription: (value = "") => String(value).replace(/\s+/g, " ").trim().slice(0, 158),
+
+        normalizeMedia: (url = "", width = 1200) => {
+            if (!url) return "";
+            if (url.includes("cloudinary.com") && !url.includes("q_auto")) {
+                return url.replace("/upload/", `/upload/q_auto,f_auto,w_${width}/`);
+            }
+            if (/^https?:\/\//i.test(url)) return url;
+            const clean = url.replace(/\\/g, "/");
+            return clean.startsWith("/") ? clean : `/${clean}`;
+        },
+
+        isLocal: () => {
+            const host = window.location.hostname;
+            return host === "localhost" || host === "127.0.0.1" || host === "" || host.endsWith(".local");
+        },
+
+        isReflexHost: () => window.location.hostname === "reflexinteractive.com" || window.location.hostname.endsWith(".reflexinteractive.com"),
+
+        routeHref: (path) => {
+            if (!utils.isLocal()) return path;
+            const url = new URL(path, window.location.origin);
+            const localPath = CONFIG.localRoutes[url.pathname];
+            if (!localPath) return path;
+            return `${localPath}${url.search}${url.hash}`;
+        },
+
+        detailHref: (page, id) => utils.routeHref(`/${page}?id=${encodeURIComponent(id)}`),
+
+        newestFirst: (items = []) => [...items].sort((a, b) => {
+            const at = Date.parse(a.date || a.release_date || "");
+            const bt = Date.parse(b.date || b.release_date || "");
+            if (Number.isNaN(at) || Number.isNaN(bt)) return 0;
+            return bt - at;
+        }),
 
         textToHTML: (value = "") => {
             const normalized = String(value)
@@ -77,365 +119,456 @@
 
             return normalized
                 .split(/\n{2,}/)
-                .map((block) => `<p>${Utils.escapeHTML(block).replace(/\n/g, "<br>")}</p>`)
+                .map((block) => `<p>${utils.escape(block).replace(/\n/g, "<br>")}</p>`)
                 .join("");
         },
-
-        normalizeMediaUrl: (url = "") => {
-            if (!url) return "";
-            if (url.includes("cloudinary.com") && !url.includes("q_auto")) {
-                return url.replace("/upload/", "/upload/q_auto,f_auto/");
-            }
-            if (/^https?:\/\//i.test(url)) return url;
-
-            const cleaned = url.replace(/\\/g, "/");
-            return cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
-        },
-
-        detailHref: (page, id) => `/${page}?id=${encodeURIComponent(id)}`,
-
-        sortNewestFirst: (items = []) => [...items].sort((a, b) => {
-            const aTime = Date.parse(a.date || a.release_date || "");
-            const bTime = Date.parse(b.date || b.release_date || "");
-            if (Number.isNaN(aTime) || Number.isNaN(bTime)) return 0;
-            return bTime - aTime;
-        }),
 
         parseJSON: (value, fallback = {}) => {
             try {
                 return JSON.parse(value || "{}");
-            } catch (error) {
-                console.warn("[JSON] Invalid embedded schema", error);
+            } catch {
                 return fallback;
             }
         },
 
-        throttle: (fn, waitMs = 100) => {
-            let lastRun = 0;
+        throttle: (fn, wait = 80) => {
+            let last = 0;
             return (...args) => {
-                const now = Date.now();
-                if (now - lastRun < waitMs) return;
-                lastRun = now;
+                const now = performance.now();
+                if (now - last < wait) return;
+                last = now;
                 fn(...args);
             };
         },
 
-        toggleSpinner: (id, show) => DOM.byId(id)?.classList.toggle("d-none", !show),
+        spinner: (id, show) => dom.id(id)?.classList.toggle("d-none", !show),
     };
 
-    const Data = {
-        fetchJSON: async (url) => {
-            if (State.cache.has(url)) return State.cache.get(url);
-
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
-
-            const data = await response.json();
-            State.cache.set(url, data);
-            return data;
+    const data = {
+        json: async (url) => {
+            if (state.cache.has(url)) return state.cache.get(url);
+            const response = await fetch(url, { headers: { Accept: "application/json" } });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const payload = await response.json();
+            state.cache.set(url, payload);
+            return payload;
         },
 
-        loadComponent: async (placeholderId, path, onLoad) => {
-            const placeholder = DOM.byId(placeholderId);
-            if (!placeholder) return null;
+        component: async (id, path, callback) => {
+            const target = dom.id(id);
+            if (!target) return null;
 
             try {
-                const response = await fetch(Utils.withCacheBust(path));
+                const response = await fetch(path);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                placeholder.innerHTML = await response.text();
-                onLoad?.(placeholder);
-                return placeholder;
+                target.innerHTML = await response.text();
+                callback?.(target);
+                return target;
             } catch (error) {
-                console.error(`[Component] Failed to load ${path}`, error);
+                console.error(`[Component] ${path}`, error);
                 return null;
             }
         },
 
-        games: async () => Utils.sortNewestFirst(await Data.fetchJSON(Config.API.GAMES)),
-        news: async () => Utils.sortNewestFirst(await Data.fetchJSON(Config.API.NEWS)),
+        games: async () => utils.newestFirst(await data.json(CONFIG.api.games)),
+        news: async () => utils.newestFirst(await data.json(CONFIG.api.news)),
     };
 
-    const Templates = {
+    const templates = {
+        arrow: '<span aria-hidden="true">></span>',
+
         newsCard: (article) => `
-            <article class="card modern-card news-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll">
-                <a href="${Utils.detailHref("newswire-details", article.id)}" class="text-decoration-none d-block h-100 d-flex flex-column">
-                    <img src="${Utils.escapeHTML(article.image_url)}" alt="${Utils.escapeHTML(article.title)}" class="card-img-top modern-card-img" loading="lazy">
-                    <div class="card-body d-flex flex-column flex-grow-1">
-                        <p class="card-text modern-card-date">${Utils.escapeHTML(article.date)}</p>
-                        <h3 class="card-title modern-card-title">${Utils.escapeHTML(article.title)}</h3>
-                        <p class="card-text modern-card-summary">${Utils.escapeHTML(article.summary)}</p>
-                        <span class="modern-card-cta mt-auto">Read More <span class="ms-2" aria-hidden="true">&rarr;</span></span>
+            <article class="card modern-card news-card h-100">
+                <a href="${utils.detailHref("newswire-details", article.id)}" class="d-flex h-100 flex-column">
+                    <img src="${utils.normalizeMedia(article.image_url, 900)}" alt="${utils.escape(article.title)}" width="900" height="506" class="modern-card-img" loading="lazy" decoding="async">
+                    <div class="card-body d-flex flex-column">
+                        <time class="modern-card-date" datetime="${utils.escape(article.date)}">${utils.escape(article.date)}</time>
+                        <h3 class="modern-card-title">${utils.escape(article.title)}</h3>
+                        <p class="modern-card-summary">${utils.escape(article.summary)}</p>
+                        <span class="modern-card-cta mt-auto">Read More ${templates.arrow}</span>
                     </div>
                 </a>
             </article>
         `,
 
         gameCard: (game) => `
-            <div class="card modern-card modern-game-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll">
-                <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${Utils.escapeHTML(game.title)}" class="modern-game-card-img" loading="lazy">
-                <div class="modern-game-card-overlay">
-                    <h3 class="modern-game-card-title">${Utils.escapeHTML(game.title)}</h3>
-                    <p class="modern-game-card-desc">${Utils.escapeHTML(game.description)}</p>
-                    <a href="${Utils.detailHref("game-details", game.id)}" class="modern-game-card-link">Learn More <span class="ms-2" aria-hidden="true">&rarr;</span></a>
-                </div>
-            </div>
+            <article class="card modern-game-card h-100">
+                <a href="${utils.detailHref("game-details", game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
+                    <img src="${utils.normalizeMedia(game.image_url, 900)}" alt="${utils.escape(game.title)} cover art" width="900" height="506" class="modern-game-card-img" loading="lazy" decoding="async">
+                    <div class="modern-game-card-overlay">
+                        <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
+                        <p class="modern-game-card-desc">${utils.escape(game.description)}</p>
+                        <span class="modern-game-card-link">Explore Game ${templates.arrow}</span>
+                    </div>
+                </a>
+            </article>
         `,
 
-        navbarGame: (game) => `
-            <a class="navbar-game-tile text-decoration-none" href="${Utils.detailHref("game-details", game.id)}">
-                <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${Utils.escapeHTML(game.title)}" loading="lazy">
-                <span class="text-white fw-bold text-uppercase">${Utils.escapeHTML(game.title)}</span>
+        navGame: (game) => `
+            <a class="navbar-game-tile" href="${utils.detailHref("game-details", game.id)}">
+                <img src="${utils.normalizeMedia(game.image_url, 480)}" alt="${utils.escape(game.title)}" width="480" height="270" loading="lazy" decoding="async">
+                <span>${utils.escape(game.title)}</span>
             </a>
         `,
 
         supportGame: (game) => `
-            <a href="#contact-section" class="card modern-card h-100 bg-dark border-0 overflow-hidden position-relative reveal-on-scroll text-decoration-none">
-                <img src="${Utils.normalizeMediaUrl(game.image_url)}" alt="${Utils.escapeHTML(game.title)}" class="modern-game-card-img support-tile-img" loading="lazy">
+            <a href="#contact-section" class="card modern-card h-100 text-decoration-none">
+                <img src="${utils.normalizeMedia(game.image_url, 700)}" alt="${utils.escape(game.title)} support category" width="700" height="394" class="modern-game-card-img support-tile-img" loading="lazy" decoding="async">
                 <div class="card-img-overlay d-flex align-items-center justify-content-center">
-                    <h3 class="text-white text-uppercase fw-bold m-0" style="text-shadow: 2px 2px 10px rgba(0,0,0,1);">${Utils.escapeHTML(game.title)}</h3>
+                    <h3 class="text-white fw-bold m-0 text-shadow-lg">${utils.escape(game.title)}</h3>
                 </div>
             </a>
         `,
     };
 
-    const UI = {
-        observeReveal: (element) => {
-            if (!element || element.closest(".navbar")) return;
-            element.classList.add("reveal-on-scroll");
-            State.revealObserver?.observe(element);
+    const ui = {
+        initNav: () => {
+            const nav = dom.qs(".navbar-custom");
+            if (!nav) return;
+
+            ui.initEnvironmentLinks();
+
+            const update = () => nav.classList.toggle("scrolled", window.scrollY > CONFIG.navScrollY);
+            update();
+            window.addEventListener("scroll", utils.throttle(update, 40), { passive: true });
+
+            const current = window.location.pathname.replace(/\.html$/, "").replace(/\/$/, "") || "/";
+            dom.qsa(".nav-link[href]").forEach((link) => {
+                const href = new URL(link.getAttribute("href"), window.location.origin).pathname.replace(/\/$/, "") || "/";
+                link.classList.toggle("active", href === current);
+            });
+
+            ui.initMegaMenu();
         },
 
-        initScrollReveal: () => {
-            const selectors = [
-                ".reveal-on-scroll",
-                ".card",
-                ".row .col",
-                ".display-4",
-                ".display-1",
-                "h1",
-                "h2",
-                "h3",
-                ".hero-section h1",
-                ".hero-section p",
-                ".btn",
-                ".navbar-brand",
-            ];
+        initEnvironmentLinks: () => {
+            const local = utils.isLocal();
+            const host = window.location.hostname;
+            const appSubdomain = utils.isReflexHost() && host !== "reflexinteractive.com" && host !== "www.reflexinteractive.com";
 
-            if (!("IntersectionObserver" in window)) {
-                DOM.qsa(".reveal-on-scroll, .reveal-on-load, .hero-entry").forEach((el) => el.classList.add("visible"));
-                return;
-            }
+            dom.qsa("a[href]").forEach((link) => {
+                const subdomain = link.dataset.subdomain;
+                const rawHref = link.getAttribute("href");
+                if (!rawHref || rawHref === "#" || rawHref.startsWith("mailto:") || rawHref.startsWith("tel:")) return;
 
-            State.revealObserver = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
+                if (subdomain && CONFIG.subdomains[subdomain]) {
+                    link.href = local ? `/${subdomain}.html` : CONFIG.subdomains[subdomain];
+                    return;
+                }
 
-                    const el = entry.target;
-                    const siblings = Array.from(el.parentElement?.children || []).filter((child) => child.tagName === el.tagName);
-                    const index = Math.max(siblings.indexOf(el), 0);
+                if (!local && appSubdomain && rawHref.startsWith("/")) {
+                    link.href = `${CONFIG.siteUrl}${rawHref}`;
+                    return;
+                }
 
-                    el.style.transitionDelay = `${index * Config.UI.REVEAL_DELAY_MS}ms`;
-                    el.classList.add("visible");
-                    State.revealObserver.unobserve(el);
-                });
-            }, { threshold: 0.08 });
+                if (!local) return;
 
-            DOM.qsa(selectors.join(", ")).forEach(UI.observeReveal);
-
-            requestAnimationFrame(() => {
-                DOM.qsa(".reveal-on-load, .hero-entry").forEach((el, index) => {
-                    const baseDelay = el.classList.contains("hero-entry") ? 120 : 0;
-                    window.setTimeout(() => el.classList.add("visible"), baseDelay + index * Config.UI.REVEAL_DELAY_MS);
-                });
+                const url = new URL(rawHref, window.location.href);
+                if (url.origin !== window.location.origin) return;
+                const localPath = CONFIG.localRoutes[url.pathname];
+                if (localPath) link.href = `${localPath}${url.search}${url.hash}`;
             });
         },
 
-        initNavbar: () => {
-            const header = DOM.qs(".navbar");
-            if (!header) return;
+        initMegaMenu: () => {
+            const trigger = dom.id("nav-games-toggle");
+            const menu = dom.id("nav-games-menu");
+            if (!trigger || !menu) return;
 
-            const update = () => header.classList.toggle("scrolled", window.scrollY > Config.UI.NAV_SCROLL_Y);
-            window.addEventListener("scroll", Utils.throttle(update, 40), { passive: true });
-            update();
+            let closeTimer = 0;
+            const setOpen = (open) => {
+                window.clearTimeout(closeTimer);
+                menu.classList.toggle("is-open", open);
+                trigger.setAttribute("aria-expanded", String(open));
+            };
+            const queueClose = () => {
+                closeTimer = window.setTimeout(() => setOpen(false), 140);
+            };
+
+            trigger.addEventListener("click", () => setOpen(!menu.classList.contains("is-open")));
+            trigger.addEventListener("mouseenter", () => setOpen(true));
+            trigger.addEventListener("focus", () => setOpen(true));
+            trigger.addEventListener("mouseleave", queueClose);
+            menu.addEventListener("mouseenter", () => setOpen(true));
+            menu.addEventListener("mouseleave", queueClose);
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") setOpen(false);
+            });
+            document.addEventListener("click", (event) => {
+                if (!menu.contains(event.target) && !trigger.contains(event.target)) setOpen(false);
+            });
         },
 
         initMobileMenu: () => {
-            const trigger = DOM.byId("mobile-menu-trigger");
-            const overlay = DOM.byId("mobile-menu-overlay");
+            const trigger = dom.id("mobile-menu-trigger");
+            const overlay = dom.id("mobile-menu-overlay");
+            const close = dom.id("mobile-menu-close");
             if (!trigger || !overlay) return;
 
-            const setOpen = (isOpen) => {
-                overlay.classList.toggle("active", isOpen);
-                overlay.setAttribute("aria-hidden", String(!isOpen));
-                document.body.style.overflow = isOpen ? "hidden" : "";
+            const setOpen = (open) => {
+                overlay.classList.toggle("active", open);
+                overlay.setAttribute("aria-hidden", String(!open));
+                trigger.setAttribute("aria-expanded", String(open));
+                document.body.style.overflow = open ? "hidden" : "";
             };
 
             trigger.addEventListener("click", () => setOpen(true));
-            DOM.byId("mobile-menu-close")?.addEventListener("click", () => setOpen(false));
-            DOM.qsa(".mobile-nav-link", overlay).forEach((link) => link.addEventListener("click", () => setOpen(false)));
+            close?.addEventListener("click", () => setOpen(false));
+            dom.qsa("a", overlay).forEach((link) => link.addEventListener("click", () => setOpen(false)));
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") setOpen(false);
+            });
         },
 
         initDownloadButtons: () => {
-            const buttons = DOM.qsa(".launcher-download-btn");
+            const buttons = dom.qsa(".launcher-download-btn");
             if (!buttons.length) return;
 
-            const userAgent = navigator.userAgent.toLowerCase();
+            const ua = navigator.userAgent.toLowerCase();
             const platform = navigator.platform.toLowerCase();
             let runtime = "win-x64";
 
-            if (userAgent.includes("mac") || platform.includes("mac")) {
-                runtime = navigator.maxTouchPoints > 0 || userAgent.includes("arm64") ? "osx-arm64" : "osx-x64";
-            } else if (userAgent.includes("linux")) {
-                runtime = "linux-x64";
-            } else if (userAgent.includes("win")) {
-                runtime = userAgent.includes("win64") || userAgent.includes("wow64") || userAgent.includes("x64") || platform.includes("x64") ? "win-x64" : "win-x86";
+            if (ua.includes("mac") || platform.includes("mac")) runtime = navigator.maxTouchPoints > 0 || ua.includes("arm64") ? "osx-arm64" : "osx-x64";
+            else if (ua.includes("linux")) runtime = "linux-x64";
+            else if (ua.includes("win")) runtime = ua.includes("win64") || ua.includes("wow64") || ua.includes("x64") || platform.includes("x64") ? "win-x64" : "win-x86";
+
+            buttons.forEach((button) => {
+                button.href = `https://cdn.reflexinteractive.com/launcher-files/${runtime}/launcher-latest.zip`;
+                button.download = "ReflexLauncher.zip";
+            });
+        },
+
+        initReveal: () => {
+            const revealables = ".reveal-on-scroll, .reveal-on-load, .hero-entry, .card, .feature-card";
+
+            if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                dom.qsa(revealables).forEach((node) => node.classList.add("visible"));
+                return;
             }
 
-            const href = `https://cdn.reflexinteractive.com/launcher-files/${runtime}/launcher-latest.zip`;
-            buttons.forEach((button) => {
-                button.href = href;
-                button.setAttribute("download", "ReflexLauncher.zip");
+            state.revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const node = entry.target;
+                    const siblings = Array.from(node.parentElement?.children || []);
+                    const index = Math.max(siblings.indexOf(node), 0);
+                    node.style.transitionDelay = `${Math.min(index, 6) * CONFIG.revealDelay}ms`;
+                    node.classList.add("visible");
+                    state.revealObserver.unobserve(node);
+                });
+            }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+
+            dom.qsa(revealables).forEach((node) => state.revealObserver.observe(node));
+            dom.qsa(".hero-entry, .reveal-on-load").forEach((node, index) => {
+                window.setTimeout(() => node.classList.add("visible"), 90 + index * CONFIG.revealDelay);
             });
+        },
+
+        observe: (node) => {
+            if (!node) return;
+            node.classList.add("reveal-on-scroll");
+            if (state.revealObserver) state.revealObserver.observe(node);
+        },
+
+        scrollRail: (id, direction) => {
+            const rail = dom.id(id);
+            if (!rail) return;
+            rail.scrollBy({ left: direction * Math.max(rail.clientWidth * CONFIG.railRatio, 280), behavior: "smooth" });
         },
 
         initBackToTop: () => {
-            const button = DOM.byId("scroll-to-top");
-            if (!button) return;
+            const button = document.createElement("button");
+            button.className = "scroll-to-top";
+            button.type = "button";
+            button.setAttribute("aria-label", "Back to top");
+            button.textContent = "^";
+            document.body.appendChild(button);
 
-            const update = () => button.classList.toggle("visible", window.scrollY > Config.UI.BACK_TO_TOP_Y);
-            window.addEventListener("scroll", Utils.throttle(update, 100), { passive: true });
+            const update = () => button.classList.toggle("visible", window.scrollY > 520);
             button.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+            window.addEventListener("scroll", utils.throttle(update, 100), { passive: true });
             update();
         },
 
-        initCounters: () => {
-            const counters = DOM.qsa("[data-count]");
-            if (!counters.length || !("IntersectionObserver" in window)) return;
+        initDepthInteraction: () => {
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
-                    UI.animateCount(entry.target, Number(entry.target.dataset.count || "0"));
-                    observer.unobserve(entry.target);
-                });
-            }, { threshold: 0.4 });
+            const root = document.documentElement;
+            const updatePointer = utils.throttle((event) => {
+                const x = (event.clientX / window.innerWidth - 0.5).toFixed(4);
+                const y = (event.clientY / window.innerHeight - 0.5).toFixed(4);
+                root.style.setProperty("--pointer-x", x);
+                root.style.setProperty("--pointer-y", y);
+            }, 16);
 
-            counters.forEach((counter) => {
-                counter.textContent = "0";
-                observer.observe(counter);
-            });
-        },
+            window.addEventListener("pointermove", updatePointer, { passive: true });
 
-        animateCount: (element, target) => {
-            const start = performance.now();
-            const duration = 900;
+            const targets = ".card, .featured-game, .surface-panel, .feature-card";
+            dom.qsa(targets).forEach((node) => node.classList.add("depth-card"));
 
-            const step = (now) => {
-                const progress = Math.min((now - start) / duration, 1);
-                element.textContent = Math.floor(target * progress).toString();
-                if (progress < 1) requestAnimationFrame(step);
-            };
+            document.addEventListener("pointermove", (event) => {
+                const card = event.target.closest(targets);
+                if (!card) return;
 
-            requestAnimationFrame(step);
-        },
+                const rect = card.getBoundingClientRect();
+                const x = (event.clientX - rect.left) / rect.width;
+                const y = (event.clientY - rect.top) / rect.height;
+                const rotateY = (x - 0.5) * 4;
+                const rotateX = (0.5 - y) * 4;
 
-        scrollRail: (railId, direction) => {
-            const rail = DOM.byId(railId);
-            if (!rail) return;
+                card.style.setProperty("--tilt-x", `${rotateY.toFixed(2)}deg`);
+                card.style.setProperty("--tilt-y", `${rotateX.toFixed(2)}deg`);
+                card.style.setProperty("--shine-x", `${(x * 100).toFixed(1)}%`);
+                card.style.setProperty("--shine-y", `${(y * 100).toFixed(1)}%`);
+                card.classList.add("is-tilting");
+            }, { passive: true });
 
-            const distance = Math.max(rail.clientWidth * Config.UI.RAIL_SCROLL_RATIO, 280);
-            rail.scrollBy({ left: direction * distance, behavior: "smooth" });
+            document.addEventListener("pointerout", (event) => {
+                const card = event.target.closest(targets);
+                if (!card || card.contains(event.relatedTarget)) return;
+                card.classList.remove("is-tilting");
+                card.style.removeProperty("--tilt-x");
+                card.style.removeProperty("--tilt-y");
+            }, { passive: true });
         },
     };
 
-    const Render = {
-        collection: async ({ containerId, spinnerId, loader, template, emptyMessage, limit = null }) => {
-            const container = DOM.byId(containerId);
+    const render = {
+        collection: async ({ containerId, spinnerId, loader, template, empty, limit = null }) => {
+            const container = dom.id(containerId);
             if (!container) return;
 
-            Utils.toggleSpinner(spinnerId, true);
+            utils.spinner(spinnerId, true);
 
             try {
                 const items = await loader();
-                const visibleItems = limit ? items.slice(0, limit) : items;
+                const visible = limit ? items.slice(0, limit) : items;
                 const isRail = container.classList.contains("content-rail");
                 const fragment = document.createDocumentFragment();
 
-                visibleItems.forEach((item) => {
+                visible.forEach((item) => {
                     const wrapper = document.createElement("div");
                     wrapper.className = isRail ? "rail-item" : "col";
                     wrapper.innerHTML = template(item);
-                    UI.observeReveal(wrapper.firstElementChild);
+                    ui.observe(wrapper.firstElementChild);
                     fragment.appendChild(wrapper);
                 });
 
                 container.replaceChildren(fragment);
             } catch (error) {
                 console.error(`[Render] ${containerId}`, error);
-                container.innerHTML = `<div class="text-center text-danger py-5">${emptyMessage}</div>`;
+                container.innerHTML = `<div class="text-center text-danger py-5">${utils.escape(empty)}</div>`;
             } finally {
-                Utils.toggleSpinner(spinnerId, false);
+                utils.spinner(spinnerId, false);
             }
         },
 
-        newsList: (containerId) => Render.collection({
+        newsList: (containerId) => render.collection({
             containerId,
             spinnerId: containerId.includes("latest") ? "homepage-loading-spinner" : "loading-spinner",
-            loader: Data.news,
-            template: Templates.newsCard,
-            emptyMessage: "Failed to load news.",
-        }),
+            loader: data.news,
+            template: templates.newsCard,
+            empty: "Newswire is temporarily unavailable.",
+            limit: containerId.includes("latest") ? 6 : null,
+        }).then(() => render.newsSchema(containerId)),
 
-        gameList: (containerId) => Render.collection({
+        gameList: (containerId) => render.collection({
             containerId,
             spinnerId: containerId.includes("latest") ? "homepage-games-loading-spinner" : "games-loading-spinner",
-            loader: Data.games,
-            template: Templates.gameCard,
-            emptyMessage: "Failed to load games.",
-        }),
+            loader: data.games,
+            template: templates.gameCard,
+            empty: "Game catalog is temporarily unavailable.",
+            limit: containerId.includes("latest") ? 6 : null,
+        }).then(() => render.gamesSchema(containerId)),
 
-        navbarGameRail: async () => {
-            const rail = DOM.byId("navbar-games-rail");
+        gamesSchema: async (containerId) => {
+            if (containerId !== "full-games-container") return;
+            const schema = dom.id("games-schema");
+            if (!schema) return;
+
+            try {
+                const games = await data.games();
+                const payload = utils.parseJSON(schema.text, {});
+                payload.mainEntity = {
+                    "@type": "ItemList",
+                    numberOfItems: games.length,
+                    itemListElement: games.map((game, index) => ({
+                        "@type": "ListItem",
+                        position: index + 1,
+                        url: `${CONFIG.siteUrl}${utils.detailHref("game-details", game.id)}`,
+                        name: game.title,
+                    })),
+                };
+                schema.text = JSON.stringify(payload);
+            } catch (error) {
+                console.warn("[Schema] games", error);
+            }
+        },
+
+        newsSchema: async (containerId) => {
+            if (containerId !== "news-container") return;
+            const schema = dom.id("news-schema");
+            if (!schema) return;
+
+            try {
+                const articles = await data.news();
+                const payload = utils.parseJSON(schema.text, {});
+                payload.blogPost = articles.map((article) => ({
+                    "@type": "BlogPosting",
+                    headline: article.title,
+                    url: `${CONFIG.siteUrl}${utils.detailHref("newswire-details", article.id)}`,
+                    datePublished: article.date,
+                    image: utils.normalizeMedia(article.image_url, 1200),
+                    description: utils.clampDescription(article.summary),
+                }));
+                schema.text = JSON.stringify(payload);
+            } catch (error) {
+                console.warn("[Schema] news", error);
+            }
+        },
+
+        navGames: async () => {
+            const rail = dom.id("navbar-games-rail");
             if (!rail) return;
 
             try {
-                const games = await Data.games();
-                rail.innerHTML = games.map(Templates.navbarGame).join("");
+                const games = await data.games();
+                rail.innerHTML = games.slice(0, 8).map(templates.navGame).join("");
             } catch (error) {
-                console.error("[Render] navbar games", error);
+                console.error("[Render] nav games", error);
                 rail.innerHTML = '<p class="text-danger mb-0">Games unavailable.</p>';
             }
         },
 
-        supportGameList: async () => Render.collection({
+        supportGames: () => render.collection({
             containerId: "support-game-grid",
-            loader: Data.games,
-            template: Templates.supportGame,
-            emptyMessage: "Failed to load game categories.",
+            loader: data.games,
+            template: templates.supportGame,
+            empty: "Support categories are temporarily unavailable.",
         }),
 
         featuredGame: async () => {
-            const slot = DOM.byId("featured-game-slot");
+            const slot = dom.id("featured-game-slot");
             if (!slot) return;
 
             try {
-                const [game] = await Data.games();
-                if (!game) throw new Error("No games found");
-
-                const image = Utils.normalizeMediaUrl(game.hero_image_url || game.image_url);
+                const [game] = await data.games();
+                const image = utils.normalizeMedia(game.hero_image_url || game.image_url, 1400);
                 slot.innerHTML = `
                     <div class="row g-0 align-items-stretch">
-                        <div class="col-12 col-lg-6">
-                            <div class="featured-media" style="background-image: url('${image}');"></div>
+                        <div class="col-12 col-lg-7">
+                            <div class="featured-media">
+                                <img src="${image}" alt="${utils.escape(game.title)} key art" width="1400" height="788" loading="lazy" decoding="async">
+                            </div>
                         </div>
-                        <div class="col-12 col-lg-6">
+                        <div class="col-12 col-lg-5">
                             <div class="featured-body">
                                 <p class="section-kicker mb-3">Featured Game</p>
-                                <h3 class="display-6 fw-bold text-uppercase mb-3">${Utils.escapeHTML(game.title)}</h3>
-                                <p class="text-muted mb-4">${Utils.escapeHTML(game.description)}</p>
+                                <h3 class="display-5 fw-bold mb-3">${utils.escape(game.title)}</h3>
+                                <p class="text-muted mb-4">${utils.escape(game.description)}</p>
                                 <div class="d-flex flex-wrap gap-3">
-                                    <a href="${Utils.detailHref("game-details", game.id)}" class="btn btn-danger text-uppercase fw-bold">Explore</a>
-                                    <a href="/games" class="btn btn-outline-light text-uppercase fw-bold">View All</a>
+                                    <a href="${utils.detailHref("game-details", game.id)}" class="btn btn-danger">Explore</a>
+                                    <a href="/games" class="btn btn-outline-light">View All</a>
                                 </div>
                             </div>
                         </div>
@@ -448,169 +581,161 @@
         },
 
         articleDetail: async (id) => {
-            if (!id) {
-                App.showMessage("Article not found.", "/newswire", "Back to Newswire");
-                return;
-            }
+            if (!id) return app.message("Article not found.", "/newswire", "Back to Newswire");
 
             try {
-                const articles = await Data.news();
+                const articles = await data.news();
                 const article = articles.find((item) => String(item.id) === String(id));
                 if (!article) throw new Error("Article not found");
 
+                const url = `${CONFIG.siteUrl}${utils.detailHref("newswire-details", article.id)}`;
+                const image = utils.normalizeMedia(article.image_url, 1400);
+                const description = utils.clampDescription(article.summary);
                 const title = `${article.title} | Reflex Interactive`;
-                const url = Utils.detailHref("newswire-details", article.id);
-                const absoluteUrl = `https://reflexinteractive.com${url}`;
-                document.title = title;
-                DOM.setCanonical(absoluteUrl);
-                DOM.setMeta('meta[name="description"]', article.summary?.slice(0, 160));
-                DOM.setMeta('meta[property="og:title"]', title);
-                DOM.setMeta('meta[property="og:description"]', article.summary?.slice(0, 160));
-                DOM.setMeta('meta[property="og:image"]', article.image_url);
-                DOM.setMeta('meta[property="og:url"]', absoluteUrl);
-                DOM.setMeta('meta[name="twitter:title"]', title);
-                DOM.setMeta('meta[name="twitter:description"]', article.summary?.slice(0, 160));
-                DOM.setMeta('meta[name="twitter:image"]', article.image_url);
 
-                const schema = DOM.byId("news-schema");
+                document.title = title;
+                dom.setCanonical(url);
+                dom.setMeta('meta[name="description"]', description);
+                dom.setMeta('meta[property="og:title"]', title);
+                dom.setMeta('meta[property="og:description"]', description);
+                dom.setMeta('meta[property="og:image"]', image);
+                dom.setMeta('meta[property="og:url"]', url);
+                dom.setMeta('meta[name="twitter:title"]', title);
+                dom.setMeta('meta[name="twitter:description"]', description);
+                dom.setMeta('meta[name="twitter:image"]', image);
+
+                const schema = dom.id("news-schema");
                 if (schema) {
                     schema.text = JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "NewsArticle",
-                        mainEntityOfPage: absoluteUrl,
+                        mainEntityOfPage: url,
                         headline: article.title,
+                        description,
+                        image,
                         datePublished: article.date,
-                        image: article.image_url,
-                        description: article.summary,
+                        dateModified: article.date,
                         author: { "@type": "Organization", name: "Reflex Interactive" },
                         publisher: {
                             "@type": "Organization",
                             name: "Reflex Interactive",
-                            logo: {
-                                "@type": "ImageObject",
-                                url: "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
-                            },
+                            logo: { "@type": "ImageObject", url: CONFIG.logo },
                         },
                     });
                 }
 
-                DOM.setText("article-title", article.title);
-                DOM.setText("article-date", article.date);
-                DOM.setHTML("article-content", Utils.textToHTML(article.content));
+                dom.setText("article-title", article.title);
+                dom.setText("article-date", article.date);
+                dom.setHTML("article-content", utils.textToHTML(article.content));
 
-                const image = DOM.byId("article-image");
-                if (image) {
-                    image.src = article.image_url;
-                    image.alt = `Newswire: ${article.title}`;
+                const img = dom.id("article-image");
+                if (img) {
+                    img.src = image;
+                    img.alt = `Newswire key art for ${article.title}`;
                 }
             } catch (error) {
                 console.error("[Render] article detail", error);
-                App.showMessage("Failed to load article.", "/newswire", "Back to Newswire");
+                app.message("Failed to load article.", "/newswire", "Back to Newswire");
             }
         },
 
         gameDetail: async (id) => {
-            if (!id) {
-                App.showMessage("Game not found.", "/games", "Back to Games");
-                return;
-            }
+            if (!id) return app.message("Game not found.", "/games", "Back to Games");
 
             try {
-                const games = await Data.games();
+                const games = await data.games();
                 const game = games.find((item) => String(item.id) === String(id));
                 if (!game) throw new Error("Game not found");
 
-                const imageUrl = Utils.normalizeMediaUrl(game.image_url);
+                const image = utils.normalizeMedia(game.image_url, 1200);
+                const hero = utils.normalizeMedia(game.hero_image_url || game.image_url, 1800);
+                const url = `${CONFIG.siteUrl}${utils.detailHref("game-details", game.id)}`;
+                const description = utils.clampDescription(game.description);
                 const title = `${game.title} | Reflex Interactive`;
-                const url = Utils.detailHref("game-details", game.id);
-                const absoluteUrl = `https://reflexinteractive.com${url}`;
+
                 document.title = title;
-                DOM.setCanonical(absoluteUrl);
+                dom.setCanonical(url);
+                dom.setMeta('meta[name="description"]', description);
+                dom.setMeta('meta[property="og:title"]', title);
+                dom.setMeta('meta[property="og:description"]', description);
+                dom.setMeta('meta[property="og:image"]', image);
+                dom.setMeta('meta[property="og:url"]', url);
+                dom.setMeta('meta[name="twitter:title"]', title);
+                dom.setMeta('meta[name="twitter:description"]', description);
+                dom.setMeta('meta[name="twitter:image"]', image);
 
-                DOM.setMeta('meta[name="description"]', game.description?.slice(0, 160));
-                DOM.setMeta('meta[property="og:title"]', title);
-                DOM.setMeta('meta[property="og:description"]', game.description?.slice(0, 160));
-                DOM.setMeta('meta[property="og:image"]', imageUrl);
-                DOM.setMeta('meta[property="og:url"]', absoluteUrl);
-                DOM.setMeta('meta[name="twitter:title"]', title);
-                DOM.setMeta('meta[name="twitter:description"]', game.description?.slice(0, 160));
-                DOM.setMeta('meta[name="twitter:image"]', imageUrl);
-
-                const schema = DOM.byId("game-json-ld");
+                const schema = dom.id("game-json-ld");
                 if (schema) {
-                    const data = Utils.parseJSON(schema.text);
-                    Object.assign(data, {
+                    const payload = utils.parseJSON(schema.text);
+                    Object.assign(payload, {
                         name: game.title,
-                        description: game.description,
+                        description,
                         genre: game.genre,
-                        image: imageUrl,
-                        url: absoluteUrl,
+                        image,
+                        url,
+                        offers: {
+                            "@type": "Offer",
+                            price: Number(game.price || 0).toFixed(2),
+                            priceCurrency: "USD",
+                            availability: "https://schema.org/InStock",
+                        },
                     });
-                    schema.text = JSON.stringify(data);
+                    schema.text = JSON.stringify(payload);
                 }
 
-                const hero = DOM.byId("game-hero");
-                if (hero) hero.style.backgroundImage = `url('${Utils.normalizeMediaUrl(game.hero_image_url || game.image_url)}')`;
+                const heroNode = dom.id("game-hero");
+                if (heroNode) heroNode.style.backgroundImage = `url('${hero}')`;
 
-                const cover = DOM.byId("game-detail-cover");
+                const cover = dom.id("game-detail-cover");
                 if (cover) {
-                    cover.src = imageUrl;
-                    cover.alt = `${game.title} Official Cover Art`;
+                    cover.src = image;
+                    cover.alt = `${game.title} official cover art`;
                 }
 
-                DOM.setText("game-detail-title", game.title);
-                DOM.setText("game-detail-developer", game.developer);
-                DOM.setText("game-detail-publisher", game.publisher);
-                DOM.setText("game-detail-genre", game.genre);
-                DOM.setText("game-detail-description", game.description);
-                DOM.setText("game-detail-price", Number(game.price) === 0 ? "FREE" : `$${Number(game.price || 0).toFixed(2)}`);
+                dom.setText("game-detail-title", game.title);
+                dom.setText("game-detail-developer", game.developer || "Reflex Interactive");
+                dom.setText("game-detail-publisher", game.publisher || "Reflex Interactive");
+                dom.setText("game-detail-genre", game.genre || "Action");
+                dom.setText("game-detail-description", game.description);
+                dom.setText("game-detail-price", Number(game.price) === 0 ? "Free" : `$${Number(game.price || 0).toFixed(2)}`);
 
-                const button = DOM.byId("purchase-download-btn");
-                if (button) {
-                    const isFreeDownload = Number(game.price) === 0 && game.download_url;
-                    button.textContent = isFreeDownload ? "Download Now" : "Purchase Now";
-                    button.href = isFreeDownload ? game.download_url : "#";
-                    button.classList.toggle("opacity-50", !isFreeDownload);
-                    button.classList.toggle("cursor-not-allowed", !isFreeDownload);
-                    if (isFreeDownload) button.setAttribute("download", "");
-                    else button.removeAttribute("download");
+                const cta = dom.id("purchase-download-btn");
+                if (cta) {
+                    const downloadable = Number(game.price) === 0 && game.download_url;
+                    cta.textContent = downloadable ? "Download Now" : "Purchase Coming Soon";
+                    cta.href = downloadable ? game.download_url : "#";
+                    cta.classList.toggle("opacity-50", !downloadable);
+                    cta.classList.toggle("cursor-not-allowed", !downloadable);
+                    if (downloadable) cta.setAttribute("download", "");
+                    else cta.removeAttribute("download");
                 }
 
-                Render.gameMedia(game);
+                render.gameMedia(game);
             } catch (error) {
                 console.error("[Render] game detail", error);
-                App.showMessage(`Failed to load game details: ${error.message}`, "/games", "Back to Games");
+                app.message("Failed to load game details.", "/games", "Back to Games");
             }
         },
 
         gameMedia: (game) => {
-            const media = DOM.byId("game-detail-screenshots");
+            const media = dom.id("game-detail-screenshots");
             if (!media) return;
 
             const fragment = document.createDocumentFragment();
 
             if (game.trailer_url) {
-                const iframe = document.createElement("iframe");
-                iframe.src = game.trailer_url;
-                iframe.className = "col-12 w-100 rounded-lg shadow-md aspect-video mb-4";
-                iframe.setAttribute("allowfullscreen", "");
-                iframe.title = `${game.title} trailer`;
-                fragment.appendChild(iframe);
+                const col = document.createElement("div");
+                col.className = "col-12";
+                col.innerHTML = `<iframe src="${utils.escape(game.trailer_url)}" class="w-100 rounded-lg shadow-md aspect-video mb-2" title="${utils.escape(game.title)} trailer" loading="lazy" allowfullscreen></iframe>`;
+                fragment.appendChild(col);
             }
 
             if (Array.isArray(game.screenshots)) {
-                game.screenshots.forEach((screenshot) => {
+                game.screenshots.forEach((shot) => {
+                    const src = utils.normalizeMedia(shot.url || shot, 900);
                     const col = document.createElement("div");
-                    const img = document.createElement("img");
-                    const src = screenshot.url || screenshot;
-
                     col.className = "col";
-                    img.src = Utils.normalizeMediaUrl(src);
-                    img.className = "img-fluid rounded-lg shadow-md";
-                    img.alt = screenshot.caption || `${game.title} Screenshot`;
-                    img.loading = "lazy";
-
-                    col.appendChild(img);
+                    col.innerHTML = `<img src="${src}" alt="${utils.escape(shot.caption || `${game.title} screenshot`)}" width="900" height="506" class="img-fluid rounded-lg shadow-md" loading="lazy" decoding="async">`;
                     fragment.appendChild(col);
                 });
             }
@@ -619,104 +744,48 @@
         },
     };
 
-    const Router = {
-        get route() {
-            const path = window.location.pathname.replace(/\/$/, "") || "/";
-            const params = new URLSearchParams(window.location.search);
-            return { path, id: params.get("id") };
-        },
-
-        run: () => {
-            const { path, id } = Router.route;
-            const hasGameHero = Boolean(DOM.byId("game-hero"));
-            const hasArticleDetail = Boolean(DOM.byId("article-detail"));
-
-            if (path.includes("game-details") || (id && hasGameHero)) {
-                Render.gameDetail(id);
-                return;
-            }
-
-            if (path.includes("newswire-details") || (id && hasArticleDetail)) {
-                Render.articleDetail(id);
-                return;
-            }
-
-            if (path.includes("games")) {
-                Render.gameList("full-games-container");
-                return;
-            }
-
-            if (path.includes("newswire")) {
-                Render.newsList("news-container");
-                return;
-            }
-
-            if ((path === "/" || path.endsWith("index.html")) && !State.isSupportSubdomain) {
-                Render.newsList("latest-news-container");
-                Render.featuredGame();
-                Render.gameList("latest-games-container");
-            }
-
-            if (State.isSupportSubdomain || path.includes("support")) {
-                Render.supportGameList();
-            }
-        },
-    };
-
-    const Events = {
+    const events = {
         init: () => {
-            document.addEventListener("click", Events.handleDocumentClick);
-
-            const newsletter = DOM.byId("newsletter-form");
-            if (newsletter) newsletter.addEventListener("submit", Events.handleFormSubmit);
+            document.addEventListener("click", events.click);
+            const newsletter = dom.id("newsletter-form");
+            newsletter?.addEventListener("submit", events.submit);
         },
 
-        handleDocumentClick: (event) => {
-            const hashLink = event.target.closest('a[href^="#"]');
-            const prevRail = event.target.closest("[data-rail-prev]");
-            const nextRail = event.target.closest("[data-rail-next]");
-            const cacheButton = event.target.closest("#clear-cache-link");
+        click: (event) => {
+            const prev = event.target.closest("[data-rail-prev]");
+            const next = event.target.closest("[data-rail-next]");
+            const hash = event.target.closest('a[href^="#"]');
+            const clear = event.target.closest("#clear-cache-link");
 
-            if (prevRail || nextRail) {
+            if (prev || next) {
                 event.preventDefault();
-                const control = prevRail || nextRail;
-                UI.scrollRail(control.dataset.railPrev || control.dataset.railNext, prevRail ? -1 : 1);
+                const control = prev || next;
+                ui.scrollRail(control.dataset.railPrev || control.dataset.railNext, prev ? -1 : 1);
                 return;
             }
 
-            if (hashLink) {
-                Events.handleHashLink(event, hashLink);
-                return;
+            if (hash) {
+                const href = hash.getAttribute("href");
+                if (href && href !== "#") {
+                    const target = dom.qs(href);
+                    if (target) {
+                        event.preventDefault();
+                        target.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                }
             }
 
-            if (cacheButton) {
-                Events.clearSiteCache(event);
-            }
+            if (clear) events.clearCache(event);
         },
 
-        handleHashLink: (event, link) => {
-            const href = link.getAttribute("href");
-            if (!href || href === "#") return;
-
-            try {
-                const target = DOM.qs(href);
-                if (!target) return;
-                event.preventDefault();
-                target.scrollIntoView({ behavior: "smooth" });
-            } catch (error) {
-                console.warn("[Navigation] Invalid hash target", href);
-            }
-        },
-
-        handleFormSubmit: async (event) => {
+        submit: async (event) => {
             event.preventDefault();
-
             const form = event.currentTarget;
             const button = form.querySelector('button[type="submit"]');
-            if (!button) return;
-
-            button.disabled = true;
-            button.textContent = "Sending...";
+            if (button) {
+                button.disabled = true;
+                button.textContent = "Sending...";
+            }
 
             try {
                 const response = await fetch(form.action, {
@@ -724,72 +793,78 @@
                     body: new FormData(form),
                     headers: { Accept: "application/json" },
                 });
-
-                form.innerHTML = `<p class="text-${response.ok ? "success" : "danger"} fw-bold text-center">${response.ok ? "Message sent!" : "Error sending message."}</p>`;
-            } catch (error) {
-                console.error("[Form] Submit failed", error);
+                form.innerHTML = `<p class="text-${response.ok ? "success" : "danger"} fw-bold text-center">${response.ok ? "Message sent." : "Error sending message."}</p>`;
+            } catch {
                 form.innerHTML = '<p class="text-danger fw-bold text-center">Something went wrong.</p>';
             }
         },
 
-        clearSiteCache: (event) => {
+        clearCache: (event) => {
             event.preventDefault();
-
-            try {
-                localStorage.clear();
-                sessionStorage.clear();
-            } catch (error) {
-                console.warn("[Cache] Storage clear failed", error);
-            }
-
+            localStorage.clear();
+            sessionStorage.clear();
             if ("serviceWorker" in navigator) {
-                navigator.serviceWorker.getRegistrations()
-                    .then((registrations) => registrations.forEach((registration) => registration.unregister()))
-                    .catch((error) => console.warn("[Cache] Service worker clear failed", error));
+                navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((reg) => reg.unregister()));
             }
-
-            const url = new URL(window.location.href);
-            url.searchParams.set("nocache", Date.now());
-            alert("Local site cache cleared. The page will now reload with the latest version.");
-            window.location.replace(url.toString());
+            window.location.reload();
         },
     };
 
-    const App = {
+    const router = {
+        run: () => {
+            const path = window.location.pathname.replace(/\/$/, "") || "/";
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get("id");
+
+            if (path.includes("game-details") || (id && dom.id("game-hero"))) return render.gameDetail(id);
+            if (path.includes("newswire-details") || (id && dom.id("article-detail"))) return render.articleDetail(id);
+            if (path.includes("games")) return render.gameList("full-games-container");
+            if (path.includes("newswire")) return render.newsList("news-container");
+            if (state.supportHost || path.includes("support")) return render.supportGames();
+
+            if (path === "/" || path.endsWith("index.html")) {
+                render.newsList("latest-news-container");
+                render.featuredGame();
+                render.gameList("latest-games-container");
+            }
+        },
+    };
+
+    const app = {
         init: async () => {
             await Promise.all([
-                Data.loadComponent("navbar", "/components/navbar.html", () => {
-                    UI.initNavbar();
-                    UI.initMobileMenu();
-                    UI.initDownloadButtons();
-                    Render.navbarGameRail();
+                data.component("navbar", "/components/navbar.html", () => {
+                    ui.initNav();
+                    ui.initMobileMenu();
+                    ui.initDownloadButtons();
+                    render.navGames();
                 }),
-                Data.loadComponent("footer", "/components/footer.html"),
+                data.component("footer", "/components/footer.html"),
             ]);
 
-            UI.initScrollReveal();
-            UI.initBackToTop();
-            UI.initCounters();
-            Events.init();
-            Router.run();
+            ui.initEnvironmentLinks();
+            ui.initReveal();
+            ui.initBackToTop();
+            ui.initDepthInteraction();
+            events.init();
+            router.run();
         },
 
-        showMessage: (message, href = "/", label = "Return Home") => {
-            const main = DOM.qs("main");
+        message: (message, href = "/", label = "Return Home") => {
+            const main = dom.qs("main");
             if (!main) return;
-
             main.innerHTML = `
-                <div class="container text-center py-5">
-                    <p class="text-danger fw-bold text-uppercase">${Utils.escapeHTML(message)}</p>
-                    <a class="btn btn-danger text-uppercase fw-bold" href="${href}">${Utils.escapeHTML(label)}</a>
-                </div>
+                <section class="container text-center py-5">
+                    <p class="section-kicker mb-3">${utils.escape(message)}</p>
+                    <a class="btn btn-danger" href="${href}">${utils.escape(label)}</a>
+                </section>
             `;
         },
     };
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", App.init, { once: true });
+        document.addEventListener("DOMContentLoaded", app.init, { once: true });
     } else {
-        App.init();
+        app.init();
     }
 })();

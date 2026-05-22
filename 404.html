@@ -7,6 +7,9 @@
     <title>Page Not Found | Reflex Interactive</title>
     <meta name="robots" content="noindex, follow">
     <meta name="description" content="The requested Reflex Interactive page could not be found. Return home, browse games, or read the latest Newswire updates.">
+    <meta name="author" content="Reflex Interactive">
+    <meta name="theme-color" content="#000000">
+    <meta name="format-detection" content="telephone=no">
     <meta property="og:title" content="Page Not Found | Reflex Interactive">
     <meta property="og:description" content="Return to Reflex Interactive to browse games, studio news, and support resources.">
     <meta property="og:type" content="website">
@@ -18,6 +21,11 @@
     <meta name="twitter:description" content="Return to Reflex Interactive to browse games, studio news, and support resources.">
     
     <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="./css/styles.css">
 </head>
@@ -25,7 +33,7 @@
     
     <div id="navbar"></div>
 
-    <main role="main">
+    <main id="main-content" role="main">
         <section class="error-page">
             <div class="error-content reveal-on-load">
                 <h1 class="error-code">404</h1>
@@ -58,7 +66,6 @@
 
     <div id="footer"></div>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="./js/app.js"></script>
+    <script src="./js/app.js" defer></script>
 </body>
 </html>
