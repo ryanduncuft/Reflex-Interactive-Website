@@ -10,6 +10,8 @@
         api: {
             news: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
             games: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
+            // Replace this with your GitHub Gist raw URL after uploading support-articles.json.
+            supportArticles: "https://gist.githubusercontent.com/ryanduncuft/3308af53408db611254490f5c0b8611f/raw/reflex-support.json",
         },
         siteUrl: "https://reflexinteractive.com",
         logo: "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
@@ -39,6 +41,14 @@
         cache: new Map(),
         revealObserver: null,
         supportHost: window.location.hostname.startsWith("support."),
+        support: {
+            articles: [],
+            games: [],
+            selectedCategory: "",
+            selectedGame: "",
+            selectedGameTitle: "",
+            query: "",
+        },
     };
 
     const dom = {
@@ -102,8 +112,8 @@
         detailHref: (page, id) => utils.routeHref(`/${page}?id=${encodeURIComponent(id)}`),
 
         newestFirst: (items = []) => [...items].sort((a, b) => {
-            const at = Date.parse(a.date || a.release_date || "");
-            const bt = Date.parse(b.date || b.release_date || "");
+            const at = Date.parse(a.date || a.release_date || a.updated || "");
+            const bt = Date.parse(b.date || b.release_date || b.updated || "");
             if (Number.isNaN(at) || Number.isNaN(bt)) return 0;
             return bt - at;
         }),
@@ -142,6 +152,23 @@
         },
 
         spinner: (id, show) => dom.id(id)?.classList.toggle("d-none", !show),
+
+        categoryLabel: (value = "general") => ({
+            account: "Account",
+            technical: "Technical",
+            "bug-report": "Bug Report",
+            downloads: "Downloads",
+            general: "General",
+        }[value] || String(value).replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())),
+
+        articleText: (article = {}) => {
+            const blocks = Array.isArray(article.content) ? article.content : [article.content || ""];
+            return blocks.map((block) => {
+                if (typeof block === "string") return block;
+                if (Array.isArray(block.items)) return block.items.join(" ");
+                return block.text || "";
+            }).join(" ");
+        },
     };
 
     const data = {
@@ -172,6 +199,7 @@
 
         games: async () => utils.newestFirst(await data.json(CONFIG.api.games)),
         news: async () => utils.newestFirst(await data.json(CONFIG.api.news)),
+        supportArticles: async () => utils.newestFirst(await data.json(CONFIG.api.supportArticles)),
     };
 
     const templates = {
@@ -212,12 +240,29 @@
         `,
 
         supportGame: (game) => `
-            <a href="#contact-section" class="card modern-card h-100 text-decoration-none">
+            <button type="button" class="card modern-card h-100 text-decoration-none support-game-card" data-support-game="${utils.escape(game.id)}" data-support-game-title="${utils.escape(game.title)}">
                 <img src="${utils.normalizeMedia(game.image_url, 700)}" alt="${utils.escape(game.title)} support category" width="700" height="394" class="modern-game-card-img support-tile-img" loading="lazy" decoding="async">
                 <div class="card-img-overlay d-flex align-items-center justify-content-center">
                     <h3 class="text-white fw-bold m-0 text-shadow-lg">${utils.escape(game.title)}</h3>
                 </div>
-            </a>
+            </button>
+        `,
+
+        supportArticleCard: (article, gameTitle = "All games") => `
+            <article class="card support-article-card">
+                <div class="card-body">
+                    <div class="support-card-meta">
+                        <span>${utils.escape(utils.categoryLabel(article.category))}</span>
+                        <span>${utils.escape(gameTitle)}</span>
+                    </div>
+                    <h3 class="modern-card-title mb-2">${utils.escape(article.title)}</h3>
+                    <p class="modern-card-summary mb-3">${utils.escape(article.summary)}</p>
+                    <div class="support-card-footer">
+                        <time class="modern-card-date mb-0" datetime="${utils.escape(article.updated || article.date || "")}">${utils.escape(article.updated || article.date || "Updated recently")}</time>
+                        <button class="btn btn-outline-light btn-sm" type="button" data-support-article="${utils.escape(article.id)}">Read</button>
+                    </div>
+                </div>
+            </article>
         `,
     };
 
@@ -539,12 +584,169 @@
             }
         },
 
-        supportGames: () => render.collection({
-            containerId: "support-game-grid",
-            loader: data.games,
-            template: templates.supportGame,
-            empty: "Support categories are temporarily unavailable.",
-        }),
+        supportPage: async () => {
+            await Promise.allSettled([
+                render.supportGames(),
+                render.supportArticles(),
+            ]);
+        },
+
+        supportGames: async () => {
+            const container = dom.id("support-game-grid");
+            if (!container) return;
+
+            try {
+                const games = await data.games();
+                state.support.games = games;
+
+                const fragment = document.createDocumentFragment();
+                games.forEach((game) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "col";
+                    wrapper.innerHTML = templates.supportGame(game);
+                    ui.observe(wrapper.firstElementChild);
+                    fragment.appendChild(wrapper);
+                });
+                container.replaceChildren(fragment);
+                render.supportGameOptions(games);
+                if (state.support.articles.length) render.supportArticleResults();
+            } catch (error) {
+                console.error("[Render] support games", error);
+                container.innerHTML = '<div class="col text-center text-danger py-5">Game support categories are temporarily unavailable.</div>';
+            }
+        },
+
+        supportGameOptions: (games = []) => {
+            const select = dom.id("support-ticket-game");
+            if (!select) return;
+
+            const selected = select.value;
+            select.innerHTML = '<option value="">Not game-specific</option>';
+            games.forEach((game) => {
+                const option = document.createElement("option");
+                option.value = game.id;
+                option.textContent = game.title;
+                select.appendChild(option);
+            });
+            select.value = games.some((game) => String(game.id) === selected) ? selected : "";
+        },
+
+        supportArticles: async () => {
+            const container = dom.id("support-articles-grid");
+            if (!container) return;
+
+            utils.spinner("support-articles-loading", true);
+            try {
+                state.support.articles = await data.supportArticles();
+                render.supportArticleResults();
+            } catch (error) {
+                console.error("[Render] support articles", error);
+                container.innerHTML = '<div class="support-empty-state text-danger">Support articles are temporarily unavailable. Please email support@reflexinteractive.com.</div>';
+            } finally {
+                utils.spinner("support-articles-loading", false);
+            }
+        },
+
+        supportArticleResults: () => {
+            const container = dom.id("support-articles-grid");
+            const summary = dom.id("support-active-filters");
+            if (!container) return;
+
+            const query = state.support.query.trim().toLowerCase();
+            const category = state.support.selectedCategory;
+            const gameId = state.support.selectedGame;
+            const gameMap = new Map(state.support.games.map((game) => [String(game.id), game.title]));
+
+            const articles = state.support.articles.filter((article) => {
+                const articleGame = String(article.game_id || "all");
+                const matchesGame = !gameId || articleGame === "all" || articleGame === "general" || articleGame === String(gameId);
+                const matchesCategory = !category || article.category === category;
+                const haystack = [
+                    article.title,
+                    article.summary,
+                    article.category,
+                    articleGame,
+                    ...(Array.isArray(article.tags) ? article.tags : []),
+                    utils.articleText(article),
+                ].join(" ").toLowerCase();
+                const matchesQuery = !query || haystack.includes(query);
+                return matchesGame && matchesCategory && matchesQuery;
+            });
+
+            const labels = [];
+            if (query) labels.push(`search "${state.support.query.trim()}"`);
+            if (category) labels.push(utils.categoryLabel(category));
+            if (gameId) labels.push(state.support.selectedGameTitle || gameMap.get(String(gameId)) || "Selected game");
+            if (summary) summary.textContent = `${articles.length} article${articles.length === 1 ? "" : "s"} shown${labels.length ? ` for ${labels.join(", ")}` : ""}`;
+
+            if (!articles.length) {
+                container.innerHTML = `
+                    <div class="support-empty-state">
+                        <h3 class="h5 fw-bold mb-2">No matching articles</h3>
+                        <p class="text-muted mb-3">Try another search or send a ticket and include as much detail as possible.</p>
+                        <a class="btn btn-danger" href="#contact-section">Contact support</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            articles.forEach((article) => {
+                const gameTitle = article.game_id && article.game_id !== "all"
+                    ? gameMap.get(String(article.game_id)) || "Selected game"
+                    : "All games";
+                const wrapper = document.createElement("div");
+                wrapper.innerHTML = templates.supportArticleCard(article, gameTitle);
+                ui.observe(wrapper.firstElementChild);
+                fragment.appendChild(wrapper.firstElementChild);
+            });
+            container.replaceChildren(fragment);
+        },
+
+        supportArticleContent: (article) => {
+            if (typeof article.content === "string") return utils.textToHTML(article.content);
+            if (!Array.isArray(article.content)) return "";
+
+            return article.content.map((block) => {
+                if (typeof block === "string") return utils.textToHTML(block);
+                if (block.type === "list" && Array.isArray(block.items)) {
+                    return `<ul>${block.items.map((item) => `<li>${utils.escape(item)}</li>`).join("")}</ul>`;
+                }
+                if (block.type === "heading") return `<h3>${utils.escape(block.text)}</h3>`;
+                return `<p>${utils.escape(block.text || "")}</p>`;
+            }).join("");
+        },
+
+        supportArticleDetail: (id) => {
+            const viewer = dom.id("support-article-viewer");
+            if (!viewer) return;
+
+            const article = state.support.articles.find((item) => String(item.id) === String(id));
+            if (!article) return;
+
+            const game = state.support.games.find((item) => String(item.id) === String(article.game_id));
+            viewer.innerHTML = `
+                <article class="support-article-detail">
+                    <button class="support-back-link" type="button" data-support-close-article>Back to articles</button>
+                    <div class="support-card-meta mb-3">
+                        <span>${utils.escape(utils.categoryLabel(article.category))}</span>
+                        <span>${utils.escape(game?.title || "All games")}</span>
+                        <time datetime="${utils.escape(article.updated || article.date || "")}">${utils.escape(article.updated || article.date || "Updated recently")}</time>
+                    </div>
+                    <h3 class="display-6 fw-bold mb-3">${utils.escape(article.title)}</h3>
+                    <p class="text-muted fs-5">${utils.escape(article.summary || "")}</p>
+                    <div class="news-detail-content support-detail-content">
+                        ${render.supportArticleContent(article)}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button class="btn btn-danger" type="button" data-support-article-ticket="${utils.escape(article.id)}">Use in support ticket</button>
+                        <a class="btn btn-outline-light" href="#contact-section">Contact support</a>
+                    </div>
+                </article>
+            `;
+            viewer.classList.remove("d-none");
+            viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
 
         featuredGame: async () => {
             const slot = dom.id("featured-game-slot");
@@ -780,8 +982,9 @@
     const events = {
         init: () => {
             document.addEventListener("click", events.click);
-            const newsletter = dom.id("newsletter-form");
-            newsletter?.addEventListener("submit", events.submit);
+            document.addEventListener("input", events.input);
+            document.addEventListener("change", events.change);
+            document.addEventListener("submit", events.submit);
         },
 
         click: (event) => {
@@ -789,11 +992,54 @@
             const next = event.target.closest("[data-rail-next]");
             const hash = event.target.closest('a[href^="#"]');
             const clear = event.target.closest("#clear-cache-link");
+            const supportCategory = event.target.closest("[data-support-category]");
+            const supportGame = event.target.closest("[data-support-game]");
+            const supportArticle = event.target.closest("[data-support-article]");
+            const supportCloseArticle = event.target.closest("[data-support-close-article]");
+            const supportClear = event.target.closest("#support-clear-filters");
+            const supportTicketArticle = event.target.closest("[data-support-article-ticket]");
 
             if (prev || next) {
                 event.preventDefault();
                 const control = prev || next;
                 ui.scrollRail(control.dataset.railPrev || control.dataset.railNext, prev ? -1 : 1);
+                return;
+            }
+
+            if (supportCategory) {
+                event.preventDefault();
+                events.selectSupportCategory(supportCategory.dataset.supportCategory);
+                return;
+            }
+
+            if (supportGame) {
+                event.preventDefault();
+                events.selectSupportGame(supportGame.dataset.supportGame, supportGame.dataset.supportGameTitle);
+                return;
+            }
+
+            if (supportArticle) {
+                event.preventDefault();
+                render.supportArticleDetail(supportArticle.dataset.supportArticle);
+                return;
+            }
+
+            if (supportCloseArticle) {
+                event.preventDefault();
+                dom.id("support-article-viewer")?.classList.add("d-none");
+                dom.id("support-articles-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+            }
+
+            if (supportClear) {
+                event.preventDefault();
+                events.clearSupportFilters();
+                return;
+            }
+
+            if (supportTicketArticle) {
+                event.preventDefault();
+                events.useArticleInTicket(supportTicketArticle.dataset.supportArticleTicket);
                 return;
             }
 
@@ -811,9 +1057,47 @@
             if (clear) events.clearCache(event);
         },
 
+        input: (event) => {
+            if (event.target?.id !== "support-search-input") return;
+            state.support.query = event.target.value;
+            dom.id("support-article-viewer")?.classList.add("d-none");
+            render.supportArticleResults();
+        },
+
+        change: (event) => {
+            if (event.target?.id === "support-ticket-category") {
+                state.support.selectedCategory = event.target.value === "general" ? "" : event.target.value;
+                dom.id("support-article-viewer")?.classList.add("d-none");
+                render.supportArticleResults();
+            }
+
+            if (event.target?.id === "support-ticket-game") {
+                const option = event.target.selectedOptions?.[0];
+                events.selectSupportGame(event.target.value, option?.textContent || "", false);
+            }
+        },
+
         submit: async (event) => {
+            const form = event.target;
+
+            if (form?.id === "support-search-form") {
+                event.preventDefault();
+                state.support.query = dom.id("support-search-input")?.value || "";
+                dom.id("support-article-viewer")?.classList.add("d-none");
+                render.supportArticleResults();
+                dom.id("support-articles-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+            }
+
+            if (form?.id === "support-ticket-form") {
+                event.preventDefault();
+                events.submitSupportTicket(form);
+                return;
+            }
+
+            if (form?.id !== "newsletter-form") return;
+
             event.preventDefault();
-            const form = event.currentTarget;
             const button = form.querySelector('button[type="submit"]');
             if (button) {
                 button.disabled = true;
@@ -841,6 +1125,97 @@
             }
             window.location.reload();
         },
+
+        selectSupportCategory: (category = "") => {
+            state.support.selectedCategory = category;
+            const select = dom.id("support-ticket-category");
+            if (select && category) select.value = category;
+            const subject = dom.id("support-ticket-subject");
+            if (subject && !subject.value.trim()) subject.value = `${utils.categoryLabel(category)} support request`;
+            dom.id("support-article-viewer")?.classList.add("d-none");
+            render.supportArticleResults();
+            dom.id("support-articles-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+
+        selectSupportGame: (id = "", title = "", scroll = true) => {
+            state.support.selectedGame = id;
+            state.support.selectedGameTitle = id ? title : "";
+
+            const current = dom.id("support-current-selection");
+            if (current) current.textContent = id ? `Selected: ${title}` : "No game selected";
+
+            const select = dom.id("support-ticket-game");
+            if (select) select.value = id;
+
+            dom.qsa("[data-support-game]").forEach((button) => {
+                button.classList.toggle("is-selected", String(button.dataset.supportGame) === String(id));
+            });
+
+            dom.id("support-article-viewer")?.classList.add("d-none");
+            render.supportArticleResults();
+            if (scroll) dom.id("support-articles-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+
+        clearSupportFilters: () => {
+            state.support.selectedCategory = "";
+            state.support.selectedGame = "";
+            state.support.selectedGameTitle = "";
+            state.support.query = "";
+
+            const search = dom.id("support-search-input");
+            if (search) search.value = "";
+            const category = dom.id("support-ticket-category");
+            if (category) category.value = "general";
+            const game = dom.id("support-ticket-game");
+            if (game) game.value = "";
+            const current = dom.id("support-current-selection");
+            if (current) current.textContent = "No game selected";
+            dom.qsa("[data-support-game]").forEach((button) => button.classList.remove("is-selected"));
+            dom.id("support-article-viewer")?.classList.add("d-none");
+
+            render.supportArticleResults();
+        },
+
+        useArticleInTicket: (id) => {
+            const article = state.support.articles.find((item) => String(item.id) === String(id));
+            if (!article) return;
+
+            const category = dom.id("support-ticket-category");
+            const subject = dom.id("support-ticket-subject");
+            const message = dom.id("support-ticket-message");
+
+            if (category) category.value = article.category || "general";
+            if (subject && !subject.value.trim()) subject.value = `Question about: ${article.title}`;
+            if (message && !message.value.trim()) {
+                message.value = `I read the support article "${article.title}" and still need help with:\n\n`;
+                message.focus();
+            }
+            dom.id("contact-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+
+        submitSupportTicket: (form) => {
+            if (!form.reportValidity()) return;
+
+            const values = Object.fromEntries(new FormData(form).entries());
+            const subject = values.subject || `${utils.categoryLabel(values.category)} support request`;
+            const body = [
+                `Name: ${values.name}`,
+                `Reply Email: ${values.email}`,
+                `Category: ${utils.categoryLabel(values.category)}`,
+                `Game: ${values.game ? state.support.games.find((game) => String(game.id) === String(values.game))?.title || values.game : "Not game-specific"}`,
+                `Platform: ${values.platform || "Not provided"}`,
+                "",
+                "Details:",
+                values.message,
+                "",
+                `Page: ${window.location.href}`,
+            ].join("\n");
+
+            const href = `mailto:support@reflexinteractive.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            const status = dom.id("support-form-status");
+            if (status) status.textContent = "Opening your email app with the ticket details. If nothing opens, use the direct email button below.";
+            window.location.href = href;
+        },
     };
 
     const router = {
@@ -853,7 +1228,7 @@
             if (path.includes("newswire-details") || (id && dom.id("article-detail"))) return render.articleDetail(id);
             if (path.includes("games")) return render.gameList("full-games-container");
             if (path.includes("newswire")) return render.newsList("news-container");
-            if (state.supportHost || path.includes("support")) return render.supportGames();
+            if (state.supportHost || path.includes("support")) return render.supportPage();
 
             if (path === "/" || path.endsWith("index.html")) {
                 render.newsList("latest-news-container");
