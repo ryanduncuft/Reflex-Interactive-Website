@@ -23,6 +23,13 @@
             careers: "https://careers.reflexinteractive.com/",
             account: "https://account.reflexinteractive.com/",
         },
+        downloads: {
+            protectedBaseUrl: "https://downloads.reflexinteractive.com",
+        },
+        launcher: {
+            baseUrl: "https://cdn.reflexinteractive.com/launcher-files",
+            manifestUrl: "https://cdn.reflexinteractive.com/launcher-files/manifest.json",
+        },
         localRoutes: {
             "/about": "/about.html",
             "/account": "/account.html",
@@ -110,6 +117,112 @@
         },
 
         detailHref: (page, id) => utils.routeHref(`/${page}?id=${encodeURIComponent(id)}`),
+
+        linkedDetailId: (game = {}) => {
+            if (!game.link) return "";
+            try {
+                return new URL(game.link, window.location.origin).searchParams.get("id") || "";
+            } catch {
+                return "";
+            }
+        },
+
+        gameMatchesId: (game = {}, id = "") => {
+            const value = String(id);
+            if (String(game.id) === value || String(game.numeric_id) === value) return true;
+            if (utils.linkedDetailId(game) === value) return true;
+            if (Array.isArray(game.aliases) && game.aliases.map(String).includes(value)) return true;
+            return false;
+        },
+
+        protectedDownloadUrl: (key = "", filename = "", game = {}) => {
+            const url = new URL(`${CONFIG.downloads.protectedBaseUrl.replace(/\/$/, "")}/download`);
+            url.searchParams.set("key", key);
+            url.searchParams.set("gameId", String(game.numeric_id || game.id || ""));
+            if (filename) url.searchParams.set("filename", filename);
+            return url.toString();
+        },
+
+        downloadFilename: (url = "", fallback = "game.zip") => {
+            try {
+                const path = new URL(url, window.location.origin).pathname;
+                return decodeURIComponent(path.split("/").filter(Boolean).pop() || fallback);
+            } catch {
+                return fallback;
+            }
+        },
+
+        gameDownloadInfo: (game = {}, runtime = "win-x64") => {
+            const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64;
+            const platformFile = Array.isArray(platformDownload?.files) ? platformDownload.files[0] : null;
+            const protectedKey = platformFile?.key
+                || platformDownload?.key
+                || platformDownload?.r2_key
+                || platformDownload?.r2Key
+                || game.download_key
+                || game.downloadKey;
+
+            const filename = platformFile?.name
+                || platformDownload?.filename
+                || game.download_name
+                || utils.downloadFilename(protectedKey || "");
+
+            if (protectedKey) {
+                return {
+                    url: utils.protectedDownloadUrl(protectedKey, filename, game),
+                    filename,
+                };
+            }
+
+            const explicit = platformFile?.url
+                || platformDownload?.zip_url
+                || platformDownload?.zipUrl
+                || platformDownload?.archive_url
+                || platformDownload?.archiveUrl
+                || platformDownload?.url
+                || game.zip_url
+                || game.zipUrl
+                || game.archive_url
+                || game.archiveUrl
+                || game.download_url
+                || game.downloadUrl
+                || game.installer_url
+                || game.installerUrl;
+
+            if (explicit) {
+                return {
+                    url: explicit,
+                    filename: platformFile?.name || platformDownload?.filename || game.download_name || utils.downloadFilename(explicit),
+                };
+            }
+
+            return { url: "", filename: "" };
+        },
+
+        currentLauncherRuntime: () => {
+            const ua = navigator.userAgent.toLowerCase();
+            const platform = navigator.platform.toLowerCase();
+
+            if (ua.includes("linux")) return "linux-x64";
+            if (!ua.includes("win")) return "";
+            return ua.includes("win64") || ua.includes("wow64") || ua.includes("x64") || platform.includes("x64")
+                ? "win-x64"
+                : "win-x86";
+        },
+
+        launcherPackageUrl: (packageInfo = {}) => {
+            const explicit = packageInfo.url || packageInfo.download_url || packageInfo.downloadUrl;
+            if (explicit) return explicit;
+
+            const relative = packageInfo.path || packageInfo.key || packageInfo.file || "";
+            if (!relative) return "";
+
+            try {
+                return new URL(relative, `${CONFIG.launcher.baseUrl.replace(/\/$/, "")}/`).toString();
+            } catch {
+                return "";
+            }
+        },
 
         newestFirst: (items = []) => [...items].sort((a, b) => {
             const at = Date.parse(a.date || a.release_date || a.updated || "");
@@ -365,21 +478,57 @@
             });
         },
 
-        initDownloadButtons: () => {
+        initDownloadButtons: async () => {
             const buttons = dom.qsa(".launcher-download-btn");
             if (!buttons.length) return;
 
-            const ua = navigator.userAgent.toLowerCase();
-            const platform = navigator.platform.toLowerCase();
-            let runtime = "win-x64";
+            const runtime = utils.currentLauncherRuntime();
 
-            if (ua.includes("linux")) runtime = "linux-x64";
-            else if (ua.includes("win")) runtime = ua.includes("win64") || ua.includes("wow64") || ua.includes("x64") || platform.includes("x64") ? "win-x64" : "win-x86";
+            const disable = (label = "Launcher unavailable") => {
+                buttons.forEach((button) => {
+                    button.href = "#";
+                    button.removeAttribute("download");
+                    button.setAttribute("aria-disabled", "true");
+                    button.classList.add("opacity-50", "cursor-not-allowed");
+                    button.textContent = label;
+                });
+            };
+
+            if (!runtime) {
+                disable();
+                return;
+            }
 
             buttons.forEach((button) => {
-                button.href = `https://cdn.reflexinteractive.com/launcher-files/${runtime}/launcher-latest.zip`;
-                button.download = "ReflexLauncher.zip";
+                button.textContent = "Preparing launcher...";
+                button.setAttribute("aria-disabled", "true");
+                button.classList.add("opacity-50", "cursor-not-allowed");
             });
+
+            try {
+                const response = await fetch(`${CONFIG.launcher.manifestUrl}?t=${Date.now()}`, {
+                    headers: { Accept: "application/json" },
+                    cache: "no-store",
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const manifest = await response.json();
+                const packageInfo = manifest.platforms?.[runtime]?.installer || manifest.platforms?.[runtime];
+                const href = utils.launcherPackageUrl(packageInfo);
+                if (!href) throw new Error(`No launcher package for ${runtime}`);
+
+                buttons.forEach((button) => {
+                    button.href = href;
+                    button.download = packageInfo.filename || `Reflex Interactive Launcher-${runtime}.zip`;
+                    button.removeAttribute("aria-disabled");
+                    button.classList.remove("opacity-50", "cursor-not-allowed");
+                    button.textContent = "Download Launcher";
+                });
+            } catch (error) {
+                console.warn("[Launcher] Manifest unavailable", error);
+                disable("Launcher temporarily unavailable");
+            }
         },
 
         initReveal: () => {
@@ -857,7 +1006,7 @@
 
             try {
                 const games = await data.games();
-                const game = games.find((item) => String(item.id) === String(id));
+                const game = games.find((item) => utils.gameMatchesId(item, id));
                 if (!game) throw new Error("Game not found");
 
                 const image = utils.normalizeMedia(game.image_url, 1200);
@@ -910,8 +1059,8 @@
                         },
                         offers: {
                             "@type": "Offer",
-                            price: Number(game.price || 0).toFixed(2),
-                            priceCurrency: "USD",
+                            price: parseFloat(game.price) || 0,
+                            priceCurrency: "GBP",
                             availability: "https://schema.org/InStock",
                         },
                     });
@@ -932,20 +1081,40 @@
                 dom.setText("game-detail-publisher", game.publisher || "Reflex Interactive");
                 dom.setText("game-detail-genre", game.genre || "Action");
                 dom.setText("game-detail-description", game.description);
-                dom.setText("game-detail-price", Number(game.price) === 0 ? "Free" : `$${Number(game.price || 0).toFixed(2)}`);
+                const actualPrice = parseFloat(game.price) || 0;
+                dom.setText("game-detail-price", actualPrice === 0 ? "Free" : `£${actualPrice.toFixed(2)}`);
 
                 const cta = dom.id("purchase-download-btn");
                 if (cta) {
-                    const downloadable = Number(game.price) === 0 && game.download_url;
-                    cta.textContent = downloadable ? "Download Now" : "Purchase Coming Soon";
-                    cta.href = downloadable ? game.download_url : "#";
-                    cta.classList.toggle("opacity-50", !downloadable);
-                    cta.classList.toggle("cursor-not-allowed", !downloadable);
-                    if (downloadable) cta.setAttribute("download", "");
-                    else cta.removeAttribute("download");
+                    const downloadInfo = utils.gameDownloadInfo(game);
+                    cta.textContent = actualPrice === 0 ? "Checking Account..." : "Purchase Coming Soon";
+                    cta.href = "#";
+                    cta.dataset.gameId = game.id || "";
+                    cta.dataset.gameNumericId = game.numeric_id || "";
+                    cta.dataset.gameTitle = game.title || "";
+                    cta.dataset.gamePrice = String(actualPrice);
+                    cta.dataset.downloadUrl = downloadInfo.url;
+                    cta.dataset.downloadName = downloadInfo.filename;
+                    cta.classList.add("opacity-50", "cursor-not-allowed");
+                    cta.setAttribute("aria-disabled", "true");
+                    cta.removeAttribute("download");
                 }
 
                 render.gameMedia(game);
+                const downloadInfo = utils.gameDownloadInfo(game);
+                document.dispatchEvent(new CustomEvent("reflex:game-detail-ready", {
+                    detail: {
+                        game: {
+                            id: game.id || "",
+                            numeric_id: game.numeric_id || "",
+                            title: game.title || "",
+                            price: actualPrice,
+                            exe_name: game.exe_name || "",
+                            download_url: downloadInfo.url,
+                            download_name: downloadInfo.filename,
+                        },
+                    },
+                }));
             } catch (error) {
                 console.error("[Render] game detail", error);
                 app.message("Failed to load game details.", "/games", "Back to Games");

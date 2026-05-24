@@ -48,28 +48,29 @@
     
     <div id="navbar"></div>
     
-    <main id="main-content" data-account-app>
-        <section class="hero-section position-relative d-flex align-items-center justify-content-center text-center account-hero" role="region" aria-label="Account Dashboard">
-            <div class="position-absolute inset-0 bg-hero-image hero-art-soft" aria-hidden="true"></div>
-            <div class="hero-overlay" aria-hidden="true"></div>
-            <div class="position-relative z-3 px-3 px-md-4 container">
-                <p class="section-kicker text-danger mb-3 hero-entry">Reflex Account</p>
-                <h1 class="display-1 fw-black text-shadow-lg mb-4 hero-entry">Your Library, Anywhere</h1>
-                <p class="fs-4 fw-light text-light hero-entry">Sign in once and your owned games sync with the Reflex Launcher.</p>
-            </div>
-        </section>
-
-        <section id="account-details" class="py-5" role="region" aria-labelledby="account-heading">
+    <main id="main-content" class="account-page" data-account-app>
+        <section class="account-dashboard-shell py-5" role="region" aria-labelledby="account-heading">
             <div class="container">
-                <div class="row g-5">
-                    
-                    <div class="col-12 col-lg-6">
-                        <p class="section-kicker mb-3">Identity</p>
-                        <h2 id="account-heading" class="display-4 fw-bold text-uppercase mb-4">
-                            Account <span class="text-danger">Access</span>
-                        </h2>
-                        
-                        <form id="account-auth-form" class="surface-panel p-4 p-md-5 needs-validation" novalidate>
+                <div class="account-header">
+                    <div>
+                        <p class="section-kicker mb-3">Reflex Account</p>
+                        <h1 id="account-heading" class="display-4 fw-bold text-uppercase mb-2">Account Dashboard</h1>
+                        <p id="account-welcome" class="text-muted fs-5 mb-0">Sign in to manage your profile, security, and game library.</p>
+                    </div>
+                    <div class="account-session-panel">
+                        <span id="account-session-state" class="account-status-pill">Signed out</span>
+                        <p id="account-profile-summary" class="mb-0 text-muted">Not signed in.</p>
+                        <button id="account-signout" type="button" class="btn btn-outline-danger btn-sm text-uppercase fw-bold" disabled>Log Out</button>
+                    </div>
+                </div>
+
+                <div class="row g-4 align-items-start">
+                    <div id="account-auth-column" class="col-12 col-xl-4">
+                        <form id="account-auth-form" class="surface-panel account-panel needs-validation" novalidate>
+                            <div class="account-panel-heading">
+                                <p class="section-kicker mb-2">Access</p>
+                                <h2 class="h4 fw-bold text-uppercase mb-0">Sign In</h2>
+                            </div>
                             <div class="d-flex gap-2 mb-4" role="tablist" aria-label="Account mode">
                                 <button type="button" class="btn btn-danger flex-fill" id="account-mode-signin">Sign In</button>
                                 <button type="button" class="btn btn-outline-light flex-fill" id="account-mode-signup">Create Account</button>
@@ -87,43 +88,93 @@
                                 <input type="password" class="form-control bg-dark text-white border-secondary" id="account-password" autocomplete="current-password" required>
                             </div>
                             <p id="account-auth-message" class="small fw-bold" role="status"></p>
-                            <button id="account-submit" type="submit" class="btn btn-danger text-uppercase fw-bold px-4">
-                                Sign In
-                            </button>
-                            <button id="account-reset-password" type="button" class="btn btn-link text-light fw-bold ms-md-3 mt-3 mt-md-0">Reset Password</button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button id="account-submit" type="submit" class="btn btn-danger text-uppercase fw-bold px-4">Sign In</button>
+                                <button id="account-reset-password" type="button" class="btn btn-outline-light text-uppercase fw-bold">Reset Password</button>
+                            </div>
                         </form>
                     </div>
-                    
-                    <div class="col-12 col-lg-6">
-                        <p class="section-kicker mb-3">Overview</p>
-                        <h2 class="display-4 fw-bold text-uppercase mb-4">Status</h2>
-                        
-                        <div class="row row-cols-1 g-3">
-                            <div class="col">
-                                <div class="feature-card reveal-on-scroll">
-                                    <h3 class="text-danger text-uppercase fs-5">Signed In As</h3>
-                                    <p id="account-profile-summary" class="text-muted mb-0">Not signed in.</p>
+
+                    <div id="account-dashboard-column" class="col-12 col-xl-8">
+                        <div id="account-dashboard" class="account-dashboard d-none">
+                            <div class="account-stat-grid mb-4">
+                                <div class="account-stat">
+                                    <span>Library</span>
+                                    <strong id="account-library-count">0</strong>
+                                </div>
+                                <div class="account-stat">
+                                    <span>Account ID</span>
+                                    <strong id="account-id-short">-</strong>
+                                </div>
+                                <div class="account-stat">
+                                    <span>Last Sync</span>
+                                    <strong id="account-last-sync">-</strong>
                                 </div>
                             </div>
-                            <div class="col">
-                                <div class="feature-card reveal-on-scroll">
-                                    <h3 class="text-danger text-uppercase fs-5">Cloud Library</h3>
-                                    <div id="account-library" class="account-library-list text-muted">Sign in to view your owned games.</div>
+
+                            <div class="row g-4">
+                                <div class="col-12 col-lg-6">
+                                    <form id="account-profile-form" class="surface-panel account-panel">
+                                        <div class="account-panel-heading">
+                                            <p class="section-kicker mb-2">Profile</p>
+                                            <h2 class="h4 fw-bold text-uppercase mb-0">Account Details</h2>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="account-settings-display-name" class="form-label text-uppercase small fw-bold text-muted">Display Name</label>
+                                            <input type="text" class="form-control bg-dark text-white border-secondary" id="account-settings-display-name" maxlength="40" autocomplete="name">
+                                        </div>
+                                        <div class="mb-4">
+                                            <label for="account-settings-email" class="form-label text-uppercase small fw-bold text-muted">Email Address</label>
+                                            <input type="email" class="form-control bg-dark text-white border-secondary" id="account-settings-email" disabled>
+                                        </div>
+                                        <p id="account-profile-message" class="small fw-bold" role="status"></p>
+                                        <button type="submit" class="btn btn-danger text-uppercase fw-bold">Save Profile</button>
+                                    </form>
+                                </div>
+
+                                <div class="col-12 col-lg-6">
+                                    <div class="surface-panel account-panel">
+                                        <div class="account-panel-heading">
+                                            <p class="section-kicker mb-2">Security</p>
+                                            <h2 class="h4 fw-bold text-uppercase mb-0">Password & Session</h2>
+                                        </div>
+                                        <div class="account-security-list">
+                                            <div>
+                                                <strong>Password Reset</strong>
+                                                <span>Send a reset link to your verified account email.</span>
+                                            </div>
+                                            <button id="account-security-reset" type="button" class="btn btn-outline-light btn-sm text-uppercase fw-bold">Send Link</button>
+                                        </div>
+                                        <div class="account-security-list">
+                                            <div>
+                                                <strong>Active Session</strong>
+                                                <span id="account-session-email">No active session.</span>
+                                            </div>
+                                            <button id="account-security-signout" type="button" class="btn btn-outline-danger btn-sm text-uppercase fw-bold">Log Out</button>
+                                        </div>
+                                        <p id="account-security-message" class="small fw-bold mb-0" role="status"></p>
+                                    </div>
                                 </div>
                             </div>
+
+                            <section class="surface-panel account-panel mt-4" aria-labelledby="account-library-heading">
+                                <div class="account-panel-heading account-library-heading">
+                                    <div>
+                                        <p class="section-kicker mb-2">Library</p>
+                                        <h2 id="account-library-heading" class="h4 fw-bold text-uppercase mb-0">Owned Games</h2>
+                                    </div>
+                                    <a class="btn btn-outline-light btn-sm text-uppercase fw-bold" href="/games">Browse Games</a>
+                                </div>
+                                <div id="account-library" class="account-library-list text-muted">No owned games yet.</div>
+                            </section>
+                        </div>
+
+                        <div id="account-signed-out-panel" class="surface-panel account-panel account-empty-dashboard">
+                            <p class="section-kicker mb-2">Dashboard Locked</p>
+                            <h2 class="h4 fw-bold text-uppercase mb-2">Sign In Required</h2>
+                            <p class="text-muted mb-0">Your profile settings, security actions, and game library appear here after sign-in.</p>
                         </div>
                     </div>
-
-                </div>
-            </div>
-        </section>
-
-        <section class="py-5 bg-darker">
-            <div class="container text-center py-4">
-                <h2 class="display-6 fw-bold text-uppercase mb-3">Launcher Sync</h2>
-                <p class="fs-5 text-muted mb-4">Use the same email and password in the Reflex Launcher to sync your owned games automatically.</p>
-                <div class="d-flex justify-content-center gap-3">
-                    <button id="account-signout" type="button" class="btn btn-outline-danger btn-lg px-5 fw-bold text-uppercase">Log Out</button>
                 </div>
             </div>
         </section>
