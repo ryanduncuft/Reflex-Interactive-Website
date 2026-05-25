@@ -4,21 +4,30 @@ const getFirebaseAdmin = () => {
     if (admin.apps.length) return admin;
 
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const databaseURL = process.env.FIREBASE_DATABASE_URL || process.env.REFLEX_FIREBASE_DATABASE_URL;
+
+    if (!databaseURL) {
+        throw new Error("FIREBASE_DATABASE_URL or REFLEX_FIREBASE_DATABASE_URL is not configured");
+    }
 
     if (serviceAccountJson) {
+        let serviceAccount;
+
+        try {
+            serviceAccount = JSON.parse(serviceAccountJson);
+        } catch (error) {
+            throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON");
+        }
+
         admin.initializeApp({
-            credential: admin.credential.cert(JSON.parse(serviceAccountJson)),
-            databaseURL: process.env.FIREBASE_DATABASE_URL,
+            credential: admin.credential.cert(serviceAccount),
+            databaseURL,
         });
         return admin;
     }
 
-    admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-        databaseURL: process.env.FIREBASE_DATABASE_URL,
-    });
+    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is not configured");
 
-    return admin;
 };
 
 module.exports = { getFirebaseAdmin };
