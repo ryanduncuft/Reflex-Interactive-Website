@@ -2,6 +2,10 @@
   publish = "."
   command = "./scripts/write-firebase-config.sh"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # === 1. Domain Normalization ===
 # Redirect WWW and Netlify subdomain to Naked Domain
 [[redirects]]

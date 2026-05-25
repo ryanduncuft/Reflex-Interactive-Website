@@ -203,13 +203,13 @@
                                         <div class="form-check">
                                             <input id="account-save-payment-method" class="form-check-input" type="checkbox">
                                             <label for="account-save-payment-method" class="form-check-label text-muted">
-                                                Let Stripe save my payment method for future Reflex Interactive purchases.
+                                                Let PayPal offer saved payment methods when available.
                                             </label>
                                         </div>
                                     </div>
                                     <div class="col-12 d-flex flex-wrap align-items-center gap-2">
                                         <button type="submit" class="btn btn-danger fw-bold">Save Payment Profile</button>
-                                        <span class="text-muted small">Payments are processed by <strong id="account-payment-provider-label">Stripe</strong>.</span>
+                                        <span class="text-muted small">Payments are processed by <strong id="account-payment-provider-label">PayPal</strong>.</span>
                                     </div>
                                     <p id="account-payment-message" class="small fw-bold mb-0" role="status"></p>
                                 </form>
@@ -224,6 +224,14 @@
                                     <a class="btn btn-outline-light btn-sm fw-bold" href="/games">Browse Games</a>
                                 </div>
                                 <div id="account-library" class="account-library-list text-muted">No owned games yet.</div>
+                            </section>
+
+                            <section class="surface-panel account-panel mt-4" aria-labelledby="account-restrictions-heading">
+                                <div class="account-panel-heading">
+                                    <p class="section-kicker mb-2">Restrictions</p>
+                                    <h2 id="account-restrictions-heading" class="h4 fw-bold mb-0">Game Access</h2>
+                                </div>
+                                <div id="account-game-restrictions" class="account-library-list text-muted">No active game restrictions.</div>
                             </section>
 
                             <section class="surface-panel account-panel mt-4" aria-labelledby="account-orders-heading">

@@ -86,6 +86,7 @@ const el = {
     paymentStatus: document.getElementById("account-payment-status"),
     paymentProviderLabel: document.getElementById("account-payment-provider-label"),
     orders: document.getElementById("account-orders"),
+    restrictions: document.getElementById("account-game-restrictions"),
     continueLink: document.getElementById("account-continue-link"),
     closeConfirm: document.getElementById("account-close-confirm"),
     closeRequest: document.getElementById("account-close-request"),
@@ -370,14 +371,13 @@ const renderPaymentProfile = (profile = {}) => {
     if (el.currency) el.currency.value = currency;
     if (el.savePaymentMethod) el.savePaymentMethod.checked = Boolean(profile.savePaymentMethod);
     if (el.paymentStatus) el.paymentStatus.textContent = profile.status || "Not configured";
-    if (el.paymentProviderLabel) el.paymentProviderLabel.textContent = "Stripe";
+    if (el.paymentProviderLabel) el.paymentProviderLabel.textContent = "PayPal";
 };
 
-const renderOrders = (orders = {}, requests = {}) => {
+const renderOrders = (orders = {}) => {
     if (!el.orders) return;
-    const paid = Object.entries(orders || {}).map(([id, order]) => ({ id, recordType: "payment", ...order }));
-    const pending = Object.entries(requests || {}).map(([id, request]) => ({ id, recordType: "request", ...request }));
-    const list = [...paid, ...pending]
+    const list = Object.entries(orders || {})
+        .map(([id, order]) => ({ id, ...order }))
         .sort((a, b) => String(b.createdAtUtc || "").localeCompare(String(a.createdAtUtc || "")));
 
     if (!list.length) {
@@ -392,7 +392,38 @@ const renderOrders = (orders = {}, requests = {}) => {
                 <span>${escapeHtml(order.status || "Pending")} · ${escapeHtml(formatDate(order.createdAtUtc || order.updatedAtUtc))}</span>
             </div>
             <div class="account-library-actions">
-                <span class="account-status-pill">${escapeHtml(order.recordType === "request" ? "Checkout request" : order.provider || "Provider pending")}</span>
+                <span class="account-status-pill">${escapeHtml(order.provider || "Provider pending")}</span>
+            </div>
+        </div>
+    `).join("");
+};
+
+const renderRestrictions = (bans = {}) => {
+    if (!el.restrictions) return;
+
+    const now = Date.now();
+    const active = Object.entries(bans || {})
+        .map(([id, ban]) => ({ id, ...ban }))
+        .filter((ban) => {
+            if (ban.status !== "active") return false;
+            const expiresAt = Date.parse(ban.expiresAtUtc || "");
+            return Number.isNaN(expiresAt) || expiresAt > now;
+        })
+        .sort((a, b) => String(a.expiresAtUtc || "").localeCompare(String(b.expiresAtUtc || "")));
+
+    if (!active.length) {
+        el.restrictions.innerHTML = '<div class="account-library-item"><div><strong>No active restrictions</strong><span>Your game access is clear.</span></div></div>';
+        return;
+    }
+
+    el.restrictions.innerHTML = active.map((ban) => `
+        <div class="account-library-item">
+            <div>
+                <strong>${escapeHtml(ban.title || "Restricted game")}</strong>
+                <span>Until ${escapeHtml(formatDate(ban.expiresAtUtc))} · ${escapeHtml(ban.reason || "No reason provided")}</span>
+            </div>
+            <div class="account-library-actions">
+                <span class="account-status-pill">Restricted</span>
             </div>
         </div>
     `).join("");
@@ -403,12 +434,14 @@ const syncPayments = (user) => {
     state.paymentUnsubscribe = onValue(ref(db, `users/${user.uid}`), (snapshot) => {
         const value = snapshot.val() || {};
         renderPaymentProfile(value.paymentProfile || {});
-        renderOrders(value.payments || {}, value.checkoutRequests || {});
+        renderOrders(value.payments || {});
+        renderRestrictions(value.gameBans || {});
     }, (error) => {
         console.warn("[Account] Payment profile unavailable", error);
         setPanelMessage(el.paymentMessage, "Payment details are not available with the current Firebase rules.", "danger");
         renderPaymentProfile({});
         renderOrders({});
+        renderRestrictions({});
     });
 };
 
@@ -425,6 +458,7 @@ const renderSignedOut = () => {
     if (el.emailVerified) el.emailVerified.textContent = "-";
     renderPaymentProfile({});
     renderOrders({});
+    renderRestrictions({});
     el.dashboard?.classList.add("d-none");
     el.signedOutPanel?.classList.remove("d-none");
     el.authColumn?.classList.remove("d-none");
@@ -597,7 +631,7 @@ el.paymentForm?.addEventListener("submit", async (event) => {
         billingEmail: (el.billingEmail?.value || user.email || "").trim().slice(0, 254),
         country,
         currency: currencyForCountry(country),
-        provider: "stripe",
+        provider: "paypal",
         savePaymentMethod: Boolean(el.savePaymentMethod?.checked),
         status: "configured",
         updatedAtUtc: now,

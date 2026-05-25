@@ -1,0 +1,11 @@
+{
+  "name": "reflex-interactive-site",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "check": "node --check js/app.js && node --check js/account.js && node --check js/account-session.js && node --check js/game-downloads.js && node --check netlify/functions/_commerce.js && node --check netlify/functions/_firebase.js && node --check netlify/functions/_paypal.js && node --check netlify/functions/create-paypal-order.js && node --check netlify/functions/capture-paypal-order.js && node --check netlify/functions/paypal-webhook.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.6.0"
+  }
+}

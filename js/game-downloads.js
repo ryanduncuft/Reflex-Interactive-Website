@@ -30,32 +30,20 @@ const state = {
     game: null,
     owned: false,
     ownershipLoaded: false,
+    bansLoaded: false,
     ownershipUnsubscribe: null,
+    bansUnsubscribe: null,
+    ban: null,
     user: null,
     busy: false,
+    checkoutStarted: false,
     ready: Boolean(firebaseConfig?.apiKey && firebaseConfig?.databaseURL && firebaseConfig?.projectId),
 };
 
+const PAYPAL_CONFIG = window.REFLEX_PAYPAL_CONFIG || {};
+const CHECKOUT_ENDPOINT = PAYPAL_CONFIG.checkoutEndpoint || "/.netlify/functions/create-paypal-order";
+
 const safeKey = (value = "") => String(value || "game").replace(/[.#$/[\]]/g, "_");
-
-const CURRENCY_BY_COUNTRY = {
-    AU: "AUD",
-    CA: "CAD",
-    DE: "EUR",
-    FR: "EUR",
-    GB: "GBP",
-    IE: "EUR",
-    NL: "EUR",
-    US: "USD",
-};
-
-const localeCountry = () => {
-    const locale = navigator.languages?.[0] || navigator.language || "en-GB";
-    const region = locale.split("-")[1];
-    return region ? region.toUpperCase() : "GB";
-};
-
-const currencyForCountry = (country = "GB") => CURRENCY_BY_COUNTRY[String(country).toUpperCase()] || "GBP";
 
 const accountActionUrl = () => {
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
@@ -233,17 +221,40 @@ const ownedRecordMatchesGame = (record = {}, game = {}) => {
     return false;
 };
 
+const banRecordMatchesGame = (record = {}, game = {}) => {
+    const numericId = String(game.numeric_id || "");
+    const currentId = String(game.id || "");
+    const ids = [record.gameId, record.numeric_id, record.current_id].filter(Boolean).map(String);
+    return (numericId && ids.includes(numericId)) || (currentId && ids.includes(currentId));
+};
+
+const activeBanForGame = (records = {}, game = {}) => {
+    const now = Date.now();
+    return Object.values(records || {}).find((record) => {
+        if (record.status !== "active" || !banRecordMatchesGame(record, game)) return false;
+        const expiresAt = Date.parse(record.expiresAtUtc || "");
+        return Number.isNaN(expiresAt) || expiresAt > now;
+    }) || null;
+};
+
 const syncOwnership = () => {
     if (state.ownershipUnsubscribe) {
         state.ownershipUnsubscribe();
         state.ownershipUnsubscribe = null;
     }
+    if (state.bansUnsubscribe) {
+        state.bansUnsubscribe();
+        state.bansUnsubscribe = null;
+    }
 
     state.owned = false;
     state.ownershipLoaded = false;
+    state.bansLoaded = false;
+    state.ban = null;
 
     if (!state.user || !state.db || !state.game) {
         state.ownershipLoaded = true;
+        state.bansLoaded = true;
         renderDownloadState();
         return;
     }
@@ -257,6 +268,17 @@ const syncOwnership = () => {
         console.warn("[Downloads] Could not read library", error);
         state.owned = false;
         state.ownershipLoaded = true;
+        renderDownloadState();
+    });
+
+    state.bansUnsubscribe = onValue(ref(state.db, `users/${state.user.uid}/gameBans`), (snapshot) => {
+        state.ban = activeBanForGame(snapshot.val() || {}, state.game);
+        state.bansLoaded = true;
+        renderDownloadState();
+    }, (error) => {
+        console.warn("[Downloads] Could not read game restrictions", error);
+        state.ban = null;
+        state.bansLoaded = true;
         renderDownloadState();
     });
 };
@@ -278,29 +300,29 @@ const claimGame = async () => {
     });
 };
 
-const createCheckoutRequest = async () => {
+const startPayPalCheckout = async () => {
     if (!state.user || !state.db || !state.game?.id) return;
 
-    const now = new Date().toISOString();
-    const requestId = safeKey(`${Date.now()}_${state.game.numeric_id || state.game.id}`);
-    const profileSnapshot = await get(ref(state.db, `users/${state.user.uid}/paymentProfile`));
-    const profile = profileSnapshot.val() || {};
-    const country = profile.country || localeCountry();
-    const currency = profile.currency || currencyForCountry(country);
-
-    await set(ref(state.db, `users/${state.user.uid}/checkoutRequests/${requestId}`), {
-        id: requestId,
-        gameId: String(state.game.id || ""),
-        numeric_id: String(state.game.numeric_id || ""),
-        title: String(state.game.title || "Game").slice(0, 120),
-        provider: "stripe",
-        country: String(country).slice(0, 2).toUpperCase(),
-        currency,
-        savePaymentMethod: Boolean(profile.savePaymentMethod),
-        status: "requested",
-        returnUrl: `${window.location.pathname}${window.location.search}`,
-        createdAtUtc: now,
+    const idToken = await state.user.getIdToken();
+    const response = await fetch(CHECKOUT_ENDPOINT, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+        },
+        body: JSON.stringify({
+            idToken,
+            gameId: state.game.id || state.game.numeric_id || "",
+            returnUrl: `${window.location.pathname}${window.location.search}`,
+        }),
     });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.url) {
+        throw new Error(payload.error || "Could not start PayPal checkout");
+    }
+
+    window.location.assign(payload.url);
 };
 
 const ensureProfile = async (user) => {
@@ -346,8 +368,42 @@ const renderDownloadState = () => {
             return;
         }
 
-        setCta({ label: state.busy ? "Creating Request..." : "Request Purchase", enabled: !state.busy });
-        setStatus("Payment provider is not connected yet. This creates a checkout request for later processing.", "muted");
+        if (!state.ownershipLoaded) {
+            setCta({ label: "Checking Library..." });
+            return;
+        }
+
+        if (!state.bansLoaded) {
+            setCta({ label: "Checking Access..." });
+            return;
+        }
+
+        if (state.ban) {
+            setCta({ label: "Access Restricted" });
+            setStatus(`This account is restricted from ${game.title}.`, "danger");
+            setPanelOpen(false);
+            return;
+        }
+
+        if (state.owned) {
+            if (!game.download_url) {
+                setCta({ label: "Owned" });
+                setStatus(`${game.title} is in your library.`, "success");
+                return;
+            }
+
+            setCta({
+                label: "Download",
+                href: "#",
+                enabled: true,
+                download: game.download_name || game.exe_name || "",
+            });
+            setStatus(`${game.title} is in your library.`, "success");
+            return;
+        }
+
+        setCta({ label: state.busy || state.checkoutStarted ? "Opening PayPal..." : "Buy With PayPal", enabled: !state.busy && !state.checkoutStarted });
+        setStatus("PayPal will process the payment securely. Completed purchases appear in your account.", "muted");
         return;
     }
 
@@ -373,6 +429,18 @@ const renderDownloadState = () => {
 
     if (!state.ownershipLoaded) {
         setCta({ label: "Checking Library..." });
+        return;
+    }
+
+    if (!state.bansLoaded) {
+        setCta({ label: "Checking Access..." });
+        return;
+    }
+
+    if (state.ban) {
+        setCta({ label: "Access Restricted" });
+        setStatus(`This account is restricted from ${game.title}.`, "danger");
+        setPanelOpen(false);
         return;
     }
 
@@ -430,18 +498,40 @@ cta.addEventListener("click", async (event) => {
             return;
         }
 
+        if (!state.ownershipLoaded || !state.bansLoaded || state.busy) {
+            return;
+        }
+
+        if (state.ban) {
+            setStatus(`This account is restricted from ${game.title}.`, "danger");
+            return;
+        }
+
+        if (state.owned) {
+            if (!game.download_url) return;
+            setStatus("Preparing secure download...");
+            try {
+                window.location.href = await authenticatedDownloadUrl(game.download_url);
+            } catch (error) {
+                console.warn("[Downloads] Could not prepare secure download", error);
+                setStatus("Could not prepare the download. Please sign in again.", "danger");
+            }
+            return;
+        }
+
         state.busy = true;
         renderDownloadState();
         try {
-            await createCheckoutRequest();
+            state.checkoutStarted = true;
+            await startPayPalCheckout();
             state.busy = false;
             renderDownloadState();
-            setStatus("Purchase request saved. Connect a payment provider to turn this into checkout.", "success");
         } catch (error) {
             console.warn("[Downloads] Could not create checkout request", error);
+            state.checkoutStarted = false;
             state.busy = false;
             renderDownloadState();
-            setStatus("Firebase rules need checkoutRequests write access before purchases can start.", "danger");
+            setStatus(error.message || "Could not start PayPal checkout.", "danger");
         }
         return;
     }
@@ -464,7 +554,7 @@ cta.addEventListener("click", async (event) => {
         event.preventDefault();
         setStatus("Sending verification email...");
         try {
-                await sendEmailVerification(state.user, verificationActionSettings());
+            await sendEmailVerification(state.user, verificationActionSettings());
             setStatus("Verification email sent. Refresh this page after verifying.", "success");
         } catch (error) {
             setStatus(friendlyError(error), "danger");
