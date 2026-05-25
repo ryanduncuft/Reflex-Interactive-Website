@@ -527,7 +527,7 @@ cta.addEventListener("click", async (event) => {
             state.busy = false;
             renderDownloadState();
         } catch (error) {
-            console.warn("[Downloads] Could not create checkout request", error);
+            console.warn("[Downloads] Could not start PayPal checkout", error);
             state.checkoutStarted = false;
             state.busy = false;
             renderDownloadState();
