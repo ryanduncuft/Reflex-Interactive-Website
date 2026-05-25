@@ -86,7 +86,7 @@
     <main id="main-content" class="min-vh-100" role="main">
         <article id="article-detail" class="news-detail">
             <div class="container py-4 py-md-5">
-                <a href="/newswire" class="detail-back-link d-inline-flex align-items-center gap-2 text-danger text-decoration-none fw-bold text-uppercase small mb-4" aria-label="Back to the main Newswire page">
+                <a href="/newswire" class="detail-back-link d-inline-flex align-items-center gap-2 text-danger text-decoration-none fw-bold small mb-4" aria-label="Back to the main Newswire page">
                     <span aria-hidden="true">&larr;</span>
                     Back to Newswire
                 </a>
@@ -99,8 +99,8 @@
             <div class="container">
                 <header class="news-detail-header mx-auto py-5">
                     <p class="section-kicker text-danger mb-3 reveal-on-load">Newswire</p>
-                    <p id="article-date" class="news-detail-date text-muted text-uppercase small fw-bold mb-3 reveal-on-load"></p>
-                    <h1 id="article-title" class="display-3 fw-bold text-uppercase mb-0 reveal-on-load"></h1>
+                    <p id="article-date" class="news-detail-date text-muted small fw-bold mb-3 reveal-on-load"></p>
+                    <h1 id="article-title" class="display-3 fw-bold mb-0 reveal-on-load"></h1>
                 </header>
 
                 <div class="news-detail-body mx-auto pb-5">
@@ -112,6 +112,8 @@
 
     <div id="footer"></div>
 
+    <script src="./js/firebase-config.js"></script>
     <script src="./js/app.js" defer></script>
+    <script type="module" src="./js/account-session.js"></script>
 </body>
 </html>

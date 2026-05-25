@@ -1,14 +1,20 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
+    applyActionCode,
+    browserLocalPersistence,
     createUserWithEmailAndPassword,
     getAuth,
     onAuthStateChanged,
+    reload,
+    sendEmailVerification,
     sendPasswordResetEmail,
+    setPersistence,
     signInWithEmailAndPassword,
     signOut,
     updateProfile,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
+    get,
     getDatabase,
     onValue,
     ref,
@@ -25,14 +31,16 @@ if (!firebaseConfig?.apiKey || !firebaseConfig?.databaseURL || !firebaseConfig?.
     throw new Error("Missing Reflex Firebase web config. Create js/firebase-config.js from js/firebase-config.example.js.");
 }
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
 const state = {
     mode: "signin",
     libraryUnsubscribe: null,
+    paymentUnsubscribe: null,
     gamesCatalog: null,
+    returnTo: "",
 };
 
 const el = {
@@ -61,11 +69,28 @@ const el = {
     profileMessage: document.getElementById("account-profile-message"),
     securityReset: document.getElementById("account-security-reset"),
     securitySignOut: document.getElementById("account-security-signout"),
+    securityVerify: document.getElementById("account-security-verify"),
+    securityRefresh: document.getElementById("account-security-refresh"),
     securityMessage: document.getElementById("account-security-message"),
     sessionEmail: document.getElementById("account-session-email"),
+    emailVerified: document.getElementById("account-email-verified"),
     libraryCount: document.getElementById("account-library-count"),
     idShort: document.getElementById("account-id-short"),
     lastSync: document.getElementById("account-last-sync"),
+    paymentForm: document.getElementById("account-payment-form"),
+    billingEmail: document.getElementById("account-billing-email"),
+    billingCountry: document.getElementById("account-billing-country"),
+    currency: document.getElementById("account-payment-currency"),
+    savePaymentMethod: document.getElementById("account-save-payment-method"),
+    paymentMessage: document.getElementById("account-payment-message"),
+    paymentStatus: document.getElementById("account-payment-status"),
+    paymentProviderLabel: document.getElementById("account-payment-provider-label"),
+    orders: document.getElementById("account-orders"),
+    restrictions: document.getElementById("account-game-restrictions"),
+    continueLink: document.getElementById("account-continue-link"),
+    closeConfirm: document.getElementById("account-close-confirm"),
+    closeRequest: document.getElementById("account-close-request"),
+    closeMessage: document.getElementById("account-close-message"),
 };
 
 const setMessage = (message, type = "muted") => {
@@ -80,10 +105,50 @@ const setPanelMessage = (node, message, type = "muted") => {
     node.className = `small fw-bold text-${type}`;
 };
 
+const safeReturnPath = (value = "") => {
+    if (!value || !value.startsWith("/")) return "";
+    if (value.startsWith("//")) return "";
+    return value.slice(0, 240);
+};
+
+state.returnTo = safeReturnPath(new URLSearchParams(window.location.search).get("return") || "");
+
+const CURRENCY_BY_COUNTRY = {
+    AU: "AUD",
+    CA: "CAD",
+    DE: "EUR",
+    FR: "EUR",
+    GB: "GBP",
+    IE: "EUR",
+    NL: "EUR",
+    US: "USD",
+};
+
+const currencyForCountry = (country = "GB") => CURRENCY_BY_COUNTRY[String(country).toUpperCase()] || "GBP";
+
+const accountActionUrl = () => {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        return `${window.location.origin}/account.html?action=verified`;
+    }
+
+    return "https://account.reflexinteractive.com/?action=verified";
+};
+
+const verificationActionSettings = () => ({
+    url: accountActionUrl(),
+    handleCodeInApp: false,
+});
+
+const cleanActionParams = () => {
+    const url = new URL(window.location.href);
+    ["mode", "oobCode", "apiKey", "continueUrl", "lang"].forEach((key) => url.searchParams.delete(key));
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+};
+
 const setBusy = (busy) => {
-    el.submit.disabled = busy;
-    el.reset.disabled = busy;
-    el.submit.textContent = busy ? "Working..." : state.mode === "signup" ? "Create Account" : "Sign In";
+    if (el.submit) el.submit.disabled = busy;
+    if (el.reset) el.reset.disabled = busy;
+    if (el.submit) el.submit.textContent = busy ? "Working..." : state.mode === "signup" ? "Create Account" : "Sign In";
 };
 
 const setMode = (mode) => {
@@ -107,28 +172,28 @@ const friendlyError = (error) => {
     }
 };
 
+const profilePayload = async (user) => {
+    const now = new Date().toISOString();
+    const snapshot = await get(ref(db, `users/${user.uid}/profile`));
+    const existing = snapshot.val() || {};
+
+    return {
+        localId: user.uid,
+        email: user.email || existing.email || "",
+        displayName: user.displayName || existing.displayName || "",
+        createdAtUtc: existing.createdAtUtc || now,
+        lastLoginAtUtc: now,
+    };
+};
+
 const ensureProfile = async (user) => {
     const profileRef = ref(db, `users/${user.uid}/profile`);
-    const now = new Date().toISOString();
-    await set(profileRef, {
-        localId: user.uid,
-        email: user.email || "",
-        displayName: user.displayName || "",
-        createdAtUtc: now,
-        lastLoginAtUtc: now,
-    });
+    await set(profileRef, await profilePayload(user));
 };
 
 const createProfile = async (user) => {
     const profileRef = ref(db, `users/${user.uid}/profile`);
-    const now = new Date().toISOString();
-    await set(profileRef, {
-        localId: user.uid,
-        email: user.email || "",
-        displayName: user.displayName || "",
-        createdAtUtc: now,
-        lastLoginAtUtc: now,
-    });
+    await set(profileRef, await profilePayload(user));
 };
 
 const safeKey = (value = "") => String(value || "game").replace(/[.#$/[\]]/g, "_");
@@ -143,6 +208,13 @@ const formatDate = (value = "") => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "Recently added";
     return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const formatStatus = (value = "") => {
+    const status = String(value || "").trim();
+    if (!status) return "Not set";
+    if (status === "configured") return "Ready";
+    return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 const localHref = (path) => {
@@ -228,11 +300,16 @@ const normalizeOwnedGame = (owned = {}, catalogGame = null) => {
     const numericId = String(catalogGame?.numeric_id || owned.numeric_id || (/^\d+$/.test(ownedId) ? ownedId : ""));
     const currentId = String(catalogGame?.id || owned.current_id || owned.catalog_id || owned.slug || (numericId ? "" : ownedId));
     const addedAtUtc = owned.addedAtUtc || owned.acquiredAtUtc || new Date().toISOString();
+    const type = owned.type || (Number(catalogGame?.price || 0) > 0 ? "paid" : "free");
 
     return {
         id: String(numericId || ownedId || currentId),
+        numeric_id: String(numericId || ""),
+        current_id: String(currentId || ""),
         title: catalogGame?.title || owned.title || currentId || "Untitled Game",
+        type,
         addedAtUtc,
+        acquiredAtUtc: owned.acquiredAtUtc || addedAtUtc,
     };
 };
 
@@ -248,7 +325,10 @@ const migrateOwnedGames = async (user, games = {}, catalog = []) => {
 
         const changed = key !== nextKey
             || String(owned.id || "") !== game.id
+            || String(owned.numeric_id || "") !== game.numeric_id
+            || String(owned.current_id || "") !== game.current_id
             || String(owned.title || "") !== game.title
+            || String(owned.type || "") !== game.type
             || String(owned.addedAtUtc || "") !== game.addedAtUtc;
 
         if (!changed) return;
@@ -264,7 +344,8 @@ const migrateOwnedGames = async (user, games = {}, catalog = []) => {
 };
 
 const libraryMeta = (game = {}) => {
-    return `#${game.id}`;
+    const type = game.type === "paid" ? "Paid" : game.type === "owned" ? "Owned" : "Free";
+    return `${type} · #${game.id}`;
 };
 
 const renderLibraryItem = (owned = {}, catalog = []) => {
@@ -273,7 +354,7 @@ const renderLibraryItem = (owned = {}, catalog = []) => {
     const slug = catalogGame?.id || owned.current_id || "";
     const detailsHref = slug ? localHref(`/game-details?id=${encodeURIComponent(slug)}`) : localHref("/games");
     const download = catalogGame ? gameDownloadInfo(catalogGame) : { url: "" };
-    const canDownload = Number(catalogGame?.price || 0) === 0 && Boolean(download.url);
+    const canDownload = Boolean(download.url);
 
     return `
         <div class="account-library-item">
@@ -282,11 +363,93 @@ const renderLibraryItem = (owned = {}, catalog = []) => {
                 <span>${escapeHtml(libraryMeta(owned))} · Added ${escapeHtml(formatDate(owned.addedAtUtc))}</span>
             </div>
             <div class="account-library-actions">
-                <a class="btn btn-outline-light btn-sm text-uppercase fw-bold" href="${detailsHref}">Details</a>
-                ${canDownload ? `<a class="btn btn-danger btn-sm text-uppercase fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm text-uppercase fw-bold" type="button" disabled>Locked</button>'}
+                <a class="btn btn-outline-light btn-sm fw-bold" href="${detailsHref}">Details</a>
+                ${canDownload ? `<a class="btn btn-danger btn-sm fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm fw-bold" type="button" disabled>Unavailable</button>'}
             </div>
         </div>
     `;
+};
+
+const renderPaymentProfile = (profile = {}) => {
+    if (el.billingEmail) el.billingEmail.value = profile.billingEmail || auth.currentUser?.email || "";
+    const country = profile.country || "GB";
+    const currency = profile.currency || currencyForCountry(country);
+    if (el.billingCountry) el.billingCountry.value = country;
+    if (el.currency) el.currency.value = currency;
+    if (el.savePaymentMethod) el.savePaymentMethod.checked = Boolean(profile.savePaymentMethod);
+    if (el.paymentStatus) el.paymentStatus.textContent = formatStatus(profile.status);
+    if (el.paymentProviderLabel) el.paymentProviderLabel.textContent = "PayPal";
+};
+
+const renderOrders = (orders = {}) => {
+    if (!el.orders) return;
+    const list = Object.entries(orders || {})
+        .map(([id, order]) => ({ id, ...order }))
+        .sort((a, b) => String(b.createdAtUtc || "").localeCompare(String(a.createdAtUtc || "")));
+
+    if (!list.length) {
+        el.orders.innerHTML = '<div class="account-library-item"><div><strong>No orders yet</strong><span>Completed purchases will appear here.</span></div></div>';
+        return;
+    }
+
+    el.orders.innerHTML = list.map((order) => `
+        <div class="account-library-item">
+            <div>
+                <strong>${escapeHtml(order.title || order.gameTitle || "Order")}</strong>
+                <span>${escapeHtml(order.status || "Pending")} · ${escapeHtml(formatDate(order.createdAtUtc || order.updatedAtUtc))}</span>
+            </div>
+            <div class="account-library-actions">
+                <span class="account-status-pill">${escapeHtml(formatStatus(order.provider || "PayPal"))}</span>
+            </div>
+        </div>
+    `).join("");
+};
+
+const renderRestrictions = (bans = {}) => {
+    if (!el.restrictions) return;
+
+    const now = Date.now();
+    const active = Object.entries(bans || {})
+        .map(([id, ban]) => ({ id, ...ban }))
+        .filter((ban) => {
+            if (ban.status !== "active") return false;
+            const expiresAt = Date.parse(ban.expiresAtUtc || "");
+            return Number.isNaN(expiresAt) || expiresAt > now;
+        })
+        .sort((a, b) => String(a.expiresAtUtc || "").localeCompare(String(b.expiresAtUtc || "")));
+
+    if (!active.length) {
+        el.restrictions.innerHTML = '<div class="account-library-item"><div><strong>No active restrictions</strong><span>Your game access is clear.</span></div></div>';
+        return;
+    }
+
+    el.restrictions.innerHTML = active.map((ban) => `
+        <div class="account-library-item">
+            <div>
+                <strong>${escapeHtml(ban.title || "Restricted game")}</strong>
+                <span>Until ${escapeHtml(formatDate(ban.expiresAtUtc))} · ${escapeHtml(ban.reason || "No reason provided")}</span>
+            </div>
+            <div class="account-library-actions">
+                <span class="account-status-pill">Restricted</span>
+            </div>
+        </div>
+    `).join("");
+};
+
+const syncPayments = (user) => {
+    if (state.paymentUnsubscribe) state.paymentUnsubscribe();
+    state.paymentUnsubscribe = onValue(ref(db, `users/${user.uid}`), (snapshot) => {
+        const value = snapshot.val() || {};
+        renderPaymentProfile(value.paymentProfile || {});
+        renderOrders(value.payments || {});
+        renderRestrictions(value.gameBans || {});
+    }, (error) => {
+        console.warn("[Account] Payment profile unavailable", error);
+        setPanelMessage(el.paymentMessage, "Payment details are temporarily unavailable.", "danger");
+        renderPaymentProfile({});
+        renderOrders({});
+        renderRestrictions({});
+    });
 };
 
 const renderSignedOut = () => {
@@ -299,6 +462,10 @@ const renderSignedOut = () => {
     el.libraryCount.textContent = "0";
     el.idShort.textContent = "-";
     el.lastSync.textContent = "-";
+    if (el.emailVerified) el.emailVerified.textContent = "-";
+    renderPaymentProfile({});
+    renderOrders({});
+    renderRestrictions({});
     el.dashboard?.classList.add("d-none");
     el.signedOutPanel?.classList.remove("d-none");
     el.authColumn?.classList.remove("d-none");
@@ -309,6 +476,10 @@ const renderSignedOut = () => {
         state.libraryUnsubscribe();
         state.libraryUnsubscribe = null;
     }
+    if (state.paymentUnsubscribe) {
+        state.paymentUnsubscribe();
+        state.paymentUnsubscribe = null;
+    }
 };
 
 const renderSignedIn = (user) => {
@@ -318,8 +489,13 @@ const renderSignedIn = (user) => {
     el.sessionState.textContent = "Signed in";
     el.sessionState.classList.add("is-online");
     el.sessionEmail.textContent = user.email || "Signed in";
+    if (el.emailVerified) el.emailVerified.textContent = user.emailVerified ? "Verified" : "Verification needed";
     el.settingsDisplayName.value = user.displayName || "";
     el.settingsEmail.value = user.email || "";
+    if (el.continueLink) {
+        el.continueLink.classList.toggle("d-none", !state.returnTo);
+        el.continueLink.href = state.returnTo || "/";
+    }
     el.idShort.textContent = user.uid.slice(0, 8);
     el.lastSync.textContent = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     el.dashboard?.classList.remove("d-none");
@@ -337,7 +513,7 @@ const renderSignedIn = (user) => {
         el.libraryCount.textContent = String(list.length);
         el.lastSync.textContent = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
         if (!list.length) {
-            el.library.innerHTML = `<div class="account-library-item"><div><strong>No owned games yet</strong><span>Free games you claim will appear here.</span></div><div class="account-library-actions"><a class="btn btn-danger btn-sm text-uppercase fw-bold" href="${localHref("/games")}">Browse</a></div></div>`;
+            el.library.innerHTML = `<div class="account-library-item"><div><strong>No owned games yet</strong><span>Free games you claim will appear here.</span></div><div class="account-library-actions"><a class="btn btn-danger btn-sm fw-bold" href="${localHref("/games")}">Browse</a></div></div>`;
             return;
         }
 
@@ -346,6 +522,8 @@ const renderSignedIn = (user) => {
             .map((game) => renderLibraryItem(game, catalog))
             .join("");
     });
+
+    syncPayments(user);
 };
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
@@ -369,11 +547,12 @@ el.form?.addEventListener("submit", async (event) => {
         const password = el.password.value;
 
         if (state.mode === "signup") {
-            const displayName = el.displayName.value.trim();
+            const displayName = el.displayName.value.trim().slice(0, 40);
             const credential = await createUserWithEmailAndPassword(auth, email, password);
             if (displayName) await updateProfile(credential.user, { displayName });
             await createProfile(credential.user);
-            setMessage("Account created. Your Reflex library is ready.", "success");
+            await sendEmailVerification(credential.user, verificationActionSettings());
+            setMessage("Account created. Check your email to verify your account.", "success");
         } else {
             const credential = await signInWithEmailAndPassword(auth, email, password);
             await ensureProfile(credential.user);
@@ -408,7 +587,7 @@ el.profileForm?.addEventListener("submit", async (event) => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const displayName = el.settingsDisplayName.value.trim();
+    const displayName = el.settingsDisplayName.value.trim().slice(0, 40);
     setPanelMessage(el.profileMessage, "Saving...", "muted");
 
     try {
@@ -418,6 +597,92 @@ el.profileForm?.addEventListener("submit", async (event) => {
         renderSignedIn(auth.currentUser);
     } catch (error) {
         setPanelMessage(el.profileMessage, friendlyError(error), "danger");
+    }
+});
+
+el.securityVerify?.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    setPanelMessage(el.securityMessage, "Sending verification email...", "muted");
+    try {
+        await sendEmailVerification(user, verificationActionSettings());
+        setPanelMessage(el.securityMessage, "Verification email sent.", "success");
+    } catch (error) {
+        setPanelMessage(el.securityMessage, friendlyError(error), "danger");
+    }
+});
+
+el.securityRefresh?.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    setPanelMessage(el.securityMessage, "Refreshing session...", "muted");
+    try {
+        await reload(user);
+        renderSignedIn(auth.currentUser);
+        setPanelMessage(el.securityMessage, auth.currentUser.emailVerified ? "Email is verified." : "Email is not verified yet.", auth.currentUser.emailVerified ? "success" : "muted");
+    } catch (error) {
+        setPanelMessage(el.securityMessage, friendlyError(error), "danger");
+    }
+});
+
+el.paymentForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const now = new Date().toISOString();
+    const country = (el.billingCountry?.value || "GB").trim().slice(0, 2).toUpperCase();
+    const payload = {
+        billingEmail: (el.billingEmail?.value || user.email || "").trim().slice(0, 254),
+        country,
+        currency: currencyForCountry(country),
+        provider: "paypal",
+        savePaymentMethod: Boolean(el.savePaymentMethod?.checked),
+        status: "configured",
+        updatedAtUtc: now,
+    };
+
+    setPanelMessage(el.paymentMessage, "Saving payment profile...", "muted");
+    try {
+        await update(ref(db, `users/${user.uid}/paymentProfile`), payload);
+        setPanelMessage(el.paymentMessage, "Payment profile saved.", "success");
+    } catch (error) {
+        console.warn("[Account] Could not save payment profile", error);
+        setPanelMessage(el.paymentMessage, "Payment profile could not be saved. Please try again.", "danger");
+    }
+});
+
+el.billingCountry?.addEventListener("change", () => {
+    if (el.currency) el.currency.value = currencyForCountry(el.billingCountry.value);
+});
+
+el.closeRequest?.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    if (!el.closeConfirm?.checked) {
+        setPanelMessage(el.closeMessage, "Confirm that you understand the account closure request first.", "danger");
+        return;
+    }
+
+    const now = new Date().toISOString();
+    const requestId = safeKey(`${Date.now()}_${user.uid.slice(0, 8)}`);
+    setPanelMessage(el.closeMessage, "Submitting closure request...", "muted");
+
+    try {
+        await set(ref(db, `users/${user.uid}/accountClosureRequests/${requestId}`), {
+            id: requestId,
+            status: "requested",
+            email: user.email || "",
+            requestedAtUtc: now,
+            reason: "user_requested",
+        });
+        setPanelMessage(el.closeMessage, "Closure request submitted. You will receive follow-up by email.", "success");
+    } catch (error) {
+        console.warn("[Account] Could not submit closure request", error);
+        setPanelMessage(el.closeMessage, "Account closure request could not be submitted. Please contact support.", "danger");
     }
 });
 
@@ -435,6 +700,35 @@ el.securityReset?.addEventListener("click", async () => {
 });
 
 const signOutCurrentUser = () => signOut(auth);
+
+const handleEmailAction = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get("mode");
+    const code = params.get("oobCode");
+
+    if (mode !== "verifyEmail" || !code) return;
+
+    setMessage("Verifying your email...", "muted");
+
+    try {
+        await applyActionCode(auth, code);
+        if (auth.currentUser) await reload(auth.currentUser);
+        cleanActionParams();
+        setMessage("Email verified. You can now claim downloads and make purchases.", "success");
+    } catch (error) {
+        if (auth.currentUser) {
+            await reload(auth.currentUser).catch(() => {});
+            if (auth.currentUser.emailVerified) {
+                cleanActionParams();
+                setMessage("Email is already verified.", "success");
+                return;
+            }
+        }
+
+        console.warn("[Account] Email verification failed", error);
+        setMessage("This verification link is invalid or has already been used. Send a new verification email from Security.", "danger");
+    }
+};
 
 el.signOut?.addEventListener("click", signOutCurrentUser);
 el.securitySignOut?.addEventListener("click", signOutCurrentUser);
@@ -464,15 +758,22 @@ el.library?.addEventListener("click", async (event) => {
     }
 });
 
-onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-        renderSignedOut();
-        return;
-    }
-
-    await ensureProfile(user);
-    renderSignedIn(user);
-});
-
 setMode("signin");
 renderSignedOut();
+
+setPersistence(auth, browserLocalPersistence)
+    .catch((error) => {
+        console.warn("[Account] Could not set auth persistence", error);
+    })
+    .finally(() => {
+        handleEmailAction();
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                renderSignedOut();
+                return;
+            }
+
+            await ensureProfile(user);
+            renderSignedIn(user);
+        });
+    });
