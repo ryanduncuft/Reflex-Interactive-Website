@@ -10,7 +10,6 @@
         api: {
             news: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
             games: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
-            // Replace this with your GitHub Gist raw URL after uploading support-articles.json.
             supportArticles: "https://gist.githubusercontent.com/ryanduncuft/3308af53408db611254490f5c0b8611f/raw/reflex-support.json",
         },
         siteUrl: "https://reflexinteractive.com",

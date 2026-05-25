@@ -403,7 +403,7 @@ const renderDownloadState = () => {
         }
 
         setCta({ label: state.busy || state.checkoutStarted ? "Opening PayPal..." : "Buy With PayPal", enabled: !state.busy && !state.checkoutStarted });
-        setStatus("PayPal will process the payment securely. Completed purchases appear in your account.", "muted");
+        setStatus("Secure checkout opens in PayPal. Completed purchases appear in your account.", "muted");
         return;
     }
 

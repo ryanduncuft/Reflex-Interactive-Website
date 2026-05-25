@@ -4,3 +4,8 @@ firebase-config.js
 .env
 .env.*
 node_modules/
+*firebase-adminsdk*.json
+service-account*.json
+serviceAccount*.json
+*.pem
+firebase-service-account.json

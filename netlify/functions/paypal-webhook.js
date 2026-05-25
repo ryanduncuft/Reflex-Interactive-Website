@@ -4,6 +4,12 @@ const { fulfillPaidGame } = require("./_commerce");
 
 const response = (statusCode, body = "") => ({ statusCode, body });
 
+const header = (headers = {}, name = "") => {
+    const lower = name.toLowerCase();
+    const key = Object.keys(headers).find((item) => item.toLowerCase() === lower);
+    return key ? headers[key] : "";
+};
+
 const verifyWebhook = async (event, webhookEvent) => {
     const webhookId = process.env.PAYPAL_WEBHOOK_ID;
     if (!webhookId) throw new Error("PAYPAL_WEBHOOK_ID is not configured");
@@ -11,11 +17,11 @@ const verifyWebhook = async (event, webhookEvent) => {
     const result = await paypalRequest("/v1/notifications/verify-webhook-signature", {
         method: "POST",
         body: JSON.stringify({
-            auth_algo: event.headers["paypal-auth-algo"],
-            cert_url: event.headers["paypal-cert-url"],
-            transmission_id: event.headers["paypal-transmission-id"],
-            transmission_sig: event.headers["paypal-transmission-sig"],
-            transmission_time: event.headers["paypal-transmission-time"],
+            auth_algo: header(event.headers, "paypal-auth-algo"),
+            cert_url: header(event.headers, "paypal-cert-url"),
+            transmission_id: header(event.headers, "paypal-transmission-id"),
+            transmission_sig: header(event.headers, "paypal-transmission-sig"),
+            transmission_time: header(event.headers, "paypal-transmission-time"),
             webhook_id: webhookId,
             webhook_event: webhookEvent,
         }),

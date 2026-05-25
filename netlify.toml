@@ -189,8 +189,15 @@
   [headers.values]
     Access-Control-Allow-Origin = "*"
     X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+[[headers]]
+  for = "/js/firebase-config.js"
+  [headers.values]
+    Cache-Control = "no-store"
 
 [[headers]]
   for = "/css/*"

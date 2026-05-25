@@ -210,6 +210,13 @@ const formatDate = (value = "") => {
     return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const formatStatus = (value = "") => {
+    const status = String(value || "").trim();
+    if (!status) return "Not set";
+    if (status === "configured") return "Ready";
+    return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 const localHref = (path) => {
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
         const url = new URL(path, window.location.origin);
@@ -347,7 +354,7 @@ const renderLibraryItem = (owned = {}, catalog = []) => {
     const slug = catalogGame?.id || owned.current_id || "";
     const detailsHref = slug ? localHref(`/game-details?id=${encodeURIComponent(slug)}`) : localHref("/games");
     const download = catalogGame ? gameDownloadInfo(catalogGame) : { url: "" };
-    const canDownload = Number(catalogGame?.price || 0) === 0 && Boolean(download.url);
+    const canDownload = Boolean(download.url);
 
     return `
         <div class="account-library-item">
@@ -357,7 +364,7 @@ const renderLibraryItem = (owned = {}, catalog = []) => {
             </div>
             <div class="account-library-actions">
                 <a class="btn btn-outline-light btn-sm fw-bold" href="${detailsHref}">Details</a>
-                ${canDownload ? `<a class="btn btn-danger btn-sm fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm fw-bold" type="button" disabled>Locked</button>'}
+                ${canDownload ? `<a class="btn btn-danger btn-sm fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm fw-bold" type="button" disabled>Unavailable</button>'}
             </div>
         </div>
     `;
@@ -370,7 +377,7 @@ const renderPaymentProfile = (profile = {}) => {
     if (el.billingCountry) el.billingCountry.value = country;
     if (el.currency) el.currency.value = currency;
     if (el.savePaymentMethod) el.savePaymentMethod.checked = Boolean(profile.savePaymentMethod);
-    if (el.paymentStatus) el.paymentStatus.textContent = profile.status || "Not configured";
+    if (el.paymentStatus) el.paymentStatus.textContent = formatStatus(profile.status);
     if (el.paymentProviderLabel) el.paymentProviderLabel.textContent = "PayPal";
 };
 
@@ -381,7 +388,7 @@ const renderOrders = (orders = {}) => {
         .sort((a, b) => String(b.createdAtUtc || "").localeCompare(String(a.createdAtUtc || "")));
 
     if (!list.length) {
-        el.orders.innerHTML = '<div class="account-library-item"><div><strong>No orders yet</strong><span>Future purchases will appear here after payment processing is connected.</span></div></div>';
+        el.orders.innerHTML = '<div class="account-library-item"><div><strong>No orders yet</strong><span>Completed purchases will appear here.</span></div></div>';
         return;
     }
 
@@ -392,7 +399,7 @@ const renderOrders = (orders = {}) => {
                 <span>${escapeHtml(order.status || "Pending")} · ${escapeHtml(formatDate(order.createdAtUtc || order.updatedAtUtc))}</span>
             </div>
             <div class="account-library-actions">
-                <span class="account-status-pill">${escapeHtml(order.provider || "Provider pending")}</span>
+                <span class="account-status-pill">${escapeHtml(formatStatus(order.provider || "PayPal"))}</span>
             </div>
         </div>
     `).join("");
@@ -438,7 +445,7 @@ const syncPayments = (user) => {
         renderRestrictions(value.gameBans || {});
     }, (error) => {
         console.warn("[Account] Payment profile unavailable", error);
-        setPanelMessage(el.paymentMessage, "Payment details are not available with the current Firebase rules.", "danger");
+        setPanelMessage(el.paymentMessage, "Payment details are temporarily unavailable.", "danger");
         renderPaymentProfile({});
         renderOrders({});
         renderRestrictions({});
@@ -643,7 +650,7 @@ el.paymentForm?.addEventListener("submit", async (event) => {
         setPanelMessage(el.paymentMessage, "Payment profile saved.", "success");
     } catch (error) {
         console.warn("[Account] Could not save payment profile", error);
-        setPanelMessage(el.paymentMessage, "Firebase rules need paymentProfile write access before this can save.", "danger");
+        setPanelMessage(el.paymentMessage, "Payment profile could not be saved. Please try again.", "danger");
     }
 });
 
@@ -675,7 +682,7 @@ el.closeRequest?.addEventListener("click", async () => {
         setPanelMessage(el.closeMessage, "Closure request submitted. You will receive follow-up by email.", "success");
     } catch (error) {
         console.warn("[Account] Could not submit closure request", error);
-        setPanelMessage(el.closeMessage, "Firebase rules need accountClosureRequests write access before this can save.", "danger");
+        setPanelMessage(el.closeMessage, "Account closure request could not be submitted. Please contact support.", "danger");
     }
 });
 

@@ -5,6 +5,17 @@ const PAYPAL_BASE_URLS = {
 
 const paypalBaseUrl = () => PAYPAL_BASE_URLS[process.env.PAYPAL_ENV === "live" ? "live" : "sandbox"];
 
+const readJson = async (response) => {
+    const text = await response.text();
+    if (!text) return {};
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        return { message: text.slice(0, 240) };
+    }
+};
+
 const paypalAccessToken = async () => {
     const clientId = process.env.PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -23,7 +34,7 @@ const paypalAccessToken = async () => {
         body: "grant_type=client_credentials",
     });
 
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (!response.ok || !payload.access_token) {
         throw new Error(payload.error_description || "Could not authenticate with PayPal");
     }
@@ -42,8 +53,7 @@ const paypalRequest = async (path, options = {}) => {
         },
     });
 
-    const text = await response.text();
-    const payload = text ? JSON.parse(text) : {};
+    const payload = await readJson(response);
     if (!response.ok) {
         throw new Error(payload.message || payload.error_description || "PayPal request failed");
     }
