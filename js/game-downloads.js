@@ -1,14 +1,19 @@
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
+    browserLocalPersistence,
     createUserWithEmailAndPassword,
     getAuth,
     onAuthStateChanged,
+    sendEmailVerification,
+    setPersistence,
     signInWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
     getDatabase,
+    get,
     onValue,
     ref,
+    set,
     update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
@@ -32,6 +37,38 @@ const state = {
 };
 
 const safeKey = (value = "") => String(value || "game").replace(/[.#$/[\]]/g, "_");
+
+const CURRENCY_BY_COUNTRY = {
+    AU: "AUD",
+    CA: "CAD",
+    DE: "EUR",
+    FR: "EUR",
+    GB: "GBP",
+    IE: "EUR",
+    NL: "EUR",
+    US: "USD",
+};
+
+const localeCountry = () => {
+    const locale = navigator.languages?.[0] || navigator.language || "en-GB";
+    const region = locale.split("-")[1];
+    return region ? region.toUpperCase() : "GB";
+};
+
+const currencyForCountry = (country = "GB") => CURRENCY_BY_COUNTRY[String(country).toUpperCase()] || "GBP";
+
+const accountActionUrl = () => {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        return `${window.location.origin}/account.html?action=verified`;
+    }
+
+    return "https://account.reflexinteractive.com/?action=verified";
+};
+
+const verificationActionSettings = () => ({
+    url: accountActionUrl(),
+    handleCodeInApp: false,
+});
 
 const ensureStatusNode = () => {
     let node = document.getElementById("game-download-status");
@@ -101,13 +138,13 @@ const ensureAuthPanel = () => {
     panel.id = "download-auth-panel";
     panel.className = "download-auth-panel d-none mt-3";
     panel.innerHTML = `
-        <label class="form-label text-uppercase small fw-bold text-muted" for="download-auth-email">Email Address</label>
+        <label class="form-label small fw-bold text-muted" for="download-auth-email">Email Address</label>
         <input type="email" class="form-control bg-dark text-white border-secondary mb-2" id="download-auth-email" autocomplete="email" required>
-        <label class="form-label text-uppercase small fw-bold text-muted" for="download-auth-password">Password</label>
+        <label class="form-label small fw-bold text-muted" for="download-auth-password">Password</label>
         <input type="password" class="form-control bg-dark text-white border-secondary mb-3" id="download-auth-password" autocomplete="current-password" required>
         <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-danger text-uppercase fw-bold">Sign In</button>
-            <button type="button" class="btn btn-outline-light text-uppercase fw-bold" id="download-auth-create">Create Account</button>
+            <button type="submit" class="btn btn-danger fw-bold">Sign In</button>
+            <button type="button" class="btn btn-outline-light fw-bold" id="download-auth-create">Create Account</button>
         </div>
         <p id="download-auth-status" class="small fw-bold text-muted mb-0" role="status"></p>
     `;
@@ -153,9 +190,10 @@ const submitAuth = async (mode) => {
             ? await createUserWithEmailAndPassword(state.auth, email, password)
             : await signInWithEmailAndPassword(state.auth, email, password);
         await ensureProfile(credential.user, mode === "signup");
+        if (mode === "signup") await sendEmailVerification(credential.user, verificationActionSettings());
 
         panel.querySelector("#download-auth-password").value = "";
-        setStatus("Signed in. Your download is ready.", "success");
+        setStatus(mode === "signup" ? "Account created. Check your email to verify before downloading." : "Signed in. Checking your library.", mode === "signup" ? "muted" : "success");
         setPanelOpen(false);
     } catch (error) {
         setStatus(friendlyError(error), "danger");
@@ -231,24 +269,56 @@ const claimGame = async () => {
     const now = new Date().toISOString();
     await update(ref(state.db, `users/${state.user.uid}/ownedGames/${gameKey}`), {
         id: String(stableId),
+        numeric_id: String(state.game.numeric_id || ""),
+        current_id: String(state.game.id || ""),
         title: state.game.title,
+        type: state.game.price > 0 ? "paid" : "free",
         addedAtUtc: now,
+        acquiredAtUtc: now,
     });
 };
 
-const ensureProfile = async (user, includeCreatedAt = false) => {
+const createCheckoutRequest = async () => {
+    if (!state.user || !state.db || !state.game?.id) return;
+
+    const now = new Date().toISOString();
+    const requestId = safeKey(`${Date.now()}_${state.game.numeric_id || state.game.id}`);
+    const profileSnapshot = await get(ref(state.db, `users/${state.user.uid}/paymentProfile`));
+    const profile = profileSnapshot.val() || {};
+    const country = profile.country || localeCountry();
+    const currency = profile.currency || currencyForCountry(country);
+
+    await set(ref(state.db, `users/${state.user.uid}/checkoutRequests/${requestId}`), {
+        id: requestId,
+        gameId: String(state.game.id || ""),
+        numeric_id: String(state.game.numeric_id || ""),
+        title: String(state.game.title || "Game").slice(0, 120),
+        provider: "stripe",
+        country: String(country).slice(0, 2).toUpperCase(),
+        currency,
+        savePaymentMethod: Boolean(profile.savePaymentMethod),
+        status: "requested",
+        returnUrl: `${window.location.pathname}${window.location.search}`,
+        createdAtUtc: now,
+    });
+};
+
+const ensureProfile = async (user) => {
     if (!user || !state.db) return;
 
     const now = new Date().toISOString();
+    const profileRef = ref(state.db, `users/${user.uid}/profile`);
+    const snapshot = await get(profileRef);
+    const existing = snapshot.val() || {};
     const profile = {
         localId: user.uid,
-        email: user.email || "",
-        displayName: user.displayName || "",
-        createdAtUtc: now,
+        email: user.email || existing.email || "",
+        displayName: user.displayName || existing.displayName || "",
+        createdAtUtc: existing.createdAtUtc || now,
         lastLoginAtUtc: now,
     };
 
-    await update(ref(state.db, `users/${user.uid}/profile`), profile);
+    await set(profileRef, profile);
 };
 
 const renderDownloadState = () => {
@@ -256,8 +326,28 @@ const renderDownloadState = () => {
     state.game = game;
 
     if (game.price > 0) {
-        setCta({ label: state.owned ? "Owned - Download Locked" : "Purchase Coming Soon" });
-        setPanelOpen(false);
+        if (!state.ready) {
+            setCta({ label: "Purchase Unavailable" });
+            setStatus("Account sign-in is not configured for this page.", "danger");
+            return;
+        }
+
+        if (!state.user) {
+            setCta({ label: "Sign In To Purchase", enabled: true });
+            ensureAuthPanel();
+            setStatus("");
+            return;
+        }
+
+        if (!state.user.emailVerified) {
+            setCta({ label: "Verify Email", enabled: true });
+            setStatus("Verify your email before starting a purchase.", "muted");
+            setPanelOpen(false);
+            return;
+        }
+
+        setCta({ label: state.busy ? "Creating Request..." : "Request Purchase", enabled: !state.busy });
+        setStatus("Payment provider is not connected yet. This creates a checkout request for later processing.", "muted");
         return;
     }
 
@@ -271,6 +361,13 @@ const renderDownloadState = () => {
         setCta({ label: "Sign In To Get", enabled: true });
         ensureAuthPanel();
         setStatus("");
+        return;
+    }
+
+    if (!state.user.emailVerified) {
+        setCta({ label: "Verify Email", enabled: true });
+        setStatus("Verify your email before claiming or downloading this game.", "muted");
+        setPanelOpen(false);
         return;
     }
 
@@ -311,6 +408,41 @@ cta.addEventListener("click", async (event) => {
 
     if (game.price > 0) {
         event.preventDefault();
+        if (!state.ready) {
+            setStatus("Account sign-in is not configured for this page.", "danger");
+            return;
+        }
+
+        if (!state.user) {
+            setPanelOpen(true);
+            setStatus(`Sign in to purchase ${game.title}.`);
+            return;
+        }
+
+        if (!state.user.emailVerified) {
+            setStatus("Sending verification email...");
+            try {
+                await sendEmailVerification(state.user, verificationActionSettings());
+                setStatus("Verification email sent. Refresh this page after verifying.", "success");
+            } catch (error) {
+                setStatus(friendlyError(error), "danger");
+            }
+            return;
+        }
+
+        state.busy = true;
+        renderDownloadState();
+        try {
+            await createCheckoutRequest();
+            state.busy = false;
+            renderDownloadState();
+            setStatus("Purchase request saved. Connect a payment provider to turn this into checkout.", "success");
+        } catch (error) {
+            console.warn("[Downloads] Could not create checkout request", error);
+            state.busy = false;
+            renderDownloadState();
+            setStatus("Firebase rules need checkoutRequests write access before purchases can start.", "danger");
+        }
         return;
     }
 
@@ -325,6 +457,18 @@ cta.addEventListener("click", async (event) => {
         event.preventDefault();
         setPanelOpen(true);
         setStatus(`Sign in to get ${game.title}.`);
+        return;
+    }
+
+    if (!state.user.emailVerified) {
+        event.preventDefault();
+        setStatus("Sending verification email...");
+        try {
+                await sendEmailVerification(state.user, verificationActionSettings());
+            setStatus("Verification email sent. Refresh this page after verifying.", "success");
+        } catch (error) {
+            setStatus(friendlyError(error), "danger");
+        }
         return;
     }
 
@@ -376,6 +520,9 @@ if (state.ready) {
     const firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
     state.auth = getAuth(firebaseApp);
     state.db = getDatabase(firebaseApp);
+    setPersistence(state.auth, browserLocalPersistence).catch((error) => {
+        console.warn("[Downloads] Could not set auth persistence", error);
+    });
 
     onAuthStateChanged(state.auth, (user) => {
         state.user = user;

@@ -1,7 +1,7 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
  * @version 1.2.1
- * @description Stable vanilla JS runtime for routing, data rendering, components, and interaction. Optimised for performance, accessibility, and SEO with minimal dependencies. Implemented 3d elements and interactivity.
+ * @description Stable vanilla JS runtime for routing, data rendering, components, and interaction. Optimised for performance, accessibility, and SEO with minimal dependencies.
  */
 (() => {
     "use strict";
@@ -321,12 +321,11 @@
         newsCard: (article) => `
             <article class="card modern-card news-card h-100">
                 <a href="${utils.detailHref("newswire-details", article.id)}" class="d-flex h-100 flex-column">
-                    <img src="${utils.normalizeMedia(article.image_url, 900)}" alt="${utils.escape(article.title)}" width="900" height="506" class="modern-card-img" loading="lazy" decoding="async">
+                    <img src="${utils.normalizeMedia(article.image_url, 720)}" alt="${utils.escape(article.title)}" width="720" height="405" class="modern-card-img" loading="lazy" decoding="async">
                     <div class="card-body d-flex flex-column">
                         <time class="modern-card-date" datetime="${utils.escape(article.date)}">${utils.escape(article.date)}</time>
                         <h3 class="modern-card-title">${utils.escape(article.title)}</h3>
-                        <p class="modern-card-summary">${utils.escape(article.summary)}</p>
-                        <span class="modern-card-cta mt-auto">Read More ${templates.arrow}</span>
+                        <span class="modern-card-cta mt-auto">Read more ${templates.arrow}</span>
                     </div>
                 </a>
             </article>
@@ -335,11 +334,10 @@
         gameCard: (game) => `
             <article class="card modern-game-card h-100">
                 <a href="${utils.detailHref("game-details", game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
-                    <img src="${utils.normalizeMedia(game.image_url, 900)}" alt="${utils.escape(game.title)} cover art" width="900" height="506" class="modern-game-card-img" loading="lazy" decoding="async">
+                    <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="lazy" decoding="async">
                     <div class="modern-game-card-overlay">
                         <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
-                        <p class="modern-game-card-desc">${utils.escape(game.description)}</p>
-                        <span class="modern-game-card-link">Explore Game ${templates.arrow}</span>
+                        <span class="modern-game-card-link">Explore game ${templates.arrow}</span>
                     </div>
                 </a>
             </article>
@@ -566,7 +564,14 @@
         scrollRail: (id, direction) => {
             const rail = dom.id(id);
             if (!rail) return;
-            rail.scrollBy({ left: direction * Math.max(rail.clientWidth * CONFIG.railRatio, 280), behavior: "smooth" });
+
+            const firstItem = rail.querySelector(".rail-item, .navbar-game-tile");
+            const styles = window.getComputedStyle(rail);
+            const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
+            const itemWidth = firstItem?.getBoundingClientRect().width || 0;
+            const distance = itemWidth ? itemWidth + gap : Math.max(rail.clientWidth * CONFIG.railRatio, 280);
+
+            rail.scrollBy({ left: direction * distance, behavior: "smooth" });
         },
 
         initBackToTop: () => {
@@ -586,20 +591,17 @@
         initDepthInteraction: () => {
             if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-            const root = document.documentElement;
-            const updatePointer = utils.throttle((event) => {
-                const x = (event.clientX / window.innerWidth - 0.5).toFixed(4);
-                const y = (event.clientY / window.innerHeight - 0.5).toFixed(4);
-                root.style.setProperty("--pointer-x", x);
-                root.style.setProperty("--pointer-y", y);
-            }, 16);
-
-            window.addEventListener("pointermove", updatePointer, { passive: true });
-
-            const targets = ".card, .featured-game, .surface-panel, .feature-card";
+            const targets = ".card, .featured-game, .feature-card";
             dom.qsa(targets).forEach((node) => node.classList.add("depth-card"));
 
-            document.addEventListener("pointermove", (event) => {
+            let tiltFrame = 0;
+            let tiltEvent = null;
+
+            const updateTilt = () => {
+                const event = tiltEvent;
+                tiltFrame = 0;
+                if (!event) return;
+
                 const card = event.target.closest(targets);
                 if (!card) return;
 
@@ -614,6 +616,11 @@
                 card.style.setProperty("--shine-x", `${(x * 100).toFixed(1)}%`);
                 card.style.setProperty("--shine-y", `${(y * 100).toFixed(1)}%`);
                 card.classList.add("is-tilting");
+            };
+
+            document.addEventListener("pointermove", (event) => {
+                tiltEvent = event;
+                if (!tiltFrame) tiltFrame = window.requestAnimationFrame(updateTilt);
             }, { passive: true });
 
             document.addEventListener("pointerout", (event) => {
@@ -622,6 +629,8 @@
                 card.classList.remove("is-tilting");
                 card.style.removeProperty("--tilt-x");
                 card.style.removeProperty("--tilt-y");
+                card.style.removeProperty("--shine-x");
+                card.style.removeProperty("--shine-y");
             }, { passive: true });
         },
     };
@@ -903,19 +912,18 @@
 
             try {
                 const [game] = await data.games();
-                const image = utils.normalizeMedia(game.hero_image_url || game.image_url, 1400);
+                const image = utils.normalizeMedia(game.hero_image_url || game.image_url, 900);
                 slot.innerHTML = `
                     <div class="row g-0 align-items-stretch">
-                        <div class="col-12 col-lg-7">
+                        <div class="col-12 col-lg-5">
                             <div class="featured-media">
-                                <img src="${image}" alt="${utils.escape(game.title)} key art" width="1400" height="788" loading="lazy" decoding="async">
+                                <img src="${image}" alt="${utils.escape(game.title)} key art" width="900" height="506" loading="lazy" decoding="async">
                             </div>
                         </div>
-                        <div class="col-12 col-lg-5">
+                        <div class="col-12 col-lg-7">
                             <div class="featured-body">
                                 <p class="section-kicker mb-3">Featured Game</p>
                                 <h3 class="display-5 fw-bold mb-3">${utils.escape(game.title)}</h3>
-                                <p class="text-muted mb-4">${utils.escape(game.description)}</p>
                                 <div class="d-flex flex-wrap gap-3">
                                     <a href="${utils.detailHref("game-details", game.id)}" class="btn btn-danger">Explore</a>
                                     <a href="/games" class="btn btn-outline-light">View All</a>
@@ -1418,8 +1426,8 @@
                 }),
                 data.component("footer", "/components/footer.html"),
             ]);
-
             ui.initEnvironmentLinks();
+            document.dispatchEvent(new CustomEvent("reflex:components-ready"));
             ui.initReveal();
             ui.initBackToTop();
             ui.initDepthInteraction();

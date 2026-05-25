@@ -54,13 +54,14 @@
                 <div class="account-header">
                     <div>
                         <p class="section-kicker mb-3">Reflex Account</p>
-                        <h1 id="account-heading" class="display-4 fw-bold text-uppercase mb-2">Account Dashboard</h1>
-                        <p id="account-welcome" class="text-muted fs-5 mb-0">Sign in to manage your profile, security, and game library.</p>
+                        <h1 id="account-heading" class="display-4 fw-bold mb-2">Account Dashboard</h1>
+                        <p id="account-welcome" class="text-muted fs-5 mb-0">Sign in to manage your profile, security, library, and payment preferences.</p>
                     </div>
                     <div class="account-session-panel">
                         <span id="account-session-state" class="account-status-pill">Signed out</span>
                         <p id="account-profile-summary" class="mb-0 text-muted">Not signed in.</p>
-                        <button id="account-signout" type="button" class="btn btn-outline-danger btn-sm text-uppercase fw-bold" disabled>Log Out</button>
+                        <a id="account-continue-link" class="btn btn-outline-light btn-sm fw-bold d-none" href="/">Continue</a>
+                        <button id="account-signout" type="button" class="btn btn-outline-danger btn-sm fw-bold" disabled>Log Out</button>
                     </div>
                 </div>
 
@@ -69,28 +70,28 @@
                         <form id="account-auth-form" class="surface-panel account-panel needs-validation" novalidate>
                             <div class="account-panel-heading">
                                 <p class="section-kicker mb-2">Access</p>
-                                <h2 class="h4 fw-bold text-uppercase mb-0">Sign In</h2>
+                                <h2 class="h4 fw-bold mb-0">Sign In</h2>
                             </div>
                             <div class="d-flex gap-2 mb-4" role="tablist" aria-label="Account mode">
                                 <button type="button" class="btn btn-danger flex-fill" id="account-mode-signin">Sign In</button>
                                 <button type="button" class="btn btn-outline-light flex-fill" id="account-mode-signup">Create Account</button>
                             </div>
                             <div class="mb-3 d-none" id="account-display-wrap">
-                                <label for="account-display-name" class="form-label text-uppercase small fw-bold text-muted">Display Name</label>
+                                <label for="account-display-name" class="form-label small fw-bold text-muted">Display Name</label>
                                 <input type="text" class="form-control bg-dark text-white border-secondary" id="account-display-name" maxlength="40" autocomplete="name">
                             </div>
                             <div class="mb-3">
-                                <label for="account-email" class="form-label text-uppercase small fw-bold text-muted">Email Address</label>
+                                <label for="account-email" class="form-label small fw-bold text-muted">Email Address</label>
                                 <input type="email" class="form-control bg-dark text-white border-secondary" id="account-email" autocomplete="email" required>
                             </div>
                             <div class="mb-4">
-                                <label for="account-password" class="form-label text-uppercase small fw-bold text-muted">Password</label>
+                                <label for="account-password" class="form-label small fw-bold text-muted">Password</label>
                                 <input type="password" class="form-control bg-dark text-white border-secondary" id="account-password" autocomplete="current-password" required>
                             </div>
                             <p id="account-auth-message" class="small fw-bold" role="status"></p>
                             <div class="d-flex flex-wrap gap-2">
-                                <button id="account-submit" type="submit" class="btn btn-danger text-uppercase fw-bold px-4">Sign In</button>
-                                <button id="account-reset-password" type="button" class="btn btn-outline-light text-uppercase fw-bold">Reset Password</button>
+                                <button id="account-submit" type="submit" class="btn btn-danger fw-bold px-4">Sign In</button>
+                                <button id="account-reset-password" type="button" class="btn btn-outline-light fw-bold">Reset Password</button>
                             </div>
                         </form>
                     </div>
@@ -110,6 +111,10 @@
                                     <span>Last Sync</span>
                                     <strong id="account-last-sync">-</strong>
                                 </div>
+                                <div class="account-stat">
+                                    <span>Payments</span>
+                                    <strong id="account-payment-status">-</strong>
+                                </div>
                             </div>
 
                             <div class="row g-4">
@@ -117,18 +122,18 @@
                                     <form id="account-profile-form" class="surface-panel account-panel">
                                         <div class="account-panel-heading">
                                             <p class="section-kicker mb-2">Profile</p>
-                                            <h2 class="h4 fw-bold text-uppercase mb-0">Account Details</h2>
+                                            <h2 class="h4 fw-bold mb-0">Account Details</h2>
                                         </div>
                                         <div class="mb-3">
-                                            <label for="account-settings-display-name" class="form-label text-uppercase small fw-bold text-muted">Display Name</label>
+                                            <label for="account-settings-display-name" class="form-label small fw-bold text-muted">Display Name</label>
                                             <input type="text" class="form-control bg-dark text-white border-secondary" id="account-settings-display-name" maxlength="40" autocomplete="name">
                                         </div>
                                         <div class="mb-4">
-                                            <label for="account-settings-email" class="form-label text-uppercase small fw-bold text-muted">Email Address</label>
+                                            <label for="account-settings-email" class="form-label small fw-bold text-muted">Email Address</label>
                                             <input type="email" class="form-control bg-dark text-white border-secondary" id="account-settings-email" disabled>
                                         </div>
                                         <p id="account-profile-message" class="small fw-bold" role="status"></p>
-                                        <button type="submit" class="btn btn-danger text-uppercase fw-bold">Save Profile</button>
+                                        <button type="submit" class="btn btn-danger fw-bold">Save Profile</button>
                                     </form>
                                 </div>
 
@@ -136,43 +141,127 @@
                                     <div class="surface-panel account-panel">
                                         <div class="account-panel-heading">
                                             <p class="section-kicker mb-2">Security</p>
-                                            <h2 class="h4 fw-bold text-uppercase mb-0">Password & Session</h2>
+                                            <h2 class="h4 fw-bold mb-0">Password & Session</h2>
                                         </div>
                                         <div class="account-security-list">
                                             <div>
                                                 <strong>Password Reset</strong>
                                                 <span>Send a reset link to your verified account email.</span>
                                             </div>
-                                            <button id="account-security-reset" type="button" class="btn btn-outline-light btn-sm text-uppercase fw-bold">Send Link</button>
+                                            <button id="account-security-reset" type="button" class="btn btn-outline-light btn-sm fw-bold">Send Link</button>
                                         </div>
                                         <div class="account-security-list">
                                             <div>
                                                 <strong>Active Session</strong>
                                                 <span id="account-session-email">No active session.</span>
                                             </div>
-                                            <button id="account-security-signout" type="button" class="btn btn-outline-danger btn-sm text-uppercase fw-bold">Log Out</button>
+                                            <button id="account-security-signout" type="button" class="btn btn-outline-danger btn-sm fw-bold">Log Out</button>
+                                        </div>
+                                        <div class="account-security-list">
+                                            <div>
+                                                <strong>Email Verification</strong>
+                                                <span id="account-email-verified">-</span>
+                                            </div>
+                                            <div class="account-library-actions">
+                                                <button id="account-security-verify" type="button" class="btn btn-outline-light btn-sm fw-bold">Send Email</button>
+                                                <button id="account-security-refresh" type="button" class="btn btn-outline-light btn-sm fw-bold">Refresh</button>
+                                            </div>
                                         </div>
                                         <p id="account-security-message" class="small fw-bold mb-0" role="status"></p>
                                     </div>
                                 </div>
                             </div>
 
+                            <section class="surface-panel account-panel mt-4" aria-labelledby="account-payment-heading">
+                                <div class="account-panel-heading">
+                                    <p class="section-kicker mb-2">Payments</p>
+                                    <h2 id="account-payment-heading" class="h4 fw-bold mb-0">Payment Profile</h2>
+                                </div>
+                                <form id="account-payment-form" class="row g-3">
+                                    <div class="col-12 col-md-5">
+                                        <label for="account-billing-email" class="form-label small fw-bold text-muted">Billing Email</label>
+                                        <input id="account-billing-email" class="form-control bg-dark text-white border-secondary" type="email" autocomplete="email" maxlength="254">
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label for="account-billing-country" class="form-label small fw-bold text-muted">Country</label>
+                                        <select id="account-billing-country" class="form-select bg-dark text-white border-secondary">
+                                            <option value="GB">United Kingdom</option>
+                                            <option value="US">United States</option>
+                                            <option value="CA">Canada</option>
+                                            <option value="AU">Australia</option>
+                                            <option value="IE">Ireland</option>
+                                            <option value="DE">Germany</option>
+                                            <option value="FR">France</option>
+                                            <option value="NL">Netherlands</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label for="account-payment-currency" class="form-label small fw-bold text-muted">Currency</label>
+                                        <input id="account-payment-currency" class="form-control bg-dark text-white border-secondary" type="text" value="GBP" readonly>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input id="account-save-payment-method" class="form-check-input" type="checkbox">
+                                            <label for="account-save-payment-method" class="form-check-label text-muted">
+                                                Let Stripe save my payment method for future Reflex Interactive purchases.
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 d-flex flex-wrap align-items-center gap-2">
+                                        <button type="submit" class="btn btn-danger fw-bold">Save Payment Profile</button>
+                                        <span class="text-muted small">Payments are processed by <strong id="account-payment-provider-label">Stripe</strong>.</span>
+                                    </div>
+                                    <p id="account-payment-message" class="small fw-bold mb-0" role="status"></p>
+                                </form>
+                            </section>
+
                             <section class="surface-panel account-panel mt-4" aria-labelledby="account-library-heading">
                                 <div class="account-panel-heading account-library-heading">
                                     <div>
                                         <p class="section-kicker mb-2">Library</p>
-                                        <h2 id="account-library-heading" class="h4 fw-bold text-uppercase mb-0">Owned Games</h2>
+                                        <h2 id="account-library-heading" class="h4 fw-bold mb-0">Owned Games</h2>
                                     </div>
-                                    <a class="btn btn-outline-light btn-sm text-uppercase fw-bold" href="/games">Browse Games</a>
+                                    <a class="btn btn-outline-light btn-sm fw-bold" href="/games">Browse Games</a>
                                 </div>
                                 <div id="account-library" class="account-library-list text-muted">No owned games yet.</div>
+                            </section>
+
+                            <section class="surface-panel account-panel mt-4" aria-labelledby="account-orders-heading">
+                                <div class="account-panel-heading">
+                                    <p class="section-kicker mb-2">Orders</p>
+                                    <h2 id="account-orders-heading" class="h4 fw-bold mb-0">Payment History</h2>
+                                </div>
+                                <div id="account-orders" class="account-library-list text-muted">No orders yet.</div>
+                            </section>
+
+                            <section class="surface-panel account-panel mt-4" aria-labelledby="account-closure-heading">
+                                <div class="account-panel-heading">
+                                    <p class="section-kicker mb-2">Account</p>
+                                    <h2 id="account-closure-heading" class="h4 fw-bold mb-0">Close Account</h2>
+                                </div>
+                                <p class="text-muted">Request closure of your Reflex account and deletion of personal data where legally possible. Purchase records may need to be retained for accounting, fraud prevention, and legal obligations.</p>
+                                <div class="form-check mb-3">
+                                    <input id="account-close-confirm" class="form-check-input" type="checkbox">
+                                    <label for="account-close-confirm" class="form-check-label text-muted">I understand this will disable account access after review.</label>
+                                </div>
+                                <button id="account-close-request" type="button" class="btn btn-outline-danger fw-bold">Request Account Closure</button>
+                                <p id="account-close-message" class="small fw-bold mb-0 mt-3" role="status"></p>
+                                <div class="support-address mt-4 pt-4 border-top border-secondary">
+                                    <p class="mb-1"><strong>Legal and payment contact</strong></p>
+                                    <p class="text-muted lh-sm mb-0">
+                                        Reflex Interactive<br>
+                                        Bartle House, Oxford Court<br>
+                                        Manchester, M2 3WQ<br>
+                                        United Kingdom
+                                    </p>
+                                </div>
                             </section>
                         </div>
 
                         <div id="account-signed-out-panel" class="surface-panel account-panel account-empty-dashboard">
                             <p class="section-kicker mb-2">Dashboard Locked</p>
-                            <h2 class="h4 fw-bold text-uppercase mb-2">Sign In Required</h2>
-                            <p class="text-muted mb-0">Your profile settings, security actions, and game library appear here after sign-in.</p>
+                            <h2 class="h4 fw-bold mb-2">Sign In Required</h2>
+                            <p class="text-muted mb-0">Your profile settings, security actions, library, and payment preferences appear here after sign-in.</p>
                         </div>
                     </div>
                 </div>
@@ -184,6 +273,7 @@
     
     <script src="./js/app.js" defer></script>
     <script src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/account-session.js"></script>
     <script type="module" src="./js/account.js"></script>
 </body>
 </html>

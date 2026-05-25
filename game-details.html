@@ -94,7 +94,7 @@
             <div class="position-relative z-3 container d-flex align-items-end pb-5 game-hero-content">
                 <div>
                     <p class="section-kicker text-danger mb-3 reveal-on-load">Game Details</p>
-                    <h1 id="game-detail-title" class="display-1 fw-black text-uppercase text-shadow-lg reveal-on-load mb-0"></h1>
+                    <h1 id="game-detail-title" class="display-1 fw-black text-shadow-lg reveal-on-load mb-0"></h1>
                 </div>
             </div>
         </section>
@@ -108,10 +108,10 @@
                             <img id="game-detail-cover" src="#" alt="Game Cover Art" class="img-fluid rounded-xl shadow-lg mb-4">
                             <div class="surface-panel p-4">
                             <div class="mb-4">
-                                <h3 class="text-uppercase text-muted fw-bold small mb-2">Price</h3>
+                                <h3 class="text-muted fw-bold small mb-2">Price</h3>
                                 <p id="game-detail-price" class="text-danger fs-4 fw-bold mb-0"></p>
                             </div>
-                            <a id="purchase-download-btn" href="#" class="btn btn-danger w-100 py-3 fw-bold text-uppercase" aria-label="Purchase or download the game">
+                            <a id="purchase-download-btn" href="#" class="btn btn-danger w-100 py-3 fw-bold" aria-label="Purchase or download the game">
                                 Purchase Now
                             </a>
                             </div>
@@ -121,30 +121,30 @@
                     <div class="col-12 col-lg-9">
                         
                         <article class="surface-panel p-4 p-md-5 mb-5 reveal-on-scroll" aria-labelledby="details-heading">
-                            <h2 id="details-heading" class="h4 fw-bold mb-4 text-uppercase text-white">Game Details</h2>
+                            <h2 id="details-heading" class="h4 fw-bold mb-4 text-white">Game Details</h2>
                             <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
                                 <div class="col">
-                                    <h3 class="text-muted text-uppercase small fw-bold mb-2">Developer</h3>
+                                    <h3 class="text-muted small fw-bold mb-2">Developer</h3>
                                     <p id="game-detail-developer" class="text-white fw-bold mb-0"></p>
                                 </div>
                                 <div class="col">
-                                    <h3 class="text-muted text-uppercase small fw-bold mb-2">Publisher</h3>
+                                    <h3 class="text-muted small fw-bold mb-2">Publisher</h3>
                                     <p id="game-detail-publisher" class="text-white fw-bold mb-0"></p>
                                 </div>
                                 <div class="col">
-                                    <h3 class="text-muted text-uppercase small fw-bold mb-2">Genre</h3>
+                                    <h3 class="text-muted small fw-bold mb-2">Genre</h3>
                                     <p id="game-detail-genre" class="text-white fw-bold mb-0"></p>
                                 </div>
                             </div>
                         </article>
 
                         <article class="surface-panel p-4 p-md-5 mb-5 reveal-on-scroll" aria-labelledby="description-heading">
-                            <h2 id="description-heading" class="h3 fw-bold mb-4 text-uppercase text-white">About This Game</h2>
+                            <h2 id="description-heading" class="h3 fw-bold mb-4 text-white">About This Game</h2>
                             <p id="game-detail-description" class="text-light lh-lg fs-5"></p>
                         </article>
 
                         <article class="reveal-on-scroll" aria-labelledby="media-heading">
-                            <h2 id="media-heading" class="h3 fw-bold mb-4 text-uppercase text-white">Media</h2>
+                            <h2 id="media-heading" class="h3 fw-bold mb-4 text-white">Media</h2>
                             <div id="game-detail-screenshots" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
                         </article>
                     </div>
@@ -157,6 +157,7 @@
     
     <script src="./js/firebase-config.js"></script>
     <script src="./js/app.js" defer></script>
+    <script type="module" src="./js/account-session.js"></script>
     <script type="module" src="./js/game-downloads.js"></script>
 </body>
 </html>

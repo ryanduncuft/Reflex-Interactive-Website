@@ -118,12 +118,12 @@
             <div class="container py-5">
                 <div class="support-hero-content text-center mx-auto">
                     <p class="section-kicker mb-3 reveal-on-load">Player Support</p>
-                    <h1 id="support-heading" class="display-4 fw-bold text-uppercase reveal-on-load">How can we <span class="text-danger">Help?</span></h1>
-                    <p class="text-muted fs-5 mb-4 reveal-on-scroll content-mid">Search the knowledge base, choose a game, or send a detailed ticket to Reflex Interactive support.</p>
+                    <h1 id="support-heading" class="display-4 fw-bold reveal-on-load">How can we help?</h1>
+                    <p class="text-muted fs-5 mb-4 reveal-on-scroll content-mid">Search support articles, choose a game, or prepare a ticket for the Reflex Interactive team.</p>
 
                     <form id="support-search-form" class="support-search reveal-on-scroll" role="search">
                         <label class="visually-hidden" for="support-search-input">Search support articles</label>
-                        <input id="support-search-input" class="form-control form-control-lg" type="search" placeholder="Search articles, games, errors, downloads..." autocomplete="off">
+                        <input id="support-search-input" class="form-control form-control-lg" type="search" placeholder="Search articles, games, errors, downloads" autocomplete="off">
                         <button class="btn btn-danger btn-lg" type="submit">Search</button>
                     </form>
 
@@ -165,21 +165,21 @@
                     <div class="col">
                         <button class="card bg-dark text-white border-secondary h-100 support-tile support-action-card" type="button" data-support-category="account">
                             <span class="section-kicker d-block mb-3">Account</span>
-                            <span class="support-action-title">Account support</span>
+                            <span class="support-action-title">Account</span>
                             <span class="support-action-copy">Sign-in, email changes, launcher access, and ownership questions.</span>
                         </button>
                     </div>
                     <div class="col">
                         <button class="card bg-dark text-white border-secondary h-100 support-tile support-action-card" type="button" data-support-category="technical">
                             <span class="section-kicker d-block mb-3">Technical</span>
-                            <span class="support-action-title">Technical issues</span>
+                            <span class="support-action-title">Technical</span>
                             <span class="support-action-copy">Crashes, performance, installation, controls, and compatibility.</span>
                         </button>
                     </div>
                     <div class="col">
                         <button class="card bg-dark text-white border-secondary h-100 support-tile support-action-card" type="button" data-support-category="bug-report">
                             <span class="section-kicker d-block mb-3">Reports</span>
-                            <span class="support-action-title">Submit a bug</span>
+                            <span class="support-action-title">Bug report</span>
                             <span class="support-action-copy">Send reproduction steps, screenshots, save details, and device info.</span>
                         </button>
                     </div>
@@ -292,6 +292,8 @@
     
     <div id="footer"></div>
     
+    <script src="./js/firebase-config.js"></script>
     <script src="./js/app.js" defer></script>
+    <script type="module" src="./js/account-session.js"></script>
 </body>
 </html>
