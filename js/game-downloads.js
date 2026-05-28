@@ -1,23 +1,29 @@
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
-    browserLocalPersistence,
     createUserWithEmailAndPassword,
-    getAuth,
     onAuthStateChanged,
     sendEmailVerification,
-    setPersistence,
     signInWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
-    getDatabase,
     get,
     onValue,
     ref,
     set,
     update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import {
+    activeBanForGame,
+    authenticatedDownloadUrl,
+    buildProfilePayload,
+    ownedGameKey,
+    ownedRecordMatchesGame,
+    safeKey,
+    verificationActionSettings,
+} from "./account-core.js";
+import { getFirebaseClient, isFirebaseConfigured } from "./firebase-client.js";
 
-const firebaseConfig = window.REFLEX_FIREBASE_CONFIG;
+const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
+const CHECKOUT_ENDPOINT = (window.REFLEX_PAYPAL_CONFIG || {}).checkoutEndpoint || SITE_CONFIG.endpoints?.checkout || "/.netlify/functions/create-paypal-order";
 const cta = document.getElementById("purchase-download-btn");
 
 if (!cta) {
@@ -37,26 +43,8 @@ const state = {
     user: null,
     busy: false,
     checkoutStarted: false,
-    ready: Boolean(firebaseConfig?.apiKey && firebaseConfig?.databaseURL && firebaseConfig?.projectId),
+    ready: isFirebaseConfigured(),
 };
-
-const PAYPAL_CONFIG = window.REFLEX_PAYPAL_CONFIG || {};
-const CHECKOUT_ENDPOINT = PAYPAL_CONFIG.checkoutEndpoint || "/.netlify/functions/create-paypal-order";
-
-const safeKey = (value = "") => String(value || "game").replace(/[.#$/[\]]/g, "_");
-
-const accountActionUrl = () => {
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-        return `${window.location.origin}/account.html?action=verified`;
-    }
-
-    return "https://account.reflexinteractive.com/?action=verified";
-};
-
-const verificationActionSettings = () => ({
-    url: accountActionUrl(),
-    handleCodeInApp: false,
-});
 
 const ensureStatusNode = () => {
     let node = document.getElementById("game-download-status");
@@ -93,19 +81,6 @@ const gameFromButton = () => ({
     download_name: cta.dataset.downloadName || "",
     exe_name: cta.getAttribute("download") || "",
 });
-
-const authenticatedDownloadUrl = async (url) => {
-    const token = await state.user.getIdToken();
-    const downloadUrl = new URL(url, window.location.origin);
-    downloadUrl.searchParams.set("token", token);
-    return downloadUrl.toString();
-};
-
-const ownedGameKey = (game = {}) => {
-    const stableId = game.numeric_id || game.id;
-    const prefix = game.numeric_id ? "game" : "slug";
-    return safeKey(`${prefix}_${stableId}`);
-};
 
 const setCta = ({ label, href = "#", enabled = false, download = "" }) => {
     cta.textContent = label;
@@ -163,6 +138,11 @@ const submitAuth = async (mode) => {
     const email = panel.querySelector("#download-auth-email")?.value.trim();
     const password = panel.querySelector("#download-auth-password")?.value || "";
 
+    if (!state.auth || !state.db) {
+        setStatus("Account services are still loading. Try again in a moment.", "muted");
+        return;
+    }
+
     if (!email || !password) {
         setStatus("Enter your email and password first.", "danger");
         return;
@@ -197,7 +177,7 @@ const friendlyError = (error) => {
         case "auth/email-already-in-use": return "That email address is already registered. Sign in instead.";
         case "auth/invalid-email": return "Enter a valid email address.";
         case "auth/invalid-credential": return "The email or password is incorrect.";
-        case "auth/operation-not-allowed": return "Email/password sign-in is not enabled in Firebase.";
+        case "auth/operation-not-allowed": return "Email/password sign-in is not enabled.";
         case "auth/weak-password": return "Password must be at least 6 characters.";
         default: return error.message || "Account request failed.";
     }
@@ -205,36 +185,10 @@ const friendlyError = (error) => {
 
 const friendlyDatabaseError = (error) => {
     if (error.code === "PERMISSION_DENIED" || /permission/i.test(error.message || "")) {
-        return `Firebase blocked the library update (${error.code || "permission denied"}: ${error.message || "no details"}).`;
+        return "Your account library could not be updated. Please sign in again and try once more.";
     }
 
     return error.message || "Could not update your library.";
-};
-
-const ownedRecordMatchesGame = (record = {}, game = {}) => {
-    const numericId = String(game.numeric_id || "");
-    const currentId = String(game.id || "");
-
-    if (numericId && String(record.numeric_id || record.id || "") === numericId) return true;
-    if (currentId && [record.current_id, record.catalog_id, record.slug, record.id].map(String).includes(currentId)) return true;
-
-    return false;
-};
-
-const banRecordMatchesGame = (record = {}, game = {}) => {
-    const numericId = String(game.numeric_id || "");
-    const currentId = String(game.id || "");
-    const ids = [record.gameId, record.numeric_id, record.current_id].filter(Boolean).map(String);
-    return (numericId && ids.includes(numericId)) || (currentId && ids.includes(currentId));
-};
-
-const activeBanForGame = (records = {}, game = {}) => {
-    const now = Date.now();
-    return Object.values(records || {}).find((record) => {
-        if (record.status !== "active" || !banRecordMatchesGame(record, game)) return false;
-        const expiresAt = Date.parse(record.expiresAtUtc || "");
-        return Number.isNaN(expiresAt) || expiresAt > now;
-    }) || null;
 };
 
 const syncOwnership = () => {
@@ -332,13 +286,7 @@ const ensureProfile = async (user) => {
     const profileRef = ref(state.db, `users/${user.uid}/profile`);
     const snapshot = await get(profileRef);
     const existing = snapshot.val() || {};
-    const profile = {
-        localId: user.uid,
-        email: user.email || existing.email || "",
-        displayName: user.displayName || existing.displayName || "",
-        createdAtUtc: existing.createdAtUtc || now,
-        lastLoginAtUtc: now,
-    };
+    const profile = buildProfilePayload(user, { ...existing, lastLoginAtUtc: now });
 
     await set(profileRef, profile);
 };
@@ -511,7 +459,7 @@ cta.addEventListener("click", async (event) => {
             if (!game.download_url) return;
             setStatus("Preparing secure download...");
             try {
-                window.location.href = await authenticatedDownloadUrl(game.download_url);
+                window.location.href = await authenticatedDownloadUrl(game.download_url, state.user);
             } catch (error) {
                 console.warn("[Downloads] Could not prepare secure download", error);
                 setStatus("Could not prepare the download. Please sign in again.", "danger");
@@ -599,25 +547,32 @@ cta.addEventListener("click", async (event) => {
     setStatus("Preparing secure download...");
 
     try {
-        window.location.href = await authenticatedDownloadUrl(game.download_url);
+        window.location.href = await authenticatedDownloadUrl(game.download_url, state.user);
     } catch (error) {
         console.warn("[Downloads] Could not prepare secure download", error);
         setStatus("Could not prepare the download. Please sign in again.", "danger");
     }
 });
 
-if (state.ready) {
-    const firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-    state.auth = getAuth(firebaseApp);
-    state.db = getDatabase(firebaseApp);
-    setPersistence(state.auth, browserLocalPersistence).catch((error) => {
-        console.warn("[Downloads] Could not set auth persistence", error);
-    });
+const initDownloads = async () => {
+    if (!state.ready) {
+        renderDownloadState();
+        return;
+    }
 
-    onAuthStateChanged(state.auth, (user) => {
-        state.user = user;
-        syncOwnership();
-    });
-} else {
-    renderDownloadState();
-}
+    try {
+        const client = await getFirebaseClient();
+        state.auth = client.auth;
+        state.db = client.db;
+        onAuthStateChanged(state.auth, (user) => {
+            state.user = user;
+            syncOwnership();
+        });
+    } catch (error) {
+        console.warn("[Downloads] Account services unavailable", error);
+        state.ready = false;
+        renderDownloadState();
+    }
+};
+
+initDownloads();

@@ -9,6 +9,7 @@ const {
     resolvePrice,
     safeReturnPath,
 } = require("./_commerce");
+const { assertTrustedOrigin, parseJsonBody } = require("./_security");
 
 const SITE_URL = process.env.SITE_URL || "https://reflexinteractive.com";
 
@@ -22,7 +23,8 @@ exports.handler = async (event) => {
     if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
 
     try {
-        const body = JSON.parse(event.body || "{}");
+        assertTrustedOrigin(event);
+        const body = parseJsonBody(event);
         const idToken = body.idToken || "";
         const gameId = String(body.gameId || "").slice(0, 120);
         const returnUrl = safeReturnPath(body.returnUrl || "/games");
@@ -59,6 +61,9 @@ exports.handler = async (event) => {
 
         const order = await paypalRequest("/v2/checkout/orders", {
             method: "POST",
+            headers: {
+                "PayPal-Request-Id": `reflex-${decoded.uid}-${ownedKey}`.slice(0, 108),
+            },
             body: JSON.stringify({
                 intent: "CAPTURE",
                 purchase_units: [{
@@ -103,6 +108,6 @@ exports.handler = async (event) => {
         return json(200, { url: approve.href });
     } catch (error) {
         console.error("[PayPal] create order failed", error);
-        return json(500, { error: safeCheckoutError(error) });
+        return json(error.statusCode || 500, { error: safeCheckoutError(error) });
     }
 };

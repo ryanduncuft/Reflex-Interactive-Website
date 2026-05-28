@@ -1,6 +1,6 @@
 const { getFirebaseAdmin } = require("./_firebase");
 const { paypalRequest } = require("./_paypal");
-const { fulfillPaidGame } = require("./_commerce");
+const { captureMatchesOrder, fulfillPaidGame } = require("./_commerce");
 
 const response = (statusCode, body = "") => ({ statusCode, body });
 
@@ -57,6 +57,13 @@ exports.handler = async (event) => {
         const orderSnapshot = await admin.database().ref(`paypalOrders/${orderId}`).get();
         const order = orderSnapshot.val();
         if (!order?.uid || !order?.gameId) return response(200, "unknown order");
+        if (!captureMatchesOrder(webhookEvent.resource, order)) {
+            await admin.database().ref(`paypalOrders/${orderId}`).update({
+                status: "amount_mismatch",
+                updatedAtUtc: new Date().toISOString(),
+            });
+            return response(200, "amount mismatch");
+        }
 
         await fulfillPaidGame({
             admin,

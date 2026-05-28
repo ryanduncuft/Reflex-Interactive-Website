@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check": "node --check js/app.js && node --check js/account.js && node --check js/account-session.js && node --check js/game-downloads.js && node --check netlify/functions/_commerce.js && node --check netlify/functions/_firebase.js && node --check netlify/functions/_paypal.js && node --check netlify/functions/create-paypal-order.js && node --check netlify/functions/capture-paypal-order.js && node --check netlify/functions/paypal-webhook.js && node --check scripts/set-admin-claim.js",
+    "check": "node --check js/site-config.js && node --check js/firebase-client.js && node --check js/app.js && node --check js/account-core.js && node --check js/account.js && node --check js/account-session.js && node --check js/game-downloads.js && node --check netlify/functions/_commerce.js && node --check netlify/functions/_firebase.js && node --check netlify/functions/_paypal.js && node --check netlify/functions/_security.js && node --check netlify/functions/create-paypal-order.js && node --check netlify/functions/capture-paypal-order.js && node --check netlify/functions/paypal-webhook.js && node --check scripts/set-admin-claim.js",
     "admin:set": "node scripts/set-admin-claim.js"
   },
   "dependencies": {

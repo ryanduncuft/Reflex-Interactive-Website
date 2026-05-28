@@ -16,6 +16,7 @@ const json = (statusCode, body) => ({
     headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
     },
     body: JSON.stringify(body),
 });
@@ -58,6 +59,16 @@ const resolvePrice = (game = {}, requestedCurrency = "GBP") => {
         currency: "GBP",
         amount: Number(game.price || 0),
     };
+};
+
+const amountToMinorUnits = (value = 0) => Math.round(Number(value || 0) * 100);
+
+const captureMatchesOrder = (capture = {}, order = {}) => {
+    const amount = capture.amount || {};
+    const currency = String(amount.currency_code || "").toUpperCase();
+    const capturedMinor = amountToMinorUnits(amount.value);
+    return currency === String(order.currency || "").toUpperCase() &&
+        capturedMinor === Number(order.amountTotal || 0);
 };
 
 const activeBanForGame = (bans = {}, game = {}) => {
@@ -108,6 +119,7 @@ const fulfillPaidGame = async ({ admin, uid, paymentId, provider, status, gameId
 module.exports = {
     CURRENCY_BY_COUNTRY,
     activeBanForGame,
+    captureMatchesOrder,
     fulfillPaidGame,
     json,
     loadGame,

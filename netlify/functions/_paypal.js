@@ -43,6 +43,10 @@ const paypalAccessToken = async () => {
 };
 
 const paypalRequest = async (path, options = {}) => {
+    if (!path.startsWith("/")) {
+        throw new Error("PayPal request path must be relative");
+    }
+
     const token = await paypalAccessToken();
     const response = await fetch(`${paypalBaseUrl()}${path}`, {
         ...options,

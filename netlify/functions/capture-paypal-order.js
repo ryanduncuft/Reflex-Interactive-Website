@@ -1,6 +1,6 @@
 const { getFirebaseAdmin } = require("./_firebase");
 const { paypalRequest } = require("./_paypal");
-const { fulfillPaidGame, redirect, safeReturnPath } = require("./_commerce");
+const { captureMatchesOrder, fulfillPaidGame, redirect, safeReturnPath } = require("./_commerce");
 
 const ACCOUNT_URL = process.env.ACCOUNT_URL || "https://account.reflexinteractive.com";
 const SITE_URL = process.env.SITE_URL || "https://reflexinteractive.com";
@@ -31,6 +31,14 @@ exports.handler = async (event) => {
                 updatedAtUtc: new Date().toISOString(),
             });
             return failureRedirect("not_completed");
+        }
+
+        if (!captureMatchesOrder(capture, order)) {
+            await admin.database().ref(`paypalOrders/${orderId}`).update({
+                status: "amount_mismatch",
+                updatedAtUtc: new Date().toISOString(),
+            });
+            return failureRedirect("amount_mismatch");
         }
 
         await fulfillPaidGame({
