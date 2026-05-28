@@ -1,33 +1,38 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
- * @version 1.2.1
- * @description Stable vanilla JS runtime for routing, data rendering, components, and interaction. Optimised for performance, accessibility, and SEO with minimal dependencies.
+ * @version v2.0.0
+ * @description Highlights: redesigned launcher UX, secured account and download flows, free-only library claims, and clean Windows x64 release packaging.
  */
 (() => {
     "use strict";
 
+    const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
+
     const CONFIG = {
         api: {
-            news: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
-            games: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
-            supportArticles: "https://gist.githubusercontent.com/ryanduncuft/3308af53408db611254490f5c0b8611f/raw/reflex-support.json",
+            news: SITE_CONFIG.urls?.news || "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
+            games: SITE_CONFIG.urls?.games || "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
+            supportArticles: SITE_CONFIG.urls?.supportArticles || "https://gist.githubusercontent.com/ryanduncuft/3308af53408db611254490f5c0b8611f/raw/reflex-support.json",
         },
-        siteUrl: "https://reflexinteractive.com",
-        logo: "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
-        revealDelay: 70,
-        navScrollY: 24,
-        railRatio: 0.86,
+        siteUrl: SITE_CONFIG.urls?.site || "https://reflexinteractive.com",
+        logo: SITE_CONFIG.urls?.logo || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+        locale: SITE_CONFIG.locale || "en-GB",
+        defaultCurrency: SITE_CONFIG.defaultCurrency || "GBP",
+        launcherRuntime: SITE_CONFIG.launcherRuntime || "win-x64",
+        revealDelay: SITE_CONFIG.ui?.revealDelay || 70,
+        navScrollY: SITE_CONFIG.ui?.navScrollY || 24,
+        railRatio: SITE_CONFIG.ui?.railRatio || 0.86,
         subdomains: {
-            support: "https://support.reflexinteractive.com/",
-            careers: "https://careers.reflexinteractive.com/",
-            account: "https://account.reflexinteractive.com/",
+            support: SITE_CONFIG.urls?.support || "https://support.reflexinteractive.com/",
+            careers: SITE_CONFIG.urls?.careers || "https://careers.reflexinteractive.com/",
+            account: SITE_CONFIG.urls?.account || "https://reflexinteractive.com/account",
         },
         downloads: {
-            protectedBaseUrl: "https://downloads.reflexinteractive.com",
+            protectedBaseUrl: SITE_CONFIG.urls?.downloads || "https://downloads.reflexinteractive.com",
         },
         launcher: {
-            baseUrl: "https://cdn.reflexinteractive.com/launcher-files",
-            manifestUrl: "https://cdn.reflexinteractive.com/launcher-files/manifest.json",
+            baseUrl: SITE_CONFIG.urls?.launcherFiles || "https://cdn.reflexinteractive.com/launcher-files",
+            versionUrl: SITE_CONFIG.urls?.launcherVersion || "https://cdn.reflexinteractive.com/launcher-files/version.json",
         },
         localRoutes: {
             "/about": "/about.html",
@@ -117,6 +122,19 @@
 
         detailHref: (page, id) => utils.routeHref(`/${page}?id=${encodeURIComponent(id)}`),
 
+        accountHref: () => {
+            const isAccountPage = window.location.pathname.includes("account") || window.location.hostname.startsWith("account.");
+            const target = utils.isLocal()
+                ? new URL(CONFIG.localRoutes["/account"], window.location.origin)
+                : new URL("/account", CONFIG.siteUrl);
+
+            if (!isAccountPage) {
+                target.searchParams.set("return", `${window.location.pathname}${window.location.search}${window.location.hash}`);
+            }
+
+            return target.toString();
+        },
+
         linkedDetailId: (game = {}) => {
             if (!game.link) return "";
             try {
@@ -151,7 +169,35 @@
             }
         },
 
-        gameDownloadInfo: (game = {}, runtime = "win-x64") => {
+        gameHasDownload: (game = {}, runtime = CONFIG.launcherRuntime) => {
+            const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64 || {};
+            const flags = [
+                game.hasDownload,
+                game.has_download,
+                game["has-download"],
+                game.downloadAvailable,
+                game.download_available,
+                game["download-available"],
+                platformDownload.hasDownload,
+                platformDownload.has_download,
+                platformDownload["has-download"],
+                platformDownload.available,
+                platformDownload.isAvailable,
+                platformDownload.is_available,
+            ];
+
+            return !flags.some((value) => value === false || String(value).toLowerCase() === "false");
+        },
+
+        gameDownloadInfo: (game = {}, runtime = CONFIG.launcherRuntime) => {
+            if (!utils.gameHasDownload(game, runtime)) {
+                return {
+                    url: "",
+                    filename: "",
+                    available: false,
+                };
+            }
+
             const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64;
             const platformFile = Array.isArray(platformDownload?.files) ? platformDownload.files[0] : null;
             const protectedKey = platformFile?.key
@@ -198,22 +244,28 @@
             return { url: "", filename: "" };
         },
 
-        currentLauncherRuntime: () => {
+        isMobileDevice: () => {
             const ua = navigator.userAgent.toLowerCase();
-            const platform = navigator.platform.toLowerCase();
+            return /android|iphone|ipad|ipod|iemobile|mobile|tablet/.test(ua);
+        },
 
-            if (ua.includes("linux")) return "linux-x64";
-            if (!ua.includes("win")) return "";
-            return ua.includes("win64") || ua.includes("wow64") || ua.includes("x64") || platform.includes("x64")
-                ? "win-x64"
-                : "win-x86";
+        currentLauncherRuntime: () => {
+            if (utils.isMobileDevice()) return "";
+
+            const ua = navigator.userAgent.toLowerCase();
+            const uaDataPlatform = navigator.userAgentData?.platform || "";
+            const platform = `${uaDataPlatform} ${navigator.platform || ""}`.toLowerCase();
+
+            if (!ua.includes("win") && !platform.includes("win")) return "";
+            if (ua.includes("arm") || platform.includes("arm")) return "";
+            return CONFIG.launcherRuntime;
         },
 
         launcherPackageUrl: (packageInfo = {}) => {
             const explicit = packageInfo.url || packageInfo.download_url || packageInfo.downloadUrl;
             if (explicit) return explicit;
 
-            const relative = packageInfo.path || packageInfo.key || packageInfo.file || "";
+            const relative = packageInfo.installer || packageInfo.filename || packageInfo.path || packageInfo.key || packageInfo.file || "";
             if (!relative) return "";
 
             try {
@@ -407,6 +459,11 @@
                 if (!rawHref || rawHref === "#" || rawHref.startsWith("mailto:") || rawHref.startsWith("tel:")) return;
 
                 if (subdomain && CONFIG.subdomains[subdomain]) {
+                    if (subdomain === "account") {
+                        link.href = utils.accountHref();
+                        return;
+                    }
+
                     link.href = local ? `/${subdomain}.html` : CONFIG.subdomains[subdomain];
                     return;
                 }
@@ -481,6 +538,10 @@
 
             const runtime = utils.currentLauncherRuntime();
 
+            const removeButtons = () => {
+                buttons.forEach((button) => button.remove());
+            };
+
             const disable = (label = "Launcher unavailable") => {
                 buttons.forEach((button) => {
                     button.href = "#";
@@ -491,8 +552,24 @@
                 });
             };
 
+            const enableFallbackDownload = () => {
+                const href = utils.fallbackLauncherPackageUrl();
+                if (!href) {
+                    disable("Launcher temporarily unavailable");
+                    return;
+                }
+
+                buttons.forEach((button) => {
+                    button.href = href;
+                    button.download = "Reflex Interactive Launcher.msi";
+                    button.removeAttribute("aria-disabled");
+                    button.classList.remove("opacity-50", "cursor-not-allowed");
+                    button.textContent = "Download Launcher";
+                });
+            };
+
             if (!runtime) {
-                disable();
+                removeButtons();
                 return;
             }
 
@@ -503,28 +580,39 @@
             });
 
             try {
-                const response = await fetch(`${CONFIG.launcher.manifestUrl}?t=${Date.now()}`, {
+                const response = await fetch(`${CONFIG.launcher.versionUrl}?t=${Date.now()}`, {
                     headers: { Accept: "application/json" },
                     cache: "no-store",
                 });
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-                const manifest = await response.json();
-                const packageInfo = manifest.platforms?.[runtime]?.installer || manifest.platforms?.[runtime];
+                const packageInfo = await response.json();
+                if (packageInfo.runtime && packageInfo.runtime !== runtime) {
+                    throw new Error(`No launcher package for ${runtime}`);
+                }
+
                 const href = utils.launcherPackageUrl(packageInfo);
                 if (!href) throw new Error(`No launcher package for ${runtime}`);
 
                 buttons.forEach((button) => {
                     button.href = href;
-                    button.download = packageInfo.filename || `Reflex Interactive Launcher-${runtime}.zip`;
+                    button.download = packageInfo.installer || packageInfo.filename || `ReflexInteractiveLauncher-${runtime}.msi`;
                     button.removeAttribute("aria-disabled");
                     button.classList.remove("opacity-50", "cursor-not-allowed");
                     button.textContent = "Download Launcher";
                 });
             } catch (error) {
-                console.warn("[Launcher] Manifest unavailable", error);
-                disable("Launcher temporarily unavailable");
+                console.warn("[Launcher] Version file unavailable", error);
+                enableFallbackDownload();
+            }
+        },
+
+        fallbackLauncherPackageUrl: () => {
+            try {
+                return new URL("Reflex Interactive Launcher.msi", `${CONFIG.launcher.baseUrl.replace(/\/$/, "")}/`).toString();
+            } catch {
+                return "";
             }
         },
 
@@ -975,7 +1063,7 @@
                         image,
                         datePublished: article.date,
                         dateModified: article.date,
-                        inLanguage: "en-GB",
+                        inLanguage: CONFIG.locale,
                         author: { "@type": "Organization", "@id": "https://reflexinteractive.com/#organization", name: "Reflex Interactive" },
                         publisher: {
                             "@type": "Organization",
@@ -1045,7 +1133,7 @@
                         genre: game.genre,
                         image,
                         url,
-                        inLanguage: "en-GB",
+                        inLanguage: CONFIG.locale,
                         publisher: {
                             "@type": "Organization",
                             "@id": "https://reflexinteractive.com/#organization",
@@ -1066,8 +1154,8 @@
                         },
                         offers: {
                             "@type": "Offer",
-                            price: parseFloat(game.price) || 0,
-                            priceCurrency: "GBP",
+                            price: 0,
+                            priceCurrency: CONFIG.defaultCurrency,
                             availability: "https://schema.org/InStock",
                         },
                     });
@@ -1088,13 +1176,13 @@
                 dom.setText("game-detail-publisher", game.publisher || "Reflex Interactive");
                 dom.setText("game-detail-genre", game.genre || "Action");
                 dom.setText("game-detail-description", game.description);
-                const actualPrice = parseFloat(game.price) || 0;
-                dom.setText("game-detail-price", actualPrice === 0 ? "Free" : `£${actualPrice.toFixed(2)}`);
+                const actualPrice = 0;
+                dom.setText("game-detail-price", "Free");
 
-                const cta = dom.id("purchase-download-btn");
+                const cta = dom.id("game-access-btn");
                 if (cta) {
                     const downloadInfo = utils.gameDownloadInfo(game);
-                    cta.textContent = actualPrice === 0 ? "Checking Account..." : "Purchase Coming Soon";
+                    cta.textContent = "Checking Account...";
                     cta.href = "#";
                     cta.dataset.gameId = game.id || "";
                     cta.dataset.gameNumericId = game.numeric_id || "";
@@ -1102,6 +1190,7 @@
                     cta.dataset.gamePrice = String(actualPrice);
                     cta.dataset.downloadUrl = downloadInfo.url;
                     cta.dataset.downloadName = downloadInfo.filename;
+                    cta.dataset.gameHasDownload = String(utils.gameHasDownload(game));
                     cta.classList.add("opacity-50", "cursor-not-allowed");
                     cta.setAttribute("aria-disabled", "true");
                     cta.removeAttribute("download");
@@ -1119,6 +1208,7 @@
                             exe_name: game.exe_name || "",
                             download_url: downloadInfo.url,
                             download_name: downloadInfo.filename,
+                            hasDownload: utils.gameHasDownload(game),
                         },
                     },
                 }));

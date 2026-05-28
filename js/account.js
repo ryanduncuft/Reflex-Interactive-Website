@@ -1,44 +1,44 @@
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
     applyActionCode,
-    browserLocalPersistence,
     createUserWithEmailAndPassword,
-    getAuth,
-    onAuthStateChanged,
     reload,
     sendEmailVerification,
     sendPasswordResetEmail,
-    setPersistence,
     signInWithEmailAndPassword,
     signOut,
     updateProfile,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
     get,
-    getDatabase,
     onValue,
     ref,
     set,
-    update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import {
+    authenticatedDownloadUrl,
+    buildProfilePayload,
+    gameDownloadInfo,
+    gameHasDownload,
+    ownedGameKey,
+    safeKey,
+    verificationActionSettings,
+} from "./account-core.js";
+import { getFirebaseClient, isFirebaseConfigured, watchAccountState } from "./firebase-client.js";
 
-const firebaseConfig = window.REFLEX_FIREBASE_CONFIG;
-const GAMES_URL = "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json";
-const DOWNLOADS_BASE_URL = "https://downloads.reflexinteractive.com";
-const SITE_URL = "https://reflexinteractive.com";
+const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
+const GAMES_URL = SITE_CONFIG.urls?.games || "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json";
+const SITE_URL = SITE_CONFIG.urls?.site || "https://reflexinteractive.com";
+const SITE_LOCALE = SITE_CONFIG.locale || "en-GB";
+const LAUNCHER_RUNTIME = SITE_CONFIG.launcherRuntime || "win-x64";
+const ACCOUNT_REQUEST_TIMEOUT_MS = 12000;
 
-if (!firebaseConfig?.apiKey || !firebaseConfig?.databaseURL || !firebaseConfig?.projectId) {
-    throw new Error("Missing Reflex Firebase web config. Create js/firebase-config.js from js/firebase-config.example.js.");
-}
-
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+let auth = null;
+let db = null;
 
 const state = {
     mode: "signin",
     libraryUnsubscribe: null,
-    paymentUnsubscribe: null,
+    restrictionsUnsubscribe: null,
     gamesCatalog: null,
     returnTo: "",
 };
@@ -77,15 +77,6 @@ const el = {
     libraryCount: document.getElementById("account-library-count"),
     idShort: document.getElementById("account-id-short"),
     lastSync: document.getElementById("account-last-sync"),
-    paymentForm: document.getElementById("account-payment-form"),
-    billingEmail: document.getElementById("account-billing-email"),
-    billingCountry: document.getElementById("account-billing-country"),
-    currency: document.getElementById("account-payment-currency"),
-    savePaymentMethod: document.getElementById("account-save-payment-method"),
-    paymentMessage: document.getElementById("account-payment-message"),
-    paymentStatus: document.getElementById("account-payment-status"),
-    paymentProviderLabel: document.getElementById("account-payment-provider-label"),
-    orders: document.getElementById("account-orders"),
     restrictions: document.getElementById("account-game-restrictions"),
     continueLink: document.getElementById("account-continue-link"),
     closeConfirm: document.getElementById("account-close-confirm"),
@@ -105,6 +96,15 @@ const setPanelMessage = (node, message, type = "muted") => {
     node.className = `small fw-bold text-${type}`;
 };
 
+const withAccountTimeout = (promise, message = "Account services took too long to respond. Try again.") => {
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), ACCOUNT_REQUEST_TIMEOUT_MS);
+    });
+
+    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
+};
+
 const safeReturnPath = (value = "") => {
     if (!value || !value.startsWith("/")) return "";
     if (value.startsWith("//")) return "";
@@ -112,32 +112,6 @@ const safeReturnPath = (value = "") => {
 };
 
 state.returnTo = safeReturnPath(new URLSearchParams(window.location.search).get("return") || "");
-
-const CURRENCY_BY_COUNTRY = {
-    AU: "AUD",
-    CA: "CAD",
-    DE: "EUR",
-    FR: "EUR",
-    GB: "GBP",
-    IE: "EUR",
-    NL: "EUR",
-    US: "USD",
-};
-
-const currencyForCountry = (country = "GB") => CURRENCY_BY_COUNTRY[String(country).toUpperCase()] || "GBP";
-
-const accountActionUrl = () => {
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-        return `${window.location.origin}/account.html?action=verified`;
-    }
-
-    return "https://account.reflexinteractive.com/?action=verified";
-};
-
-const verificationActionSettings = () => ({
-    url: accountActionUrl(),
-    handleCodeInApp: false,
-});
 
 const cleanActionParams = () => {
     const url = new URL(window.location.href);
@@ -166,7 +140,10 @@ const friendlyError = (error) => {
         case "auth/email-already-in-use": return "That email address is already registered.";
         case "auth/invalid-email": return "Enter a valid email address.";
         case "auth/invalid-credential": return "The email or password is incorrect.";
-        case "auth/operation-not-allowed": return "Email/password sign-in is not enabled in Firebase.";
+        case "auth/network-request-failed": return "Could not reach account services. Check your connection and try again.";
+        case "auth/operation-not-allowed": return "Email/password sign-in is not enabled.";
+        case "auth/too-many-requests": return "Too many attempts. Wait a moment, then try again.";
+        case "auth/unauthorized-domain": return "This account domain is not authorized in Firebase. Add this domain in Firebase Authentication settings.";
         case "auth/weak-password": return "Password must be at least 6 characters.";
         default: return error.message || "Account request failed.";
     }
@@ -174,47 +151,26 @@ const friendlyError = (error) => {
 
 const profilePayload = async (user) => {
     const now = new Date().toISOString();
-    const snapshot = await get(ref(db, `users/${user.uid}/profile`));
+    const snapshot = await withAccountTimeout(get(ref(db, `users/${user.uid}/profile`)));
     const existing = snapshot.val() || {};
 
-    return {
-        localId: user.uid,
-        email: user.email || existing.email || "",
-        displayName: user.displayName || existing.displayName || "",
-        createdAtUtc: existing.createdAtUtc || now,
-        lastLoginAtUtc: now,
-    };
+    return buildProfilePayload(user, { ...existing, lastLoginAtUtc: now });
 };
 
 const ensureProfile = async (user) => {
     const profileRef = ref(db, `users/${user.uid}/profile`);
-    await set(profileRef, await profilePayload(user));
+    await withAccountTimeout(set(profileRef, await profilePayload(user)));
 };
 
 const createProfile = async (user) => {
     const profileRef = ref(db, `users/${user.uid}/profile`);
-    await set(profileRef, await profilePayload(user));
-};
-
-const safeKey = (value = "") => String(value || "game").replace(/[.#$/[\]]/g, "_");
-
-const ownedGameKey = (game = {}) => {
-    const stableId = game.numeric_id || game.id;
-    const prefix = game.numeric_id || /^\d+$/.test(String(stableId)) ? "game" : "slug";
-    return safeKey(`${prefix}_${stableId}`);
+    await withAccountTimeout(set(profileRef, await profilePayload(user)));
 };
 
 const formatDate = (value = "") => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "Recently added";
-    return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-};
-
-const formatStatus = (value = "") => {
-    const status = String(value || "").trim();
-    if (!status) return "Not set";
-    if (status === "configured") return "Ready";
-    return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+    return date.toLocaleDateString(SITE_LOCALE, { day: "2-digit", month: "short", year: "numeric" });
 };
 
 const localHref = (path) => {
@@ -224,37 +180,6 @@ const localHref = (path) => {
         if (url.pathname === "/games") return "/games.html";
     }
     return path.startsWith("http") ? path : `${SITE_URL}${path}`;
-};
-
-const protectedDownloadUrl = (key = "", filename = "", game = {}) => {
-    const url = new URL(`${DOWNLOADS_BASE_URL.replace(/\/$/, "")}/download`);
-    url.searchParams.set("key", key);
-    url.searchParams.set("gameId", String(game.numeric_id || game.id || ""));
-    if (filename) url.searchParams.set("filename", filename);
-    return url.toString();
-};
-
-const gameDownloadInfo = (game = {}, runtime = "win-x64") => {
-    const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64;
-    const platformFile = Array.isArray(platformDownload?.files) ? platformDownload.files[0] : null;
-    const protectedKey = platformFile?.key || platformDownload?.key || platformDownload?.r2_key || platformDownload?.r2Key;
-    const explicit = platformFile?.url || platformDownload?.zip_url || platformDownload?.url || game.zip_url || game.download_url;
-
-    if (protectedKey) {
-        return {
-            url: protectedDownloadUrl(protectedKey, platformFile?.name || platformDownload?.filename || "", game),
-            protected: true,
-        };
-    }
-    if (explicit) return { url: explicit, protected: false };
-    return { url: "", protected: false };
-};
-
-const authenticatedDownloadUrl = async (url, user) => {
-    const token = await user.getIdToken();
-    const downloadUrl = new URL(url, window.location.origin);
-    downloadUrl.searchParams.set("token", token);
-    return downloadUrl.toString();
 };
 
 const loadGamesCatalog = async () => {
@@ -300,7 +225,7 @@ const normalizeOwnedGame = (owned = {}, catalogGame = null) => {
     const numericId = String(catalogGame?.numeric_id || owned.numeric_id || (/^\d+$/.test(ownedId) ? ownedId : ""));
     const currentId = String(catalogGame?.id || owned.current_id || owned.catalog_id || owned.slug || (numericId ? "" : ownedId));
     const addedAtUtc = owned.addedAtUtc || owned.acquiredAtUtc || new Date().toISOString();
-    const type = owned.type || (Number(catalogGame?.price || 0) > 0 ? "paid" : "free");
+    const type = "free";
 
     return {
         id: String(numericId || ownedId || currentId),
@@ -314,7 +239,6 @@ const normalizeOwnedGame = (owned = {}, catalogGame = null) => {
 };
 
 const migrateOwnedGames = async (user, games = {}, catalog = []) => {
-    const updates = {};
     const normalized = new Map();
 
     Object.entries(games).forEach(([key, owned]) => {
@@ -322,30 +246,14 @@ const migrateOwnedGames = async (user, games = {}, catalog = []) => {
         const game = normalizeOwnedGame(owned, catalogGame);
         const nextKey = ownedGameKey(game);
         normalized.set(nextKey, game);
-
-        const changed = key !== nextKey
-            || String(owned.id || "") !== game.id
-            || String(owned.numeric_id || "") !== game.numeric_id
-            || String(owned.current_id || "") !== game.current_id
-            || String(owned.title || "") !== game.title
-            || String(owned.type || "") !== game.type
-            || String(owned.addedAtUtc || "") !== game.addedAtUtc;
-
-        if (!changed) return;
-        updates[nextKey] = game;
-        if (key !== nextKey) updates[key] = null;
     });
-
-    if (Object.keys(updates).length) {
-        await update(ref(db, `users/${user.uid}/ownedGames`), updates);
-    }
 
     return Array.from(normalized.values());
 };
 
 const libraryMeta = (game = {}) => {
-    const type = game.type === "paid" ? "Paid" : game.type === "owned" ? "Owned" : "Free";
-    return `${type} · #${game.id}`;
+    const type = game.type === "owned" ? "Owned" : "Free";
+    return `${type} game`;
 };
 
 const renderLibraryItem = (owned = {}, catalog = []) => {
@@ -353,56 +261,23 @@ const renderLibraryItem = (owned = {}, catalog = []) => {
     const title = catalogGame?.title || owned.title || "Untitled Game";
     const slug = catalogGame?.id || owned.current_id || "";
     const detailsHref = slug ? localHref(`/game-details?id=${encodeURIComponent(slug)}`) : localHref("/games");
-    const download = catalogGame ? gameDownloadInfo(catalogGame) : { url: "" };
-    const canDownload = Boolean(download.url);
+    const download = catalogGame ? gameDownloadInfo(catalogGame, LAUNCHER_RUNTIME) : { url: "", available: false, message: "Download metadata is not available yet." };
+    const canDownload = Boolean(download.url) && (!catalogGame || gameHasDownload(catalogGame, LAUNCHER_RUNTIME));
+    const unavailableMessage = download.message || "Download files are not ready yet.";
 
     return `
         <div class="account-library-item">
             <div>
                 <strong>${escapeHtml(title)}</strong>
                 <span>${escapeHtml(libraryMeta(owned))} · Added ${escapeHtml(formatDate(owned.addedAtUtc))}</span>
+                ${canDownload ? "" : `<span>${escapeHtml(unavailableMessage)}</span>`}
             </div>
             <div class="account-library-actions">
                 <a class="btn btn-outline-light btn-sm fw-bold" href="${detailsHref}">Details</a>
-                ${canDownload ? `<a class="btn btn-danger btn-sm fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm fw-bold" type="button" disabled>Unavailable</button>'}
+                ${canDownload ? `<a class="btn btn-danger btn-sm fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm fw-bold" type="button" disabled>Not Released</button>'}
             </div>
         </div>
     `;
-};
-
-const renderPaymentProfile = (profile = {}) => {
-    if (el.billingEmail) el.billingEmail.value = profile.billingEmail || auth.currentUser?.email || "";
-    const country = profile.country || "GB";
-    const currency = profile.currency || currencyForCountry(country);
-    if (el.billingCountry) el.billingCountry.value = country;
-    if (el.currency) el.currency.value = currency;
-    if (el.savePaymentMethod) el.savePaymentMethod.checked = Boolean(profile.savePaymentMethod);
-    if (el.paymentStatus) el.paymentStatus.textContent = formatStatus(profile.status);
-    if (el.paymentProviderLabel) el.paymentProviderLabel.textContent = "PayPal";
-};
-
-const renderOrders = (orders = {}) => {
-    if (!el.orders) return;
-    const list = Object.entries(orders || {})
-        .map(([id, order]) => ({ id, ...order }))
-        .sort((a, b) => String(b.createdAtUtc || "").localeCompare(String(a.createdAtUtc || "")));
-
-    if (!list.length) {
-        el.orders.innerHTML = '<div class="account-library-item"><div><strong>No orders yet</strong><span>Completed purchases will appear here.</span></div></div>';
-        return;
-    }
-
-    el.orders.innerHTML = list.map((order) => `
-        <div class="account-library-item">
-            <div>
-                <strong>${escapeHtml(order.title || order.gameTitle || "Order")}</strong>
-                <span>${escapeHtml(order.status || "Pending")} · ${escapeHtml(formatDate(order.createdAtUtc || order.updatedAtUtc))}</span>
-            </div>
-            <div class="account-library-actions">
-                <span class="account-status-pill">${escapeHtml(formatStatus(order.provider || "PayPal"))}</span>
-            </div>
-        </div>
-    `).join("");
 };
 
 const renderRestrictions = (bans = {}) => {
@@ -436,18 +311,12 @@ const renderRestrictions = (bans = {}) => {
     `).join("");
 };
 
-const syncPayments = (user) => {
-    if (state.paymentUnsubscribe) state.paymentUnsubscribe();
-    state.paymentUnsubscribe = onValue(ref(db, `users/${user.uid}`), (snapshot) => {
-        const value = snapshot.val() || {};
-        renderPaymentProfile(value.paymentProfile || {});
-        renderOrders(value.payments || {});
-        renderRestrictions(value.gameBans || {});
+const syncRestrictions = (user) => {
+    if (state.restrictionsUnsubscribe) state.restrictionsUnsubscribe();
+    state.restrictionsUnsubscribe = onValue(ref(db, `users/${user.uid}/gameBans`), (snapshot) => {
+        renderRestrictions(snapshot.val() || {});
     }, (error) => {
-        console.warn("[Account] Payment profile unavailable", error);
-        setPanelMessage(el.paymentMessage, "Payment details are temporarily unavailable.", "danger");
-        renderPaymentProfile({});
-        renderOrders({});
+        console.warn("[Account] Game restrictions unavailable", error);
         renderRestrictions({});
     });
 };
@@ -463,8 +332,6 @@ const renderSignedOut = () => {
     el.idShort.textContent = "-";
     el.lastSync.textContent = "-";
     if (el.emailVerified) el.emailVerified.textContent = "-";
-    renderPaymentProfile({});
-    renderOrders({});
     renderRestrictions({});
     el.dashboard?.classList.add("d-none");
     el.signedOutPanel?.classList.remove("d-none");
@@ -476,9 +343,9 @@ const renderSignedOut = () => {
         state.libraryUnsubscribe();
         state.libraryUnsubscribe = null;
     }
-    if (state.paymentUnsubscribe) {
-        state.paymentUnsubscribe();
-        state.paymentUnsubscribe = null;
+    if (state.restrictionsUnsubscribe) {
+        state.restrictionsUnsubscribe();
+        state.restrictionsUnsubscribe = null;
     }
 };
 
@@ -496,8 +363,8 @@ const renderSignedIn = (user) => {
         el.continueLink.classList.toggle("d-none", !state.returnTo);
         el.continueLink.href = state.returnTo || "/";
     }
-    el.idShort.textContent = user.uid.slice(0, 8);
-    el.lastSync.textContent = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    el.idShort.textContent = user.emailVerified ? "Verified" : "Action needed";
+    el.lastSync.textContent = "Ready";
     el.dashboard?.classList.remove("d-none");
     el.signedOutPanel?.classList.add("d-none");
     el.authColumn?.classList.add("d-none");
@@ -511,7 +378,7 @@ const renderSignedIn = (user) => {
         const catalog = await loadGamesCatalog();
         const list = games ? await migrateOwnedGames(user, games, catalog) : [];
         el.libraryCount.textContent = String(list.length);
-        el.lastSync.textContent = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+        el.lastSync.textContent = "Synced";
         if (!list.length) {
             el.library.innerHTML = `<div class="account-library-item"><div><strong>No owned games yet</strong><span>Free games you claim will appear here.</span></div><div class="account-library-actions"><a class="btn btn-danger btn-sm fw-bold" href="${localHref("/games")}">Browse</a></div></div>`;
             return;
@@ -523,7 +390,7 @@ const renderSignedIn = (user) => {
             .join("");
     });
 
-    syncPayments(user);
+    syncRestrictions(user);
 };
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
@@ -539,6 +406,11 @@ el.signUpMode?.addEventListener("click", () => setMode("signup"));
 
 el.form?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!auth || !db) {
+        setMessage("Account services are still loading. Try again in a moment.", "muted");
+        return;
+    }
+
     setBusy(true);
     setMessage(state.mode === "signup" ? "Creating account..." : "Signing in...", "muted");
 
@@ -548,13 +420,21 @@ el.form?.addEventListener("submit", async (event) => {
 
         if (state.mode === "signup") {
             const displayName = el.displayName.value.trim().slice(0, 40);
-            const credential = await createUserWithEmailAndPassword(auth, email, password);
-            if (displayName) await updateProfile(credential.user, { displayName });
+            const credential = await withAccountTimeout(
+                createUserWithEmailAndPassword(auth, email, password),
+                "Creating the account took too long. Try again."
+            );
+            if (displayName) {
+                await withAccountTimeout(updateProfile(credential.user, { displayName }));
+            }
             await createProfile(credential.user);
-            await sendEmailVerification(credential.user, verificationActionSettings());
+            await withAccountTimeout(sendEmailVerification(credential.user, verificationActionSettings()));
             setMessage("Account created. Check your email to verify your account.", "success");
         } else {
-            const credential = await signInWithEmailAndPassword(auth, email, password);
+            const credential = await withAccountTimeout(
+                signInWithEmailAndPassword(auth, email, password),
+                "Signing in took too long. Check your connection and try again."
+            );
             await ensureProfile(credential.user);
             setMessage("Signed in. Your library is synced.", "success");
         }
@@ -568,6 +448,11 @@ el.form?.addEventListener("submit", async (event) => {
 });
 
 el.reset?.addEventListener("click", async () => {
+    if (!auth) {
+        setMessage("Account services are still loading. Try again in a moment.", "muted");
+        return;
+    }
+
     const email = el.email.value.trim();
     if (!email) {
         setMessage("Enter your email first.", "danger");
@@ -627,37 +512,6 @@ el.securityRefresh?.addEventListener("click", async () => {
     }
 });
 
-el.paymentForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const now = new Date().toISOString();
-    const country = (el.billingCountry?.value || "GB").trim().slice(0, 2).toUpperCase();
-    const payload = {
-        billingEmail: (el.billingEmail?.value || user.email || "").trim().slice(0, 254),
-        country,
-        currency: currencyForCountry(country),
-        provider: "paypal",
-        savePaymentMethod: Boolean(el.savePaymentMethod?.checked),
-        status: "configured",
-        updatedAtUtc: now,
-    };
-
-    setPanelMessage(el.paymentMessage, "Saving payment profile...", "muted");
-    try {
-        await update(ref(db, `users/${user.uid}/paymentProfile`), payload);
-        setPanelMessage(el.paymentMessage, "Payment profile saved.", "success");
-    } catch (error) {
-        console.warn("[Account] Could not save payment profile", error);
-        setPanelMessage(el.paymentMessage, "Payment profile could not be saved. Please try again.", "danger");
-    }
-});
-
-el.billingCountry?.addEventListener("change", () => {
-    if (el.currency) el.currency.value = currencyForCountry(el.billingCountry.value);
-});
-
 el.closeRequest?.addEventListener("click", async () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -672,13 +526,13 @@ el.closeRequest?.addEventListener("click", async () => {
     setPanelMessage(el.closeMessage, "Submitting closure request...", "muted");
 
     try {
-        await set(ref(db, `users/${user.uid}/accountClosureRequests/${requestId}`), {
+        await withAccountTimeout(set(ref(db, `users/${user.uid}/accountClosureRequests/${requestId}`), {
             id: requestId,
             status: "requested",
             email: user.email || "",
             requestedAtUtc: now,
             reason: "user_requested",
-        });
+        }));
         setPanelMessage(el.closeMessage, "Closure request submitted. You will receive follow-up by email.", "success");
     } catch (error) {
         console.warn("[Account] Could not submit closure request", error);
@@ -699,7 +553,7 @@ el.securityReset?.addEventListener("click", async () => {
     }
 });
 
-const signOutCurrentUser = () => signOut(auth);
+const signOutCurrentUser = () => auth ? signOut(auth) : Promise.resolve();
 
 const handleEmailAction = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -714,7 +568,7 @@ const handleEmailAction = async () => {
         await applyActionCode(auth, code);
         if (auth.currentUser) await reload(auth.currentUser);
         cleanActionParams();
-        setMessage("Email verified. You can now claim downloads and make purchases.", "success");
+        setMessage("Email verified. You can now claim free games and download owned games.", "success");
     } catch (error) {
         if (auth.currentUser) {
             await reload(auth.currentUser).catch(() => {});
@@ -761,19 +615,37 @@ el.library?.addEventListener("click", async (event) => {
 setMode("signin");
 renderSignedOut();
 
-setPersistence(auth, browserLocalPersistence)
-    .catch((error) => {
-        console.warn("[Account] Could not set auth persistence", error);
-    })
-    .finally(() => {
-        handleEmailAction();
-        onAuthStateChanged(auth, async (user) => {
+const initAccount = async () => {
+    if (!isFirebaseConfigured()) {
+        setMessage("Account services are temporarily unavailable.", "danger");
+        return;
+    }
+
+    try {
+        const client = await getFirebaseClient();
+        auth = client.auth;
+        db = client.db;
+        await handleEmailAction();
+
+        await watchAccountState(async (user) => {
             if (!user) {
                 renderSignedOut();
                 return;
             }
 
-            await ensureProfile(user);
-            renderSignedIn(user);
+            try {
+                await ensureProfile(user);
+                renderSignedIn(user);
+            } catch (error) {
+                console.warn("[Account] Could not sync profile", error);
+                setMessage("Signed in, but account data could not sync. Check the site Firebase database settings.", "danger");
+                renderSignedIn(user);
+            }
         });
-    });
+    } catch (error) {
+        console.warn("[Account] Could not initialise account services", error);
+        setMessage("Account services are temporarily unavailable.", "danger");
+    }
+};
+
+initAccount();
