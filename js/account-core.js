@@ -1,18 +1,7 @@
 const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
 
-export const CURRENCY_BY_COUNTRY = {
-    AU: "AUD",
-    CA: "CAD",
-    DE: "EUR",
-    FR: "EUR",
-    GB: "GBP",
-    IE: "EUR",
-    NL: "EUR",
-    US: "USD",
-};
-
-export const currencyForCountry = (country = SITE_CONFIG.defaultCountry || "GB") =>
-    CURRENCY_BY_COUNTRY[String(country).toUpperCase()] || SITE_CONFIG.defaultCurrency || "GBP";
+const DOWNLOADS_BASE_URL = SITE_CONFIG.urls?.downloads || "https://downloads.reflexinteractive.com";
+const DEFAULT_RUNTIME = SITE_CONFIG.launcherRuntime || "win-x64";
 
 export const safeKey = (value = "") => String(value || "game").replace(/[.#$/[\]]/g, "_");
 
@@ -53,6 +42,102 @@ export const authenticatedDownloadUrl = async (url, user) => {
     return downloadUrl.toString();
 };
 
+export const gameHasDownload = (game = {}, runtime = DEFAULT_RUNTIME) => {
+    const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64 || {};
+    const flags = [
+        game.hasDownload,
+        game.has_download,
+        game["has-download"],
+        game.downloadAvailable,
+        game.download_available,
+        game["download-available"],
+        platformDownload.hasDownload,
+        platformDownload.has_download,
+        platformDownload["has-download"],
+        platformDownload.available,
+        platformDownload.isAvailable,
+        platformDownload.is_available,
+    ];
+
+    return !flags.some((value) => value === false || String(value).toLowerCase() === "false");
+};
+
+export const protectedDownloadUrl = (key = "", filename = "", game = {}) => {
+    const url = new URL(`${DOWNLOADS_BASE_URL.replace(/\/$/, "")}/download`);
+    url.searchParams.set("key", key);
+    url.searchParams.set("gameId", String(game.numeric_id || game.id || ""));
+    if (filename) url.searchParams.set("filename", filename);
+    return url.toString();
+};
+
+export const gameDownloadInfo = (game = {}, runtime = DEFAULT_RUNTIME) => {
+    if (!gameHasDownload(game, runtime)) {
+        return {
+            url: "",
+            filename: "",
+            available: false,
+            message: "This game is in your library. The download will unlock when the release files are ready.",
+        };
+    }
+
+    const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64;
+    const platformFile = Array.isArray(platformDownload?.files) ? platformDownload.files[0] : null;
+    const protectedKey = platformFile?.key
+        || platformDownload?.key
+        || platformDownload?.r2_key
+        || platformDownload?.r2Key
+        || game.download_key
+        || game.downloadKey;
+
+    const filename = platformFile?.name
+        || platformDownload?.filename
+        || game.download_name
+        || "";
+
+    if (protectedKey) {
+        return {
+            url: protectedDownloadUrl(protectedKey, filename, game),
+            filename,
+            available: true,
+            protected: true,
+            message: "",
+        };
+    }
+
+    const explicit = platformFile?.url
+        || platformDownload?.zip_url
+        || platformDownload?.zipUrl
+        || platformDownload?.archive_url
+        || platformDownload?.archiveUrl
+        || platformDownload?.url
+        || game.zip_url
+        || game.zipUrl
+        || game.archive_url
+        || game.archiveUrl
+        || game.download_url
+        || game.downloadUrl
+        || game.installer_url
+        || game.installerUrl;
+
+    if (explicit) {
+        return {
+            url: explicit,
+            filename: filename || downloadFilename(explicit),
+            available: true,
+            protected: false,
+            message: "",
+        };
+    }
+
+    return {
+        url: "",
+        filename: "",
+        available: true,
+        protected: false,
+        message: "Download files are not configured yet.",
+    };
+};
+
 export const ownedRecordMatchesGame = (record = {}, game = {}) => {
     const numericId = String(game.numeric_id || "");
     const currentId = String(game.id || "");
@@ -77,4 +162,13 @@ export const activeBanForGame = (records = {}, game = {}) => {
         const expiresAt = Date.parse(record.expiresAtUtc || "");
         return Number.isNaN(expiresAt) || expiresAt > now;
     }) || null;
+};
+
+const downloadFilename = (url = "", fallback = "game.zip") => {
+    try {
+        const path = new URL(url, window.location.origin).pathname;
+        return decodeURIComponent(path.split("/").filter(Boolean).pop() || fallback);
+    } catch {
+        return fallback;
+    }
 };

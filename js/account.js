@@ -13,12 +13,12 @@ import {
     onValue,
     ref,
     set,
-    update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import {
     authenticatedDownloadUrl,
     buildProfilePayload,
-    currencyForCountry,
+    gameDownloadInfo,
+    gameHasDownload,
     ownedGameKey,
     safeKey,
     verificationActionSettings,
@@ -27,14 +27,9 @@ import { getFirebaseClient, isFirebaseConfigured, watchAccountState } from "./fi
 
 const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
 const GAMES_URL = SITE_CONFIG.urls?.games || "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json";
-const DOWNLOADS_BASE_URL = SITE_CONFIG.urls?.downloads || "https://downloads.reflexinteractive.com";
 const SITE_URL = SITE_CONFIG.urls?.site || "https://reflexinteractive.com";
 const SITE_LOCALE = SITE_CONFIG.locale || "en-GB";
-const DEFAULT_COUNTRY = SITE_CONFIG.defaultCountry || "GB";
-const PAYMENT_PROVIDER = SITE_CONFIG.paymentProvider || "PayPal";
 const LAUNCHER_RUNTIME = SITE_CONFIG.launcherRuntime || "win-x64";
-const PAYPAL_CONFIG = window.REFLEX_PAYPAL_CONFIG || {};
-const PURCHASES_DISABLED_MESSAGE = PAYPAL_CONFIG.disabledMessage || "Purchases are paused while checkout is being finalized.";
 
 let auth = null;
 let db = null;
@@ -42,7 +37,7 @@ let db = null;
 const state = {
     mode: "signin",
     libraryUnsubscribe: null,
-    paymentUnsubscribe: null,
+    restrictionsUnsubscribe: null,
     gamesCatalog: null,
     returnTo: "",
 };
@@ -81,15 +76,6 @@ const el = {
     libraryCount: document.getElementById("account-library-count"),
     idShort: document.getElementById("account-id-short"),
     lastSync: document.getElementById("account-last-sync"),
-    paymentForm: document.getElementById("account-payment-form"),
-    billingEmail: document.getElementById("account-billing-email"),
-    billingCountry: document.getElementById("account-billing-country"),
-    currency: document.getElementById("account-payment-currency"),
-    savePaymentMethod: document.getElementById("account-save-payment-method"),
-    paymentMessage: document.getElementById("account-payment-message"),
-    paymentStatus: document.getElementById("account-payment-status"),
-    paymentProviderLabel: document.getElementById("account-payment-provider-label"),
-    orders: document.getElementById("account-orders"),
     restrictions: document.getElementById("account-game-restrictions"),
     continueLink: document.getElementById("account-continue-link"),
     closeConfirm: document.getElementById("account-close-confirm"),
@@ -144,7 +130,10 @@ const friendlyError = (error) => {
         case "auth/email-already-in-use": return "That email address is already registered.";
         case "auth/invalid-email": return "Enter a valid email address.";
         case "auth/invalid-credential": return "The email or password is incorrect.";
+        case "auth/network-request-failed": return "Could not reach account services. Check your connection and try again.";
         case "auth/operation-not-allowed": return "Email/password sign-in is not enabled.";
+        case "auth/too-many-requests": return "Too many attempts. Wait a moment, then try again.";
+        case "auth/unauthorized-domain": return "This account domain is not authorized in Firebase. Add this domain in Firebase Authentication settings.";
         case "auth/weak-password": return "Password must be at least 6 characters.";
         default: return error.message || "Account request failed.";
     }
@@ -174,13 +163,6 @@ const formatDate = (value = "") => {
     return date.toLocaleDateString(SITE_LOCALE, { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const formatStatus = (value = "") => {
-    const status = String(value || "").trim();
-    if (!status) return "Checkout paused";
-    if (status === "configured") return "Ready";
-    return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
 const localHref = (path) => {
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
         const url = new URL(path, window.location.origin);
@@ -188,30 +170,6 @@ const localHref = (path) => {
         if (url.pathname === "/games") return "/games.html";
     }
     return path.startsWith("http") ? path : `${SITE_URL}${path}`;
-};
-
-const protectedDownloadUrl = (key = "", filename = "", game = {}) => {
-    const url = new URL(`${DOWNLOADS_BASE_URL.replace(/\/$/, "")}/download`);
-    url.searchParams.set("key", key);
-    url.searchParams.set("gameId", String(game.numeric_id || game.id || ""));
-    if (filename) url.searchParams.set("filename", filename);
-    return url.toString();
-};
-
-const gameDownloadInfo = (game = {}, runtime = LAUNCHER_RUNTIME) => {
-    const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64;
-    const platformFile = Array.isArray(platformDownload?.files) ? platformDownload.files[0] : null;
-    const protectedKey = platformFile?.key || platformDownload?.key || platformDownload?.r2_key || platformDownload?.r2Key;
-    const explicit = platformFile?.url || platformDownload?.zip_url || platformDownload?.url || game.zip_url || game.download_url;
-
-    if (protectedKey) {
-        return {
-            url: protectedDownloadUrl(protectedKey, platformFile?.name || platformDownload?.filename || "", game),
-            protected: true,
-        };
-    }
-    if (explicit) return { url: explicit, protected: false };
-    return { url: "", protected: false };
 };
 
 const loadGamesCatalog = async () => {
@@ -257,7 +215,7 @@ const normalizeOwnedGame = (owned = {}, catalogGame = null) => {
     const numericId = String(catalogGame?.numeric_id || owned.numeric_id || (/^\d+$/.test(ownedId) ? ownedId : ""));
     const currentId = String(catalogGame?.id || owned.current_id || owned.catalog_id || owned.slug || (numericId ? "" : ownedId));
     const addedAtUtc = owned.addedAtUtc || owned.acquiredAtUtc || new Date().toISOString();
-    const type = owned.type === "paid" ? "paid" : "free";
+    const type = "free";
 
     return {
         id: String(numericId || ownedId || currentId),
@@ -284,7 +242,7 @@ const migrateOwnedGames = async (user, games = {}, catalog = []) => {
 };
 
 const libraryMeta = (game = {}) => {
-    const type = game.type === "paid" ? "Paid" : game.type === "owned" ? "Owned" : "Free";
+    const type = game.type === "owned" ? "Owned" : "Free";
     return `${type} game`;
 };
 
@@ -293,56 +251,23 @@ const renderLibraryItem = (owned = {}, catalog = []) => {
     const title = catalogGame?.title || owned.title || "Untitled Game";
     const slug = catalogGame?.id || owned.current_id || "";
     const detailsHref = slug ? localHref(`/game-details?id=${encodeURIComponent(slug)}`) : localHref("/games");
-    const download = catalogGame ? gameDownloadInfo(catalogGame) : { url: "" };
-    const canDownload = Boolean(download.url);
+    const download = catalogGame ? gameDownloadInfo(catalogGame, LAUNCHER_RUNTIME) : { url: "", available: false, message: "Download metadata is not available yet." };
+    const canDownload = Boolean(download.url) && (!catalogGame || gameHasDownload(catalogGame, LAUNCHER_RUNTIME));
+    const unavailableMessage = download.message || "Download files are not ready yet.";
 
     return `
         <div class="account-library-item">
             <div>
                 <strong>${escapeHtml(title)}</strong>
                 <span>${escapeHtml(libraryMeta(owned))} · Added ${escapeHtml(formatDate(owned.addedAtUtc))}</span>
+                ${canDownload ? "" : `<span>${escapeHtml(unavailableMessage)}</span>`}
             </div>
             <div class="account-library-actions">
                 <a class="btn btn-outline-light btn-sm fw-bold" href="${detailsHref}">Details</a>
-                ${canDownload ? `<a class="btn btn-danger btn-sm fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm fw-bold" type="button" disabled>Unavailable</button>'}
+                ${canDownload ? `<a class="btn btn-danger btn-sm fw-bold" href="#" data-secure-download="${escapeHtml(download.url)}" download>Download</a>` : '<button class="btn btn-outline-light btn-sm fw-bold" type="button" disabled>Not Released</button>'}
             </div>
         </div>
     `;
-};
-
-const renderPaymentProfile = (profile = {}) => {
-    if (el.billingEmail) el.billingEmail.value = profile.billingEmail || auth?.currentUser?.email || "";
-    const country = profile.country || DEFAULT_COUNTRY;
-    const currency = profile.currency || currencyForCountry(country);
-    if (el.billingCountry) el.billingCountry.value = country;
-    if (el.currency) el.currency.value = currency;
-    if (el.savePaymentMethod) el.savePaymentMethod.checked = Boolean(profile.savePaymentMethod);
-    if (el.paymentStatus) el.paymentStatus.textContent = formatStatus(profile.status);
-    if (el.paymentProviderLabel) el.paymentProviderLabel.textContent = PAYMENT_PROVIDER;
-};
-
-const renderOrders = (orders = {}) => {
-    if (!el.orders) return;
-    const list = Object.entries(orders || {})
-        .map(([id, order]) => ({ id, ...order }))
-        .sort((a, b) => String(b.createdAtUtc || "").localeCompare(String(a.createdAtUtc || "")));
-
-    if (!list.length) {
-        el.orders.innerHTML = `<div class="account-library-item"><div><strong>No orders yet</strong><span>${escapeHtml(PURCHASES_DISABLED_MESSAGE)}</span></div></div>`;
-        return;
-    }
-
-    el.orders.innerHTML = list.map((order) => `
-        <div class="account-library-item">
-            <div>
-                <strong>${escapeHtml(order.title || order.gameTitle || "Order")}</strong>
-                <span>${escapeHtml(order.status || "Pending")} · ${escapeHtml(formatDate(order.createdAtUtc || order.updatedAtUtc))}</span>
-            </div>
-            <div class="account-library-actions">
-                <span class="account-status-pill">${escapeHtml(formatStatus(order.provider || PAYMENT_PROVIDER))}</span>
-            </div>
-        </div>
-    `).join("");
 };
 
 const renderRestrictions = (bans = {}) => {
@@ -376,18 +301,12 @@ const renderRestrictions = (bans = {}) => {
     `).join("");
 };
 
-const syncPayments = (user) => {
-    if (state.paymentUnsubscribe) state.paymentUnsubscribe();
-    state.paymentUnsubscribe = onValue(ref(db, `users/${user.uid}`), (snapshot) => {
-        const value = snapshot.val() || {};
-        renderPaymentProfile(value.paymentProfile || {});
-        renderOrders(value.payments || {});
-        renderRestrictions(value.gameBans || {});
+const syncRestrictions = (user) => {
+    if (state.restrictionsUnsubscribe) state.restrictionsUnsubscribe();
+    state.restrictionsUnsubscribe = onValue(ref(db, `users/${user.uid}/gameBans`), (snapshot) => {
+        renderRestrictions(snapshot.val() || {});
     }, (error) => {
-        console.warn("[Account] Payment profile unavailable", error);
-        setPanelMessage(el.paymentMessage, "Payment details are temporarily unavailable.", "danger");
-        renderPaymentProfile({});
-        renderOrders({});
+        console.warn("[Account] Game restrictions unavailable", error);
         renderRestrictions({});
     });
 };
@@ -403,8 +322,6 @@ const renderSignedOut = () => {
     el.idShort.textContent = "-";
     el.lastSync.textContent = "-";
     if (el.emailVerified) el.emailVerified.textContent = "-";
-    renderPaymentProfile({});
-    renderOrders({});
     renderRestrictions({});
     el.dashboard?.classList.add("d-none");
     el.signedOutPanel?.classList.remove("d-none");
@@ -416,9 +333,9 @@ const renderSignedOut = () => {
         state.libraryUnsubscribe();
         state.libraryUnsubscribe = null;
     }
-    if (state.paymentUnsubscribe) {
-        state.paymentUnsubscribe();
-        state.paymentUnsubscribe = null;
+    if (state.restrictionsUnsubscribe) {
+        state.restrictionsUnsubscribe();
+        state.restrictionsUnsubscribe = null;
     }
 };
 
@@ -463,7 +380,7 @@ const renderSignedIn = (user) => {
             .join("");
     });
 
-    syncPayments(user);
+    syncRestrictions(user);
 };
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
@@ -575,37 +492,6 @@ el.securityRefresh?.addEventListener("click", async () => {
     } catch (error) {
         setPanelMessage(el.securityMessage, friendlyError(error), "danger");
     }
-});
-
-el.paymentForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const now = new Date().toISOString();
-    const country = (el.billingCountry?.value || DEFAULT_COUNTRY).trim().slice(0, 2).toUpperCase();
-    const payload = {
-        billingEmail: (el.billingEmail?.value || user.email || "").trim().slice(0, 254),
-        country,
-        currency: currencyForCountry(country),
-        provider: PAYMENT_PROVIDER.toLowerCase(),
-        savePaymentMethod: Boolean(el.savePaymentMethod?.checked),
-        status: "checkout_paused",
-        updatedAtUtc: now,
-    };
-
-    setPanelMessage(el.paymentMessage, "Saving payment profile...", "muted");
-    try {
-        await update(ref(db, `users/${user.uid}/paymentProfile`), payload);
-        setPanelMessage(el.paymentMessage, "Checkout preferences saved. Purchases are paused for now.", "success");
-    } catch (error) {
-        console.warn("[Account] Could not save payment profile", error);
-        setPanelMessage(el.paymentMessage, "Payment profile could not be saved. Please try again.", "danger");
-    }
-});
-
-el.billingCountry?.addEventListener("change", () => {
-    if (el.currency) el.currency.value = currencyForCountry(el.billingCountry.value);
 });
 
 el.closeRequest?.addEventListener("click", async () => {

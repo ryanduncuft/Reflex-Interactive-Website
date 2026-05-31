@@ -14,18 +14,17 @@ import {
     activeBanForGame,
     authenticatedDownloadUrl,
     buildProfilePayload,
+    gameDownloadInfo,
+    gameHasDownload,
     ownedRecordMatchesGame,
     verificationActionSettings,
 } from "./account-core.js";
 import { getFirebaseClient, isFirebaseConfigured } from "./firebase-client.js";
 
 const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
-const PAYPAL_CONFIG = window.REFLEX_PAYPAL_CONFIG || {};
 const CLAIM_ENDPOINT = SITE_CONFIG.endpoints?.claimFreeGame || "/.netlify/functions/claim-free-game";
-const CHECKOUT_ENDPOINT = PAYPAL_CONFIG.checkoutEndpoint || SITE_CONFIG.endpoints?.checkout || "/.netlify/functions/create-paypal-order";
-const PURCHASES_ENABLED = PAYPAL_CONFIG.purchasesEnabled === true;
-const PURCHASES_DISABLED_MESSAGE = PAYPAL_CONFIG.disabledMessage || "Purchases are paused while checkout is being finalized.";
-const cta = document.getElementById("purchase-download-btn");
+const LAUNCHER_RUNTIME = SITE_CONFIG.launcherRuntime || "win-x64";
+const cta = document.getElementById("game-access-btn");
 
 if (!cta) {
     throw new Error("Game download button is missing.");
@@ -43,7 +42,6 @@ const state = {
     ban: null,
     user: null,
     busy: false,
-    checkoutStarted: false,
     ready: isFirebaseConfigured(),
 };
 
@@ -73,15 +71,38 @@ const setStatus = (message, type = "muted") => {
     });
 };
 
-const gameFromButton = () => ({
-    id: cta.dataset.gameId || "",
-    numeric_id: cta.dataset.gameNumericId || "",
-    title: cta.dataset.gameTitle || "Game",
-    price: parseFloat(cta.dataset.gamePrice) || 0,
-    download_url: cta.dataset.downloadUrl || "",
-    download_name: cta.dataset.downloadName || "",
-    exe_name: cta.getAttribute("download") || "",
-});
+const boolFromDataset = (value = "") => {
+    const normalized = String(value).trim().toLowerCase();
+    if (!normalized) return null;
+    return !["0", "false", "no"].includes(normalized);
+};
+
+const gameFromButton = () => {
+    const downloadFlag = boolFromDataset(cta.dataset.gameHasDownload);
+    return {
+        id: cta.dataset.gameId || "",
+        numeric_id: cta.dataset.gameNumericId || "",
+        title: cta.dataset.gameTitle || "Game",
+        download_url: cta.dataset.downloadUrl || "",
+        download_name: cta.dataset.downloadName || "",
+        exe_name: cta.getAttribute("download") || "",
+        hasDownload: downloadFlag === null ? true : downloadFlag,
+    };
+};
+
+const currentDownloadInfo = () => {
+    const game = state.game || gameFromButton();
+    if (game.download_url && gameHasDownload(game, LAUNCHER_RUNTIME)) {
+        return {
+            url: game.download_url,
+            filename: game.download_name || game.exe_name || "",
+            available: true,
+            message: "",
+        };
+    }
+
+    return gameDownloadInfo(game, LAUNCHER_RUNTIME);
+};
 
 const setCta = ({ label, href = "#", enabled = false, download = "" }) => {
     cta.textContent = label;
@@ -158,7 +179,7 @@ const submitAuth = async (mode) => {
         const credential = mode === "signup"
             ? await createUserWithEmailAndPassword(state.auth, email, password)
             : await signInWithEmailAndPassword(state.auth, email, password);
-        await ensureProfile(credential.user, mode === "signup");
+        await ensureProfile(credential.user);
         if (mode === "signup") await sendEmailVerification(credential.user, verificationActionSettings());
 
         panel.querySelector("#download-auth-password").value = "";
@@ -178,7 +199,10 @@ const friendlyError = (error) => {
         case "auth/email-already-in-use": return "That email address is already registered. Sign in instead.";
         case "auth/invalid-email": return "Enter a valid email address.";
         case "auth/invalid-credential": return "The email or password is incorrect.";
+        case "auth/network-request-failed": return "Could not reach account services. Check your connection and try again.";
         case "auth/operation-not-allowed": return "Email/password sign-in is not enabled.";
+        case "auth/too-many-requests": return "Too many attempts. Wait a moment, then try again.";
+        case "auth/unauthorized-domain": return "This account domain is not authorized in Firebase. Add this domain in Firebase Authentication settings.";
         case "auth/weak-password": return "Password must be at least 6 characters.";
         default: return error.message || "Account request failed.";
     }
@@ -240,9 +264,6 @@ const syncOwnership = () => {
 
 const claimGame = async () => {
     if (!state.user || !state.db || (!state.game?.numeric_id && !state.game?.id)) return;
-    if (Number(state.game.price || 0) > 0) {
-        throw new Error(PURCHASES_DISABLED_MESSAGE);
-    }
 
     const idToken = await state.user.getIdToken();
     const response = await fetch(CLAIM_ENDPOINT, {
@@ -261,32 +282,6 @@ const claimGame = async () => {
     if (!response.ok) throw new Error(payload.error || "Could not add this game to your library.");
 };
 
-const startPayPalCheckout = async () => {
-    if (!state.user || !state.db || !state.game?.id) return;
-    if (!PURCHASES_ENABLED) throw new Error(PURCHASES_DISABLED_MESSAGE);
-
-    const idToken = await state.user.getIdToken();
-    const response = await fetch(CHECKOUT_ENDPOINT, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-        },
-        body: JSON.stringify({
-            idToken,
-            gameId: state.game.id || state.game.numeric_id || "",
-            returnUrl: `${window.location.pathname}${window.location.search}`,
-        }),
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || !payload.url) {
-        throw new Error(payload.error || "Could not start PayPal checkout");
-    }
-
-    window.location.assign(payload.url);
-};
-
 const ensureProfile = async (user) => {
     if (!user || !state.db) return;
 
@@ -302,80 +297,6 @@ const ensureProfile = async (user) => {
 const renderDownloadState = () => {
     const game = state.game || gameFromButton();
     state.game = game;
-
-    if (game.price > 0) {
-        if (!PURCHASES_ENABLED && !state.user) {
-            setCta({ label: "Purchase Paused" });
-            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
-            setPanelOpen(false);
-            return;
-        }
-
-        if (!state.ready) {
-            setCta({ label: "Purchase Unavailable" });
-            setStatus("Account sign-in is not configured for this page.", "danger");
-            return;
-        }
-
-        if (!state.user) {
-            setCta({ label: "Sign In To Purchase", enabled: true });
-            ensureAuthPanel();
-            setStatus("");
-            return;
-        }
-
-        if (!state.user.emailVerified) {
-            setCta({ label: "Verify Email", enabled: true });
-            setStatus("Verify your email before starting a purchase.", "muted");
-            setPanelOpen(false);
-            return;
-        }
-
-        if (!state.ownershipLoaded) {
-            setCta({ label: "Checking Library..." });
-            return;
-        }
-
-        if (!state.bansLoaded) {
-            setCta({ label: "Checking Access..." });
-            return;
-        }
-
-        if (state.ban) {
-            setCta({ label: "Access Restricted" });
-            setStatus(`This account is restricted from ${game.title}.`, "danger");
-            setPanelOpen(false);
-            return;
-        }
-
-        if (state.owned) {
-            if (!game.download_url) {
-                setCta({ label: "Owned" });
-                setStatus(`${game.title} is in your library.`, "success");
-                return;
-            }
-
-            setCta({
-                label: "Download",
-                href: "#",
-                enabled: true,
-                download: game.download_name || game.exe_name || "",
-            });
-            setStatus(`${game.title} is in your library.`, "success");
-            return;
-        }
-
-        if (!PURCHASES_ENABLED) {
-            setCta({ label: "Purchase Paused" });
-            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
-            setPanelOpen(false);
-            return;
-        }
-
-        setCta({ label: state.busy || state.checkoutStarted ? "Opening PayPal..." : "Buy With PayPal", enabled: !state.busy && !state.checkoutStarted });
-        setStatus("Secure checkout opens in PayPal. Completed purchases appear in your account.", "muted");
-        return;
-    }
 
     if (!state.ready) {
         setCta({ label: "Sign In Unavailable" });
@@ -415,12 +336,15 @@ const renderDownloadState = () => {
     }
 
     if (!state.owned) {
-        setCta({ label: state.busy ? "Adding..." : "Get Free Game", enabled: !state.busy });
+        setCta({ label: state.busy ? "Adding..." : "Get Game", enabled: !state.busy });
+        setStatus("Free games are added securely to your Reflex account.", "muted");
         return;
     }
 
-    if (!game.download_url) {
-        setCta({ label: "Download Coming Soon" });
+    const download = currentDownloadInfo();
+    if (!download.url) {
+        setCta({ label: download.available === false ? "In Library" : "Download Coming Soon" });
+        setStatus(download.message || `${game.title} is in your library. Download files are not ready yet.`, "muted");
         setPanelOpen(false);
         return;
     }
@@ -429,7 +353,7 @@ const renderDownloadState = () => {
         label: "Download",
         href: "#",
         enabled: true,
-        download: game.download_name || game.exe_name || "",
+        download: download.filename || game.download_name || game.exe_name || "",
     });
     setStatus(`${game.title} is in your library.`, "success");
     setPanelOpen(false);
@@ -443,80 +367,6 @@ document.addEventListener("reflex:game-detail-ready", (event) => {
 
 cta.addEventListener("click", async (event) => {
     const game = state.game || gameFromButton();
-
-    if (game.price > 0) {
-        event.preventDefault();
-        if (!PURCHASES_ENABLED && !state.user) {
-            setPanelOpen(false);
-            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
-            return;
-        }
-
-        if (!state.ready) {
-            setStatus("Account sign-in is not configured for this page.", "danger");
-            return;
-        }
-
-        if (!state.user) {
-            setPanelOpen(true);
-            setStatus(`Sign in to purchase ${game.title}.`);
-            return;
-        }
-
-        if (!state.user.emailVerified) {
-            setStatus("Sending verification email...");
-            try {
-                await sendEmailVerification(state.user, verificationActionSettings());
-                setStatus("Verification email sent. Refresh this page after verifying.", "success");
-            } catch (error) {
-                setStatus(friendlyError(error), "danger");
-            }
-            return;
-        }
-
-        if (!state.ownershipLoaded || !state.bansLoaded || state.busy) {
-            return;
-        }
-
-        if (state.ban) {
-            setStatus(`This account is restricted from ${game.title}.`, "danger");
-            return;
-        }
-
-        if (state.owned) {
-            if (!game.download_url) return;
-            setStatus("Preparing secure download...");
-            try {
-                window.location.href = await authenticatedDownloadUrl(game.download_url, state.user);
-            } catch (error) {
-                console.warn("[Downloads] Could not prepare secure download", error);
-                setStatus("Could not prepare the download. Please sign in again.", "danger");
-            }
-            return;
-        }
-
-        if (!PURCHASES_ENABLED) {
-            setPanelOpen(false);
-            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
-            return;
-        }
-
-        state.busy = true;
-        renderDownloadState();
-        try {
-            state.checkoutStarted = true;
-            await startPayPalCheckout();
-            state.busy = false;
-            renderDownloadState();
-        } catch (error) {
-            console.warn("[Downloads] Could not start PayPal checkout", error);
-            state.checkoutStarted = false;
-            state.busy = false;
-            renderDownloadState();
-            setStatus(error.message || "Could not start PayPal checkout.", "danger");
-        }
-        return;
-    }
 
     if (!state.ready) {
         event.preventDefault();
@@ -544,13 +394,14 @@ cta.addEventListener("click", async (event) => {
         return;
     }
 
-    if (!state.ownershipLoaded) {
+    if (!state.ownershipLoaded || !state.bansLoaded || state.busy) {
         event.preventDefault();
         return;
     }
 
-    if (state.busy) {
+    if (state.ban) {
         event.preventDefault();
+        setStatus(`This account is restricted from ${game.title}.`, "danger");
         return;
     }
 
@@ -561,7 +412,12 @@ cta.addEventListener("click", async (event) => {
         try {
             await claimGame();
             state.owned = true;
-            setStatus(`${game.title} has been added to your library.`, "success");
+            const download = currentDownloadInfo();
+            setStatus(
+                download.url
+                    ? `${game.title} has been added to your library.`
+                    : download.message || `${game.title} is now in your library. Download files are not ready yet.`,
+                "success");
         } catch (error) {
             console.warn("[Downloads] Could not add game to library", error);
             setStatus(friendlyDatabaseError(error), "danger");
@@ -572,8 +428,10 @@ cta.addEventListener("click", async (event) => {
         return;
     }
 
-    if (!game.download_url) {
+    const download = currentDownloadInfo();
+    if (!download.url) {
         event.preventDefault();
+        setStatus(download.message || "Download files are not ready yet.", "muted");
         return;
     }
 
@@ -581,7 +439,7 @@ cta.addEventListener("click", async (event) => {
     setStatus("Preparing secure download...");
 
     try {
-        window.location.href = await authenticatedDownloadUrl(game.download_url, state.user);
+        window.location.href = await authenticatedDownloadUrl(download.url, state.user);
     } catch (error) {
         console.warn("[Downloads] Could not prepare secure download", error);
         setStatus("Could not prepare the download. Please sign in again.", "danger");

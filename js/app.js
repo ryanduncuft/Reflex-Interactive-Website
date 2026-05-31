@@ -1,7 +1,7 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
  * @version v2.0.0
- * @description Highlights: redesigned launcher UX, secured account and download flows, locked checkout with live PayPal configuration, and clean Windows x64 release packaging.
+ * @description Highlights: redesigned launcher UX, secured account and download flows, free-only library claims, and clean Windows x64 release packaging.
  */
 (() => {
     "use strict";
@@ -169,7 +169,35 @@
             }
         },
 
+        gameHasDownload: (game = {}, runtime = CONFIG.launcherRuntime) => {
+            const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64 || {};
+            const flags = [
+                game.hasDownload,
+                game.has_download,
+                game["has-download"],
+                game.downloadAvailable,
+                game.download_available,
+                game["download-available"],
+                platformDownload.hasDownload,
+                platformDownload.has_download,
+                platformDownload["has-download"],
+                platformDownload.available,
+                platformDownload.isAvailable,
+                platformDownload.is_available,
+            ];
+
+            return !flags.some((value) => value === false || String(value).toLowerCase() === "false");
+        },
+
         gameDownloadInfo: (game = {}, runtime = CONFIG.launcherRuntime) => {
+            if (!utils.gameHasDownload(game, runtime)) {
+                return {
+                    url: "",
+                    filename: "",
+                    available: false,
+                };
+            }
+
             const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64;
             const platformFile = Array.isArray(platformDownload?.files) ? platformDownload.files[0] : null;
             const protectedKey = platformFile?.key
@@ -1103,7 +1131,7 @@
                         },
                         offers: {
                             "@type": "Offer",
-                            price: parseFloat(game.price) || 0,
+                            price: 0,
                             priceCurrency: CONFIG.defaultCurrency,
                             availability: "https://schema.org/InStock",
                         },
@@ -1125,13 +1153,13 @@
                 dom.setText("game-detail-publisher", game.publisher || "Reflex Interactive");
                 dom.setText("game-detail-genre", game.genre || "Action");
                 dom.setText("game-detail-description", game.description);
-                const actualPrice = parseFloat(game.price) || 0;
-                dom.setText("game-detail-price", actualPrice === 0 ? "Free" : `£${actualPrice.toFixed(2)}`);
+                const actualPrice = 0;
+                dom.setText("game-detail-price", "Free");
 
-                const cta = dom.id("purchase-download-btn");
+                const cta = dom.id("game-access-btn");
                 if (cta) {
                     const downloadInfo = utils.gameDownloadInfo(game);
-                    cta.textContent = actualPrice === 0 ? "Checking Account..." : "Purchase Paused";
+                    cta.textContent = "Checking Account...";
                     cta.href = "#";
                     cta.dataset.gameId = game.id || "";
                     cta.dataset.gameNumericId = game.numeric_id || "";
@@ -1139,6 +1167,7 @@
                     cta.dataset.gamePrice = String(actualPrice);
                     cta.dataset.downloadUrl = downloadInfo.url;
                     cta.dataset.downloadName = downloadInfo.filename;
+                    cta.dataset.gameHasDownload = String(utils.gameHasDownload(game));
                     cta.classList.add("opacity-50", "cursor-not-allowed");
                     cta.setAttribute("aria-disabled", "true");
                     cta.removeAttribute("download");
@@ -1156,6 +1185,7 @@
                             exe_name: game.exe_name || "",
                             download_url: downloadInfo.url,
                             download_name: downloadInfo.filename,
+                            hasDownload: utils.gameHasDownload(game),
                         },
                     },
                 }));

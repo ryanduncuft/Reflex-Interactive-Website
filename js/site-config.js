@@ -4,7 +4,6 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
     defaultCountry: "GB",
     defaultCurrency: "GBP",
     launcherRuntime: "win-x64",
-    paymentProvider: "PayPal",
     urls: {
         site: "https://reflexinteractive.com",
         account: "https://reflexinteractive.com/account",
@@ -26,10 +25,6 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
     },
     endpoints: {
         claimFreeGame: "/.netlify/functions/claim-free-game",
-        checkout: "/.netlify/functions/create-paypal-order",
-    },
-    commerce: {
-        purchasesEnabled: false,
     },
     ui: {
         revealDelay: 70,

@@ -55,7 +55,7 @@
                     <div>
                         <p class="section-kicker mb-3">Reflex Account</p>
                         <h1 id="account-heading" class="display-4 fw-bold mb-2">Account Dashboard</h1>
-                        <p id="account-welcome" class="text-muted fs-5 mb-0">Sign in to manage your profile, security, library, and payment preferences.</p>
+                        <p id="account-welcome" class="text-muted fs-5 mb-0">Sign in to manage your profile, security, and game library.</p>
                     </div>
                     <div class="account-session-panel">
                         <span id="account-session-state" class="account-status-pill">Signed out</span>
@@ -110,10 +110,6 @@
                                 <div class="account-stat">
                                     <span>Library</span>
                                     <strong id="account-last-sync">-</strong>
-                                </div>
-                                <div class="account-stat">
-                                    <span>Payments</span>
-                                    <strong id="account-payment-status">-</strong>
                                 </div>
                             </div>
 
@@ -172,49 +168,6 @@
                                 </div>
                             </div>
 
-                            <section class="surface-panel account-panel mt-4" aria-labelledby="account-payment-heading">
-                                <div class="account-panel-heading">
-                                    <p class="section-kicker mb-2">Payments</p>
-                                    <h2 id="account-payment-heading" class="h4 fw-bold mb-0">Payment Profile</h2>
-                                </div>
-                                <form id="account-payment-form" class="row g-3">
-                                    <div class="col-12 col-md-5">
-                                        <label for="account-billing-email" class="form-label small fw-bold text-muted">Billing Email</label>
-                                        <input id="account-billing-email" class="form-control bg-dark text-white border-secondary" type="email" autocomplete="email" maxlength="254">
-                                    </div>
-                                    <div class="col-12 col-md-3">
-                                        <label for="account-billing-country" class="form-label small fw-bold text-muted">Country</label>
-                                        <select id="account-billing-country" class="form-select bg-dark text-white border-secondary">
-                                            <option value="GB">United Kingdom</option>
-                                            <option value="US">United States</option>
-                                            <option value="CA">Canada</option>
-                                            <option value="AU">Australia</option>
-                                            <option value="IE">Ireland</option>
-                                            <option value="DE">Germany</option>
-                                            <option value="FR">France</option>
-                                            <option value="NL">Netherlands</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-4">
-                                        <label for="account-payment-currency" class="form-label small fw-bold text-muted">Currency</label>
-                                        <input id="account-payment-currency" class="form-control bg-dark text-white border-secondary" type="text" value="GBP" readonly>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check">
-                                            <input id="account-save-payment-method" class="form-check-input" type="checkbox">
-                                            <label for="account-save-payment-method" class="form-check-label text-muted">
-                                                Remember these checkout preferences for my account.
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 d-flex flex-wrap align-items-center gap-2">
-                                        <button type="submit" class="btn btn-danger fw-bold">Save Payment Profile</button>
-                                        <span class="text-muted small">Payments are processed by <strong id="account-payment-provider-label">PayPal</strong>.</span>
-                                    </div>
-                                    <p id="account-payment-message" class="small fw-bold mb-0" role="status"></p>
-                                </form>
-                            </section>
-
                             <section class="surface-panel account-panel mt-4" aria-labelledby="account-library-heading">
                                 <div class="account-panel-heading account-library-heading">
                                     <div>
@@ -234,20 +187,12 @@
                                 <div id="account-game-restrictions" class="account-library-list text-muted">No active game restrictions.</div>
                             </section>
 
-                            <section class="surface-panel account-panel mt-4" aria-labelledby="account-orders-heading">
-                                <div class="account-panel-heading">
-                                    <p class="section-kicker mb-2">Orders</p>
-                                    <h2 id="account-orders-heading" class="h4 fw-bold mb-0">Payment History</h2>
-                                </div>
-                                <div id="account-orders" class="account-library-list text-muted">No orders yet.</div>
-                            </section>
-
                             <section class="surface-panel account-panel mt-4" aria-labelledby="account-closure-heading">
                                 <div class="account-panel-heading">
                                     <p class="section-kicker mb-2">Account</p>
                                     <h2 id="account-closure-heading" class="h4 fw-bold mb-0">Close Account</h2>
                                 </div>
-                                <p class="text-muted">Request closure of your Reflex account and deletion of personal data where legally possible. Purchase records may need to be retained for accounting, fraud prevention, and legal obligations.</p>
+                                <p class="text-muted">Request closure of your Reflex account and deletion of personal data where legally possible. Ownership and security records may need to be retained for account protection and legal obligations.</p>
                                 <div class="form-check mb-3">
                                     <input id="account-close-confirm" class="form-check-input" type="checkbox">
                                     <label for="account-close-confirm" class="form-check-label text-muted">I understand this will disable account access after review.</label>
@@ -255,7 +200,7 @@
                                 <button id="account-close-request" type="button" class="btn btn-outline-danger fw-bold">Request Account Closure</button>
                                 <p id="account-close-message" class="small fw-bold mb-0 mt-3" role="status"></p>
                                 <div class="support-address mt-4 pt-4 border-top border-secondary">
-                                    <p class="mb-1"><strong>Legal and payment contact</strong></p>
+                                    <p class="mb-1"><strong>Legal contact</strong></p>
                                     <p class="text-muted lh-sm mb-0">
                                         Reflex Interactive<br>
                                         Bartle House, Oxford Court<br>
@@ -269,7 +214,7 @@
                         <div id="account-signed-out-panel" class="surface-panel account-panel account-empty-dashboard">
                             <p class="section-kicker mb-2">Dashboard Locked</p>
                             <h2 class="h4 fw-bold mb-2">Sign In Required</h2>
-                            <p class="text-muted mb-0">Your profile settings, security actions, library, and payment preferences appear here after sign-in.</p>
+                            <p class="text-muted mb-0">Your profile settings, security actions, and library appear here after sign-in.</p>
                         </div>
                     </div>
                 </div>
@@ -281,7 +226,6 @@
     
     <script src="./js/site-config.js"></script>
     <script src="./js/firebase-config.js"></script>
-    <script src="./js/paypal-config.js"></script>
     <script src="./js/app.js" defer></script>
     <script type="module" src="./js/account-session.js"></script>
     <script type="module" src="./js/account.js"></script>

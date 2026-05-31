@@ -25,9 +25,6 @@ exports.handler = async (event) => {
         const game = await loadGame(gameId);
         if (!game) return json(404, { error: "Game not found" });
 
-        const price = Number(game.price || 0);
-        if (price > 0) return json(423, { error: "Paid games are not available for direct claim" });
-
         const userRef = admin.database().ref(`users/${decoded.uid}`);
         const userSnapshot = await userRef.get();
         const userData = userSnapshot.val() || {};
@@ -55,7 +52,7 @@ exports.handler = async (event) => {
 
         return json(200, { owned: true });
     } catch (error) {
-        console.error("[Commerce] free claim failed", error);
+        console.error("[Library] free claim failed", error);
         return json(error.statusCode || 500, { error: "Could not add this game to your library. Please try again." });
     }
 };
