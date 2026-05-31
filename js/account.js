@@ -33,6 +33,8 @@ const SITE_LOCALE = SITE_CONFIG.locale || "en-GB";
 const DEFAULT_COUNTRY = SITE_CONFIG.defaultCountry || "GB";
 const PAYMENT_PROVIDER = SITE_CONFIG.paymentProvider || "PayPal";
 const LAUNCHER_RUNTIME = SITE_CONFIG.launcherRuntime || "win-x64";
+const PAYPAL_CONFIG = window.REFLEX_PAYPAL_CONFIG || {};
+const PURCHASES_DISABLED_MESSAGE = PAYPAL_CONFIG.disabledMessage || "Purchases are paused while checkout is being finalized.";
 
 let auth = null;
 let db = null;
@@ -174,7 +176,7 @@ const formatDate = (value = "") => {
 
 const formatStatus = (value = "") => {
     const status = String(value || "").trim();
-    if (!status) return "Not set";
+    if (!status) return "Checkout paused";
     if (status === "configured") return "Ready";
     return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
@@ -255,7 +257,7 @@ const normalizeOwnedGame = (owned = {}, catalogGame = null) => {
     const numericId = String(catalogGame?.numeric_id || owned.numeric_id || (/^\d+$/.test(ownedId) ? ownedId : ""));
     const currentId = String(catalogGame?.id || owned.current_id || owned.catalog_id || owned.slug || (numericId ? "" : ownedId));
     const addedAtUtc = owned.addedAtUtc || owned.acquiredAtUtc || new Date().toISOString();
-    const type = owned.type || (Number(catalogGame?.price || 0) > 0 ? "paid" : "free");
+    const type = owned.type === "paid" ? "paid" : "free";
 
     return {
         id: String(numericId || ownedId || currentId),
@@ -269,7 +271,6 @@ const normalizeOwnedGame = (owned = {}, catalogGame = null) => {
 };
 
 const migrateOwnedGames = async (user, games = {}, catalog = []) => {
-    const updates = {};
     const normalized = new Map();
 
     Object.entries(games).forEach(([key, owned]) => {
@@ -277,23 +278,7 @@ const migrateOwnedGames = async (user, games = {}, catalog = []) => {
         const game = normalizeOwnedGame(owned, catalogGame);
         const nextKey = ownedGameKey(game);
         normalized.set(nextKey, game);
-
-        const changed = key !== nextKey
-            || String(owned.id || "") !== game.id
-            || String(owned.numeric_id || "") !== game.numeric_id
-            || String(owned.current_id || "") !== game.current_id
-            || String(owned.title || "") !== game.title
-            || String(owned.type || "") !== game.type
-            || String(owned.addedAtUtc || "") !== game.addedAtUtc;
-
-        if (!changed) return;
-        updates[nextKey] = game;
-        if (key !== nextKey) updates[key] = null;
     });
-
-    if (Object.keys(updates).length) {
-        await update(ref(db, `users/${user.uid}/ownedGames`), updates);
-    }
 
     return Array.from(normalized.values());
 };
@@ -343,7 +328,7 @@ const renderOrders = (orders = {}) => {
         .sort((a, b) => String(b.createdAtUtc || "").localeCompare(String(a.createdAtUtc || "")));
 
     if (!list.length) {
-        el.orders.innerHTML = '<div class="account-library-item"><div><strong>No orders yet</strong><span>Completed purchases will appear here.</span></div></div>';
+        el.orders.innerHTML = `<div class="account-library-item"><div><strong>No orders yet</strong><span>${escapeHtml(PURCHASES_DISABLED_MESSAGE)}</span></div></div>`;
         return;
     }
 
@@ -605,14 +590,14 @@ el.paymentForm?.addEventListener("submit", async (event) => {
         currency: currencyForCountry(country),
         provider: PAYMENT_PROVIDER.toLowerCase(),
         savePaymentMethod: Boolean(el.savePaymentMethod?.checked),
-        status: "configured",
+        status: "checkout_paused",
         updatedAtUtc: now,
     };
 
     setPanelMessage(el.paymentMessage, "Saving payment profile...", "muted");
     try {
         await update(ref(db, `users/${user.uid}/paymentProfile`), payload);
-        setPanelMessage(el.paymentMessage, "Payment profile saved.", "success");
+        setPanelMessage(el.paymentMessage, "Checkout preferences saved. Purchases are paused for now.", "success");
     } catch (error) {
         console.warn("[Account] Could not save payment profile", error);
         setPanelMessage(el.paymentMessage, "Payment profile could not be saved. Please try again.", "danger");
@@ -679,7 +664,7 @@ const handleEmailAction = async () => {
         await applyActionCode(auth, code);
         if (auth.currentUser) await reload(auth.currentUser);
         cleanActionParams();
-        setMessage("Email verified. You can now claim downloads and make purchases.", "success");
+        setMessage("Email verified. You can now claim free games and download owned games.", "success");
     } catch (error) {
         if (auth.currentUser) {
             await reload(auth.currentUser).catch(() => {});

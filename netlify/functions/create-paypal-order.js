@@ -1,5 +1,5 @@
 const { getFirebaseAdmin } = require("./_firebase");
-const { paypalRequest } = require("./_paypal");
+const { paypalRequest, purchasePausedMessage, purchasesEnabled } = require("./_paypal");
 const {
     CURRENCY_BY_COUNTRY,
     activeBanForGame,
@@ -15,12 +15,20 @@ const SITE_URL = process.env.SITE_URL || "https://reflexinteractive.com";
 
 const safeCheckoutError = (error) => {
     const message = error instanceof Error ? error.message : "";
-    const expectedConfigurationError = /^(FIREBASE_|PayPal credentials|Could not authenticate with PayPal|PayPal request failed|PayPal did not return)/.test(message);
-    return expectedConfigurationError ? message : "Could not start PayPal checkout";
+    if (/^(PayPal credentials|Could not authenticate with PayPal|PayPal request failed|PayPal did not return)/.test(message)) {
+        return "Checkout is not available right now.";
+    }
+
+    if (/^FIREBASE_/.test(message)) {
+        return "Account services are not available right now.";
+    }
+
+    return "Could not start PayPal checkout.";
 };
 
 exports.handler = async (event) => {
     if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
+    if (!purchasesEnabled()) return json(503, { error: purchasePausedMessage() });
 
     try {
         assertTrustedOrigin(event);

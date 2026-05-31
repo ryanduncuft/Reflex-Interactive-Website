@@ -3,7 +3,13 @@ const PAYPAL_BASE_URLS = {
     sandbox: "https://api-m.sandbox.paypal.com",
 };
 
-const paypalBaseUrl = () => PAYPAL_BASE_URLS[process.env.PAYPAL_ENV === "live" ? "live" : "sandbox"];
+const paypalEnvironment = () => process.env.PAYPAL_ENV === "sandbox" ? "sandbox" : "live";
+
+const purchasesEnabled = () => /^(1|true|yes)$/i.test(process.env.REFLEX_PURCHASES_ENABLED || "");
+
+const paypalBaseUrl = () => PAYPAL_BASE_URLS[paypalEnvironment()];
+
+const purchasePausedMessage = () => "Purchases are paused while checkout is being finalized.";
 
 const readJson = async (response) => {
     const text = await response.text();
@@ -68,5 +74,8 @@ const paypalRequest = async (path, options = {}) => {
 module.exports = {
     paypalAccessToken,
     paypalBaseUrl,
+    paypalEnvironment,
     paypalRequest,
+    purchasePausedMessage,
+    purchasesEnabled,
 };

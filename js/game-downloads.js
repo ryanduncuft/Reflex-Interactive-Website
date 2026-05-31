@@ -9,21 +9,22 @@ import {
     onValue,
     ref,
     set,
-    update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 import {
     activeBanForGame,
     authenticatedDownloadUrl,
     buildProfilePayload,
-    ownedGameKey,
     ownedRecordMatchesGame,
-    safeKey,
     verificationActionSettings,
 } from "./account-core.js";
 import { getFirebaseClient, isFirebaseConfigured } from "./firebase-client.js";
 
 const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
-const CHECKOUT_ENDPOINT = (window.REFLEX_PAYPAL_CONFIG || {}).checkoutEndpoint || SITE_CONFIG.endpoints?.checkout || "/.netlify/functions/create-paypal-order";
+const PAYPAL_CONFIG = window.REFLEX_PAYPAL_CONFIG || {};
+const CLAIM_ENDPOINT = SITE_CONFIG.endpoints?.claimFreeGame || "/.netlify/functions/claim-free-game";
+const CHECKOUT_ENDPOINT = PAYPAL_CONFIG.checkoutEndpoint || SITE_CONFIG.endpoints?.checkout || "/.netlify/functions/create-paypal-order";
+const PURCHASES_ENABLED = PAYPAL_CONFIG.purchasesEnabled === true;
+const PURCHASES_DISABLED_MESSAGE = PAYPAL_CONFIG.disabledMessage || "Purchases are paused while checkout is being finalized.";
 const cta = document.getElementById("purchase-download-btn");
 
 if (!cta) {
@@ -239,23 +240,30 @@ const syncOwnership = () => {
 
 const claimGame = async () => {
     if (!state.user || !state.db || (!state.game?.numeric_id && !state.game?.id)) return;
+    if (Number(state.game.price || 0) > 0) {
+        throw new Error(PURCHASES_DISABLED_MESSAGE);
+    }
 
-    const stableId = state.game.numeric_id || state.game.id;
-    const gameKey = ownedGameKey(state.game);
-    const now = new Date().toISOString();
-    await update(ref(state.db, `users/${state.user.uid}/ownedGames/${gameKey}`), {
-        id: String(stableId),
-        numeric_id: String(state.game.numeric_id || ""),
-        current_id: String(state.game.id || ""),
-        title: state.game.title,
-        type: state.game.price > 0 ? "paid" : "free",
-        addedAtUtc: now,
-        acquiredAtUtc: now,
+    const idToken = await state.user.getIdToken();
+    const response = await fetch(CLAIM_ENDPOINT, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+        },
+        body: JSON.stringify({
+            idToken,
+            gameId: state.game.id || state.game.numeric_id || "",
+        }),
     });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "Could not add this game to your library.");
 };
 
 const startPayPalCheckout = async () => {
     if (!state.user || !state.db || !state.game?.id) return;
+    if (!PURCHASES_ENABLED) throw new Error(PURCHASES_DISABLED_MESSAGE);
 
     const idToken = await state.user.getIdToken();
     const response = await fetch(CHECKOUT_ENDPOINT, {
@@ -296,6 +304,13 @@ const renderDownloadState = () => {
     state.game = game;
 
     if (game.price > 0) {
+        if (!PURCHASES_ENABLED && !state.user) {
+            setCta({ label: "Purchase Paused" });
+            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
+            setPanelOpen(false);
+            return;
+        }
+
         if (!state.ready) {
             setCta({ label: "Purchase Unavailable" });
             setStatus("Account sign-in is not configured for this page.", "danger");
@@ -347,6 +362,13 @@ const renderDownloadState = () => {
                 download: game.download_name || game.exe_name || "",
             });
             setStatus(`${game.title} is in your library.`, "success");
+            return;
+        }
+
+        if (!PURCHASES_ENABLED) {
+            setCta({ label: "Purchase Paused" });
+            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
+            setPanelOpen(false);
             return;
         }
 
@@ -424,6 +446,12 @@ cta.addEventListener("click", async (event) => {
 
     if (game.price > 0) {
         event.preventDefault();
+        if (!PURCHASES_ENABLED && !state.user) {
+            setPanelOpen(false);
+            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
+            return;
+        }
+
         if (!state.ready) {
             setStatus("Account sign-in is not configured for this page.", "danger");
             return;
@@ -464,6 +492,12 @@ cta.addEventListener("click", async (event) => {
                 console.warn("[Downloads] Could not prepare secure download", error);
                 setStatus("Could not prepare the download. Please sign in again.", "danger");
             }
+            return;
+        }
+
+        if (!PURCHASES_ENABLED) {
+            setPanelOpen(false);
+            setStatus(PURCHASES_DISABLED_MESSAGE, "muted");
             return;
         }
 
