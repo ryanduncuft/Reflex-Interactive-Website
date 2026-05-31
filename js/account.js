@@ -30,6 +30,7 @@ const GAMES_URL = SITE_CONFIG.urls?.games || "https://gist.githubusercontent.com
 const SITE_URL = SITE_CONFIG.urls?.site || "https://reflexinteractive.com";
 const SITE_LOCALE = SITE_CONFIG.locale || "en-GB";
 const LAUNCHER_RUNTIME = SITE_CONFIG.launcherRuntime || "win-x64";
+const ACCOUNT_REQUEST_TIMEOUT_MS = 12000;
 
 let auth = null;
 let db = null;
@@ -95,6 +96,15 @@ const setPanelMessage = (node, message, type = "muted") => {
     node.className = `small fw-bold text-${type}`;
 };
 
+const withAccountTimeout = (promise, message = "Account services took too long to respond. Try again.") => {
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), ACCOUNT_REQUEST_TIMEOUT_MS);
+    });
+
+    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
+};
+
 const safeReturnPath = (value = "") => {
     if (!value || !value.startsWith("/")) return "";
     if (value.startsWith("//")) return "";
@@ -141,7 +151,7 @@ const friendlyError = (error) => {
 
 const profilePayload = async (user) => {
     const now = new Date().toISOString();
-    const snapshot = await get(ref(db, `users/${user.uid}/profile`));
+    const snapshot = await withAccountTimeout(get(ref(db, `users/${user.uid}/profile`)));
     const existing = snapshot.val() || {};
 
     return buildProfilePayload(user, { ...existing, lastLoginAtUtc: now });
@@ -149,12 +159,12 @@ const profilePayload = async (user) => {
 
 const ensureProfile = async (user) => {
     const profileRef = ref(db, `users/${user.uid}/profile`);
-    await set(profileRef, await profilePayload(user));
+    await withAccountTimeout(set(profileRef, await profilePayload(user)));
 };
 
 const createProfile = async (user) => {
     const profileRef = ref(db, `users/${user.uid}/profile`);
-    await set(profileRef, await profilePayload(user));
+    await withAccountTimeout(set(profileRef, await profilePayload(user)));
 };
 
 const formatDate = (value = "") => {
@@ -410,13 +420,21 @@ el.form?.addEventListener("submit", async (event) => {
 
         if (state.mode === "signup") {
             const displayName = el.displayName.value.trim().slice(0, 40);
-            const credential = await createUserWithEmailAndPassword(auth, email, password);
-            if (displayName) await updateProfile(credential.user, { displayName });
+            const credential = await withAccountTimeout(
+                createUserWithEmailAndPassword(auth, email, password),
+                "Creating the account took too long. Try again."
+            );
+            if (displayName) {
+                await withAccountTimeout(updateProfile(credential.user, { displayName }));
+            }
             await createProfile(credential.user);
-            await sendEmailVerification(credential.user, verificationActionSettings());
+            await withAccountTimeout(sendEmailVerification(credential.user, verificationActionSettings()));
             setMessage("Account created. Check your email to verify your account.", "success");
         } else {
-            const credential = await signInWithEmailAndPassword(auth, email, password);
+            const credential = await withAccountTimeout(
+                signInWithEmailAndPassword(auth, email, password),
+                "Signing in took too long. Check your connection and try again."
+            );
             await ensureProfile(credential.user);
             setMessage("Signed in. Your library is synced.", "success");
         }
@@ -508,13 +526,13 @@ el.closeRequest?.addEventListener("click", async () => {
     setPanelMessage(el.closeMessage, "Submitting closure request...", "muted");
 
     try {
-        await set(ref(db, `users/${user.uid}/accountClosureRequests/${requestId}`), {
+        await withAccountTimeout(set(ref(db, `users/${user.uid}/accountClosureRequests/${requestId}`), {
             id: requestId,
             status: "requested",
             email: user.email || "",
             requestedAtUtc: now,
             reason: "user_requested",
-        });
+        }));
         setPanelMessage(el.closeMessage, "Closure request submitted. You will receive follow-up by email.", "success");
     } catch (error) {
         console.warn("[Account] Could not submit closure request", error);
@@ -615,8 +633,14 @@ const initAccount = async () => {
                 return;
             }
 
-            await ensureProfile(user);
-            renderSignedIn(user);
+            try {
+                await ensureProfile(user);
+                renderSignedIn(user);
+            } catch (error) {
+                console.warn("[Account] Could not sync profile", error);
+                setMessage("Signed in, but account data could not sync. Check the site Firebase database settings.", "danger");
+                renderSignedIn(user);
+            }
         });
     } catch (error) {
         console.warn("[Account] Could not initialise account services", error);

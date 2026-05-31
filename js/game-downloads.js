@@ -24,10 +24,11 @@ import { getFirebaseClient, isFirebaseConfigured } from "./firebase-client.js";
 const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
 const CLAIM_ENDPOINT = SITE_CONFIG.endpoints?.claimFreeGame || "/.netlify/functions/claim-free-game";
 const LAUNCHER_RUNTIME = SITE_CONFIG.launcherRuntime || "win-x64";
+const ACCOUNT_REQUEST_TIMEOUT_MS = 12000;
 const cta = document.getElementById("game-access-btn");
 
 if (!cta) {
-    throw new Error("Game download button is missing.");
+    console.warn("[Downloads] Game access button is missing.");
 }
 
 const state = {
@@ -45,6 +46,15 @@ const state = {
     ready: isFirebaseConfigured(),
 };
 
+const withAccountTimeout = (promise, message = "Account services took too long to respond. Try again.") => {
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), ACCOUNT_REQUEST_TIMEOUT_MS);
+    });
+
+    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
+};
+
 const ensureStatusNode = () => {
     let node = document.getElementById("game-download-status");
     if (node) return node;
@@ -53,7 +63,7 @@ const ensureStatusNode = () => {
     node.id = "game-download-status";
     node.className = "game-download-status small fw-bold text-muted mb-0 mt-3";
     node.setAttribute("role", "status");
-    cta.insertAdjacentElement("afterend", node);
+    cta?.insertAdjacentElement("afterend", node);
     return node;
 };
 
@@ -78,14 +88,14 @@ const boolFromDataset = (value = "") => {
 };
 
 const gameFromButton = () => {
-    const downloadFlag = boolFromDataset(cta.dataset.gameHasDownload);
+    const downloadFlag = boolFromDataset(cta?.dataset.gameHasDownload);
     return {
-        id: cta.dataset.gameId || "",
-        numeric_id: cta.dataset.gameNumericId || "",
-        title: cta.dataset.gameTitle || "Game",
-        download_url: cta.dataset.downloadUrl || "",
-        download_name: cta.dataset.downloadName || "",
-        exe_name: cta.getAttribute("download") || "",
+        id: cta?.dataset.gameId || "",
+        numeric_id: cta?.dataset.gameNumericId || "",
+        title: cta?.dataset.gameTitle || "Game",
+        download_url: cta?.dataset.downloadUrl || "",
+        download_name: cta?.dataset.downloadName || "",
+        exe_name: cta?.getAttribute("download") || "",
         hasDownload: downloadFlag === null ? true : downloadFlag,
     };
 };
@@ -105,6 +115,7 @@ const currentDownloadInfo = () => {
 };
 
 const setCta = ({ label, href = "#", enabled = false, download = "" }) => {
+    if (!cta) return;
     cta.textContent = label;
     cta.href = href;
     cta.classList.toggle("opacity-50", !enabled);
@@ -133,7 +144,7 @@ const ensureAuthPanel = () => {
         </div>
         <p id="download-auth-status" class="small fw-bold text-muted mb-0" role="status"></p>
     `;
-    cta.insertAdjacentElement("afterend", panel);
+    cta?.insertAdjacentElement("afterend", panel);
 
     panel.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -177,10 +188,10 @@ const submitAuth = async (mode) => {
 
     try {
         const credential = mode === "signup"
-            ? await createUserWithEmailAndPassword(state.auth, email, password)
-            : await signInWithEmailAndPassword(state.auth, email, password);
+            ? await withAccountTimeout(createUserWithEmailAndPassword(state.auth, email, password), "Creating the account took too long. Try again.")
+            : await withAccountTimeout(signInWithEmailAndPassword(state.auth, email, password), "Signing in took too long. Check your connection and try again.");
         await ensureProfile(credential.user);
-        if (mode === "signup") await sendEmailVerification(credential.user, verificationActionSettings());
+        if (mode === "signup") await withAccountTimeout(sendEmailVerification(credential.user, verificationActionSettings()));
 
         panel.querySelector("#download-auth-password").value = "";
         setStatus(mode === "signup" ? "Account created. Check your email to verify before downloading." : "Signed in. Checking your library.", mode === "signup" ? "muted" : "success");
@@ -287,11 +298,11 @@ const ensureProfile = async (user) => {
 
     const now = new Date().toISOString();
     const profileRef = ref(state.db, `users/${user.uid}/profile`);
-    const snapshot = await get(profileRef);
+    const snapshot = await withAccountTimeout(get(profileRef));
     const existing = snapshot.val() || {};
     const profile = buildProfilePayload(user, { ...existing, lastLoginAtUtc: now });
 
-    await set(profileRef, profile);
+    await withAccountTimeout(set(profileRef, profile));
 };
 
 const renderDownloadState = () => {
@@ -365,7 +376,7 @@ document.addEventListener("reflex:game-detail-ready", (event) => {
     renderDownloadState();
 });
 
-cta.addEventListener("click", async (event) => {
+cta?.addEventListener("click", async (event) => {
     const game = state.game || gameFromButton();
 
     if (!state.ready) {
@@ -410,7 +421,7 @@ cta.addEventListener("click", async (event) => {
         state.busy = true;
         renderDownloadState();
         try {
-            await claimGame();
+            await withAccountTimeout(claimGame(), "Claiming this game took too long. Try again.");
             state.owned = true;
             const download = currentDownloadInfo();
             setStatus(

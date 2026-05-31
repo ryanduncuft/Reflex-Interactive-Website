@@ -4,7 +4,7 @@
   "description": "Highlights: redesigned launcher UX, secured account and download flows, free-only library claims, and clean Windows x64 release packaging.",
   "private": true,
   "scripts": {
-    "check": "node --check js/site-config.js && node --check js/firebase-client.js && node --check js/app.js && node --check js/account-core.js && node --check js/account.js && node --check js/account-session.js && node --check js/game-downloads.js && node --check netlify/functions/_commerce.js && node --check netlify/functions/_firebase.js && node --check netlify/functions/_security.js && node --check netlify/functions/claim-free-game.js && node --check scripts/set-admin-claim.js",
+    "check": "node --check js/site-config.js && node --check js/firebase-client.js && node --check js/app.js && node --check js/account-core.js && node --check js/account.js && node --check js/account-session.js && node --check js/game-downloads.js && node --check netlify/functions/_commerce.js && node --check netlify/functions/_firebase.js && node --check netlify/functions/_security.js && node --check netlify/functions/claim-free-game.js && node --check cloudflare-workers/account-page-reflex.mjs && node --check cloudflare-workers/reflex-games.mjs && node --check cloudflare-workers/reflex-launcher-files.mjs && node --check scripts/set-admin-claim.js",
     "admin:set": "node scripts/set-admin-claim.js"
   },
   "dependencies": {

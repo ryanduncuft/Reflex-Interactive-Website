@@ -257,9 +257,8 @@
             const platform = `${uaDataPlatform} ${navigator.platform || ""}`.toLowerCase();
 
             if (!ua.includes("win") && !platform.includes("win")) return "";
-            return ua.includes("win64") || ua.includes("wow64") || ua.includes("x64") || platform.includes("x64")
-                ? CONFIG.launcherRuntime
-                : "";
+            if (ua.includes("arm") || platform.includes("arm")) return "";
+            return CONFIG.launcherRuntime;
         },
 
         launcherPackageUrl: (packageInfo = {}) => {
@@ -553,6 +552,22 @@
                 });
             };
 
+            const enableFallbackDownload = () => {
+                const href = utils.fallbackLauncherPackageUrl();
+                if (!href) {
+                    disable("Launcher temporarily unavailable");
+                    return;
+                }
+
+                buttons.forEach((button) => {
+                    button.href = href;
+                    button.download = "Reflex Interactive Launcher.msi";
+                    button.removeAttribute("aria-disabled");
+                    button.classList.remove("opacity-50", "cursor-not-allowed");
+                    button.textContent = "Download Launcher";
+                });
+            };
+
             if (!runtime) {
                 removeButtons();
                 return;
@@ -589,7 +604,15 @@
                 });
             } catch (error) {
                 console.warn("[Launcher] Version file unavailable", error);
-                disable("Launcher temporarily unavailable");
+                enableFallbackDownload();
+            }
+        },
+
+        fallbackLauncherPackageUrl: () => {
+            try {
+                return new URL("Reflex Interactive Launcher.msi", `${CONFIG.launcher.baseUrl.replace(/\/$/, "")}/`).toString();
+            } catch {
+                return "";
             }
         },
 
