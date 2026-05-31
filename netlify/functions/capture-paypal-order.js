@@ -1,5 +1,5 @@
 const { getFirebaseAdmin } = require("./_firebase");
-const { paypalRequest } = require("./_paypal");
+const { paypalRequest, purchasesEnabled } = require("./_paypal");
 const { captureMatchesOrder, fulfillPaidGame, redirect, safeReturnPath } = require("./_commerce");
 
 const ACCOUNT_URL = process.env.ACCOUNT_URL || "https://account.reflexinteractive.com";
@@ -11,6 +11,7 @@ exports.handler = async (event) => {
     const orderId = event.queryStringParameters?.token || event.queryStringParameters?.orderId || "";
     const returnPath = safeReturnPath(event.queryStringParameters?.return || "/account");
 
+    if (!purchasesEnabled()) return failureRedirect("purchases_paused");
     if (!orderId) return failureRedirect("missing_order");
 
     try {

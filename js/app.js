@@ -1,7 +1,7 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
- * @version 1.2.2
- * @description Stable vanilla JS runtime for routing, data rendering, components, and interaction. Optimised for performance, accessibility, and SEO with minimal dependencies.
+ * @version v2.0.0
+ * @description Highlights: redesigned launcher UX, secured account and download flows, locked checkout with live PayPal configuration, and clean Windows x64 release packaging.
  */
 (() => {
     "use strict";
@@ -1131,7 +1131,7 @@
                 const cta = dom.id("purchase-download-btn");
                 if (cta) {
                     const downloadInfo = utils.gameDownloadInfo(game);
-                    cta.textContent = actualPrice === 0 ? "Checking Account..." : "Purchase Coming Soon";
+                    cta.textContent = actualPrice === 0 ? "Checking Account..." : "Purchase Paused";
                     cta.href = "#";
                     cta.dataset.gameId = game.id || "";
                     cta.dataset.gameNumericId = game.numeric_id || "";

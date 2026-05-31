@@ -1,5 +1,5 @@
 window.REFLEX_SITE_CONFIG = Object.freeze({
-    version: "1.2.2",
+    version: "v2.0.0",
     locale: "en-GB",
     defaultCountry: "GB",
     defaultCurrency: "GBP",
@@ -25,7 +25,11 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
         games: "/games",
     },
     endpoints: {
+        claimFreeGame: "/.netlify/functions/claim-free-game",
         checkout: "/.netlify/functions/create-paypal-order",
+    },
+    commerce: {
+        purchasesEnabled: false,
     },
     ui: {
         revealDelay: 70,

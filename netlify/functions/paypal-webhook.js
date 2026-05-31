@@ -1,5 +1,5 @@
 const { getFirebaseAdmin } = require("./_firebase");
-const { paypalRequest } = require("./_paypal");
+const { paypalRequest, purchasesEnabled } = require("./_paypal");
 const { captureMatchesOrder, fulfillPaidGame } = require("./_commerce");
 
 const response = (statusCode, body = "") => ({ statusCode, body });
@@ -34,6 +34,7 @@ const orderIdFromCapture = (resource = {}) => resource.supplementary_data?.relat
 
 exports.handler = async (event) => {
     if (event.httpMethod !== "POST") return response(405, "Method not allowed");
+    if (!purchasesEnabled()) return response(200, "purchases paused");
 
     let webhookEvent;
     try {
