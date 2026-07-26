@@ -38,36 +38,6 @@
   to = "/components/:splat"
   status = 200
 
-[[redirects]]
-  from = "https://careers.reflexinteractive.com/css/*"
-  to = "/css/:splat"
-  status = 200
-
-[[redirects]]
-  from = "https://careers.reflexinteractive.com/js/*"
-  to = "/js/:splat"
-  status = 200
-
-[[redirects]]
-  from = "https://careers.reflexinteractive.com/components/*"
-  to = "/components/:splat"
-  status = 200
-
-[[redirects]]
-  from = "https://account.reflexinteractive.com/css/*"
-  to = "/css/:splat"
-  status = 200
-
-[[redirects]]
-  from = "https://account.reflexinteractive.com/js/*"
-  to = "/js/:splat"
-  status = 200
-
-[[redirects]]
-  from = "https://account.reflexinteractive.com/components/*"
-  to = "/components/:splat"
-  status = 200
-
 # 1. Serve support.html at the root of the support subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
@@ -82,51 +52,17 @@
   status = 301
   force = true
 
-# CAREERS SUBDOMAIN
-[[redirects]]
-  from = "https://careers.reflexinteractive.com/"
-  to = "/careers.html"
-  status = 200
-  force = true
-
-# ACCOUNT SUBDOMAIN
-[[redirects]]
-  from = "https://account.reflexinteractive.com/"
-  to = "/account.html"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "https://account.reflexinteractive.com/*"
-  to = "/account.html"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "https://careers.reflexinteractive.com/*"
-  to = "https://reflexinteractive.com/:splat"
-  status = 301
-  force = true
-
-# === 3. Main Domain to Subdomain Redirects ===
-# When users click /support, /careers, or /account on the main site, send them to the subdomains
+# === 3. Main Domain Route Rewrites ===
+# Rewrite /support to serve support.html directly without redirecting the browser URL
 [[redirects]]
   from = "/support"
-  to = "https://support.reflexinteractive.com/"
-  status = 301
-  force = true
+  to = "/support.html"
+  status = 200
 
 [[redirects]]
-  from = "/careers"
-  to = "https://careers.reflexinteractive.com/"
-  status = 301
-  force = true
-
-[[redirects]]
-  from = "/account"
-  to = "https://account.reflexinteractive.com/"
-  status = 301
-  force = true
+  from = "/support/*"
+  to = "/support.html"
+  status = 200
 
 # === 4. Clean URLs & Routing ===
 [[redirects]]

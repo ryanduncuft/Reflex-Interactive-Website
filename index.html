@@ -82,13 +82,6 @@
           "@type": "Place",
           "name": "Manchester, United Kingdom"
         },
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "Bartle House, Oxford Court",
-          "addressLocality": "Manchester",
-          "postalCode": "M2 3WQ",
-          "addressCountry": "GB"
-        },
         "areaServed": "Worldwide",
         "knowsAbout": ["Game development", "Narrative action games", "Precision gameplay", "Video game development", "Game publishing"],
         "contactPoint": [
@@ -96,7 +89,7 @@
             "@type": "ContactPoint",
             "contactType": "customer support",
             "email": "support@reflexinteractive.com",
-            "url": "https://support.reflexinteractive.com/",
+            "url": "https://reflexinteractive.com/support",
             "areaServed": "Worldwide",
             "availableLanguage": ["en-GB", "en"]
           },
@@ -169,6 +162,49 @@
       }
     ]
     </script>
+
+    <style>
+        .overhaul-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .overhaul-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .overhaul-modal {
+            background: #121212;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-top: 4px solid #dc3545;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 100%;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .overhaul-overlay.show .overhaul-modal {
+            transform: scale(1);
+        }
+    </style>
 </head>
 <body class="bg-black text-white overflow-x-hidden">
     
@@ -289,6 +325,36 @@
     </main>
 
     <div id="footer"></div>
+
+    <!-- Overhaul Alert Modal -->
+    <div id="overhaulModal" class="overhaul-overlay" role="dialog" aria-modal="true" aria-labelledby="overhaul-title">
+        <div class="overhaul-modal">
+            <p class="section-kicker mb-2">Notice</p>
+            <h2 id="overhaul-title" class="h3 fw-bold mb-3">Site Under Overhaul</h2>
+            <p class="text-muted mb-4">
+                We're currently undergoing a massive redesign. Most features and pages will be broken or unavailable while updates are taking place. Thank you for your patience!
+            </p>
+            <button type="button" class="btn btn-danger btn-lg px-4" onclick="dismissOverhaulModal()">
+                I Understand
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('overhaulModal');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        });
+
+        function dismissOverhaulModal() {
+            const modal = document.getElementById('overhaulModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+    </script>
     
     <script src="./js/site-config.js"></script>
     <script src="./js/firebase-config.js"></script>

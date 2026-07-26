@@ -22,14 +22,14 @@
     <meta name="application-name" content="Reflex Interactive">
     <meta name="theme-color" content="#000000">
     <meta name="format-detection" content="telephone=no">
-    <link rel="canonical" href="https://support.reflexinteractive.com/">
-    <link rel="alternate" hreflang="en-gb" href="https://support.reflexinteractive.com/">
-    <link rel="alternate" hreflang="x-default" href="https://support.reflexinteractive.com/">
+    <link rel="canonical" href="https://reflexinteractive.com/support">
+    <link rel="alternate" hreflang="en-gb" href="https://reflexinteractive.com/support">
+    <link rel="alternate" hreflang="x-default" href="https://reflexinteractive.com/support">
     
     <meta property="og:title" content="Support | Reflex Interactive">
     <meta property="og:description" content="Official support for Reflex Interactive games, accounts, technical issues, bug reports, and studio contact requests.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://support.reflexinteractive.com/">
+    <meta property="og:url" content="https://reflexinteractive.com/support">
     <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
     <meta property="og:image:secure_url" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
     <meta property="og:image:alt" content="Reflex Interactive support key art">
@@ -61,7 +61,7 @@
       "@type": "ContactPage",
       "name": "Reflex Interactive Support",
       "description": "Official support and contact page for Reflex Interactive games, accounts, technical issues, and bug reports.",
-      "url": "https://support.reflexinteractive.com/",
+      "url": "https://reflexinteractive.com/support",
       "inLanguage": "en-GB",
       "isPartOf": {
         "@type": "WebSite",
@@ -72,19 +72,12 @@
       "publisher": {
         "@type": "Organization",
         "@id": "https://reflexinteractive.com/#organization",
-        "name": "Reflex Interactive",
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "Bartle House, Oxford Court",
-          "addressLocality": "Manchester",
-          "postalCode": "M2 3WQ",
-          "addressCountry": "GB"
-        }
+        "name": "Reflex Interactive"
       },
       "mainEntity": {
         "@type": "ContactPoint",
         "contactType": "customer support",
-        "url": "https://support.reflexinteractive.com/",
+        "url": "https://reflexinteractive.com/support",
         "email": "support@reflexinteractive.com",
         "areaServed": "Worldwide",
         "availableLanguage": ["en-GB", "en"]
@@ -102,7 +95,7 @@
             "@type": "ListItem",
             "position": 2,
             "name": "Support",
-            "item": "https://support.reflexinteractive.com/"
+            "item": "https://reflexinteractive.com/support"
           }
         ]
       }
@@ -113,178 +106,27 @@
     
     <div id="navbar"></div>
 
-    <main id="main-content" class="min-vh-100">
-        <section class="support-hero py-5 bg-dark mb-5" aria-labelledby="support-heading">
-            <div class="container py-5">
-                <div class="support-hero-content text-center mx-auto">
-                    <p class="section-kicker mb-3 reveal-on-load">Player Support</p>
-                    <h1 id="support-heading" class="display-4 fw-bold reveal-on-load">How can we help?</h1>
-                    <p class="text-muted fs-5 mb-4 reveal-on-scroll content-mid">Search support articles, choose a game, or prepare a ticket for the Reflex Interactive team.</p>
+    <main id="main-content" class="min-vh-100 d-flex flex-column justify-content-center py-5">
+        <div class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6 text-center">
+                    <p class="section-kicker mb-3">Player Support</p>
+                    <h1 id="support-heading" class="display-4 fw-bold mb-4">How can we help?</h1>
+                    <p class="text-muted fs-5 mb-5">
+                        Have a question, technical issue, or bug to report? Reach out to our team directly via email and we'll get back to you as soon as possible.
+                    </p>
 
-                    <form id="support-search-form" class="support-search reveal-on-scroll" role="search">
-                        <label class="visually-hidden" for="support-search-input">Search support articles</label>
-                        <input id="support-search-input" class="form-control form-control-lg" type="search" placeholder="Search articles, games, errors, downloads" autocomplete="off">
-                        <button class="btn btn-danger btn-lg" type="submit">Search</button>
-                    </form>
-
-                    <div class="support-hero-actions reveal-on-scroll" aria-label="Support shortcuts">
-                        <button class="btn btn-outline-light" type="button" data-support-category="technical">Technical help</button>
-                        <button class="btn btn-outline-light" type="button" data-support-category="account">Account support</button>
-                        <button class="btn btn-outline-light" type="button" data-support-category="bug-report">Report a bug</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div class="container pb-5">
-            <section class="support-section" aria-labelledby="support-games-heading">
-                <div class="support-section-heading">
-                    <div>
-                        <p class="section-kicker mb-2">Games</p>
-                        <h2 id="support-games-heading" class="h3 fw-bold mb-0">Select a game</h2>
-                    </div>
-                    <p id="support-current-selection" class="text-muted mb-0">No game selected</p>
-                </div>
-
-                <div id="support-game-grid" class="row row-cols-1 row-cols-md-3 g-4 mb-5">
-                    <div class="col text-center py-5">
-                        <div class="spinner-border text-danger" role="status"></div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="support-section" aria-labelledby="support-categories-heading">
-                <div class="support-section-heading">
-                    <div>
-                        <p class="section-kicker mb-2">Topics</p>
-                        <h2 id="support-categories-heading" class="h3 fw-bold mb-0">Common support paths</h2>
-                    </div>
-                </div>
-
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 mb-5">
-                    <div class="col">
-                        <button class="card bg-dark text-white border-secondary h-100 support-tile support-action-card" type="button" data-support-category="account">
-                            <span class="section-kicker d-block mb-3">Account</span>
-                            <span class="support-action-title">Account</span>
-                            <span class="support-action-copy">Sign-in, email changes, launcher access, and ownership questions.</span>
-                        </button>
-                    </div>
-                    <div class="col">
-                        <button class="card bg-dark text-white border-secondary h-100 support-tile support-action-card" type="button" data-support-category="technical">
-                            <span class="section-kicker d-block mb-3">Technical</span>
-                            <span class="support-action-title">Technical</span>
-                            <span class="support-action-copy">Crashes, performance, installation, controls, and compatibility.</span>
-                        </button>
-                    </div>
-                    <div class="col">
-                        <button class="card bg-dark text-white border-secondary h-100 support-tile support-action-card" type="button" data-support-category="bug-report">
-                            <span class="section-kicker d-block mb-3">Reports</span>
-                            <span class="support-action-title">Bug report</span>
-                            <span class="support-action-copy">Send reproduction steps, screenshots, save details, and device info.</span>
-                        </button>
-                    </div>
-                    <div class="col">
-                        <button class="card bg-dark text-white border-secondary h-100 support-tile support-action-card" type="button" data-support-category="downloads">
-                            <span class="section-kicker d-block mb-3">Downloads</span>
-                            <span class="support-action-title">Downloads</span>
-                            <span class="support-action-copy">Launcher files, updates, install paths, and download troubleshooting.</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <div class="row g-4 g-xl-5 align-items-start">
-                <div class="col-12 col-lg-8">
-                    <section id="support-articles-section" class="support-section" aria-labelledby="support-articles-heading">
-                        <div class="support-section-heading">
-                            <div>
-                                <p class="section-kicker mb-2">Knowledge Base</p>
-                                <h2 id="support-articles-heading" class="h3 fw-bold mb-0">Support articles</h2>
-                            </div>
-                            <button id="support-clear-filters" class="btn btn-outline-light" type="button">Clear filters</button>
+                    <div class="card bg-dark text-white border-secondary p-4 p-md-5 surface-panel">
+                        <p class="text-muted small text-uppercase fw-bold mb-2">Direct Contact</p>
+                        <p class="fs-4 fw-semibold text-break mb-4">
+                            <a class="text-danger text-decoration-none" href="mailto:support@reflexinteractive.com">support@reflexinteractive.com</a>
+                        </p>
+                        <div>
+                            <a class="btn btn-danger btn-lg px-4" href="mailto:support@reflexinteractive.com">
+                                Send us an Email
+                            </a>
                         </div>
-
-                        <div id="support-active-filters" class="support-filter-summary text-muted mb-3">Showing all articles</div>
-
-                        <div id="support-articles-loading" class="loading-zone d-flex justify-content-center align-items-center" aria-label="Loading support articles">
-                            <div class="loading-animation"></div>
-                        </div>
-
-                        <div id="support-article-viewer" class="support-article-viewer d-none" aria-live="polite"></div>
-                        <div id="support-articles-grid" class="support-articles-grid" aria-live="polite"></div>
-
-                        <noscript>
-                            <p class="text-muted mt-4">JavaScript is required to load support articles. You can still contact support at <a class="text-danger" href="mailto:support@reflexinteractive.com">support@reflexinteractive.com</a>.</p>
-                        </noscript>
-                    </section>
-                </div>
-
-                <div class="col-12 col-lg-4">
-                    <section id="contact-section" class="support-contact-panel surface-panel reveal-on-scroll" aria-labelledby="support-contact-heading">
-                        <p class="section-kicker mb-3">Ticket</p>
-                        <h2 id="support-contact-heading" class="h3 fw-bold mb-3">Still need help?</h2>
-                        <p class="text-muted">Tell us what happened and we will prepare a detailed email for the support team.</p>
-
-                        <form id="support-ticket-form" class="support-ticket-form">
-                            <div class="mb-3">
-                                <label class="form-label" for="support-ticket-name">Name</label>
-                                <input id="support-ticket-name" name="name" class="form-control" type="text" autocomplete="name" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="support-ticket-email">Email</label>
-                                <input id="support-ticket-email" name="email" class="form-control" type="email" autocomplete="email" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="support-ticket-category">Category</label>
-                                <select id="support-ticket-category" name="category" class="form-select" required>
-                                    <option value="general">General support</option>
-                                    <option value="account">Account support</option>
-                                    <option value="technical">Technical issue</option>
-                                    <option value="bug-report">Bug report</option>
-                                    <option value="downloads">Downloads and launcher</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="support-ticket-game">Game</label>
-                                <select id="support-ticket-game" name="game" class="form-select">
-                                    <option value="">Not game-specific</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="support-ticket-platform">Platform</label>
-                                <select id="support-ticket-platform" name="platform" class="form-select">
-                                    <option value="">Select platform</option>
-                                    <option>Windows PC</option>
-                                    <option>Linux</option>
-                                    <option>Steam Deck</option>
-                                    <option>Other</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="support-ticket-subject">Subject</label>
-                                <input id="support-ticket-subject" name="subject" class="form-control" type="text" maxlength="90" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="support-ticket-message">Details</label>
-                                <textarea id="support-ticket-message" name="message" class="form-control" rows="6" required placeholder="Include steps to reproduce, error messages, and anything you have already tried."></textarea>
-                            </div>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-danger" type="submit">Open email draft</button>
-                                <a class="btn btn-outline-light" href="mailto:support@reflexinteractive.com">Email support directly</a>
-                            </div>
-                            <p id="support-form-status" class="support-form-status text-muted mb-0 mt-3" aria-live="polite"></p>
-                        </form>
-
-                        <div class="support-address mt-4 pt-4 border-top border-secondary">
-                            <p class="mb-1"><strong>Mailing Address</strong></p>
-                            <p class="text-muted lh-sm mb-0">
-                                Reflex Interactive<br>
-                                Bartle House, Oxford Court<br>
-                                Manchester, M2 3WQ<br>
-                                United Kingdom
-                            </p>
-                        </div>
-                    </section>
+                    </div>
                 </div>
             </div>
         </div>
