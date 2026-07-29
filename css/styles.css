@@ -228,27 +228,6 @@ p {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 42%);
 }
 
-.card::after,
-.feature-card::after,
-.surface-panel::after,
-.featured-game::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background: radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 0%), rgba(255, 255, 255, 0.12), transparent 28%);
-    opacity: 0;
-    transition: opacity 180ms var(--ri-ease);
-}
-
-.card.is-tilting::after,
-.feature-card.is-tilting::after,
-.surface-panel.is-tilting::after,
-.featured-game.is-tilting::after {
-    opacity: 1;
-}
-
 .btn {
     --bs-btn-border-radius: var(--ri-radius-xs);
     position: relative;
@@ -262,162 +241,6 @@ p {
     font-weight: 700;
     letter-spacing: 0;
     transition: transform 160ms var(--ri-ease), background-color 160ms var(--ri-ease), border-color 160ms var(--ri-ease), box-shadow 160ms var(--ri-ease), color 160ms var(--ri-ease);
-}
-
-.account-page {
-    padding-top: 5.5rem;
-    min-height: 100vh;
-    background:
-        linear-gradient(180deg, rgba(232, 47, 64, 0.08), transparent 24rem),
-        var(--ri-black);
-}
-
-.account-dashboard-shell {
-    min-height: calc(100vh - 5.5rem);
-}
-
-.account-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
-    gap: 1.5rem;
-    align-items: stretch;
-    margin-bottom: 2rem;
-}
-
-.account-session-panel,
-.account-panel,
-.account-stat {
-    padding: 1.25rem;
-}
-
-.account-session-panel {
-    display: grid;
-    gap: 0.85rem;
-    align-content: center;
-    border: 1px solid var(--ri-line);
-    border-radius: var(--ri-radius);
-    background: rgba(255, 255, 255, 0.035);
-}
-
-.account-status-pill {
-    width: max-content;
-    padding: 0.3rem 0.65rem;
-    border: 1px solid var(--ri-line);
-    border-radius: 999px;
-    color: var(--ri-muted);
-    font-size: 0.72rem;
-    font-weight: 800;
-    line-height: 1;
-    text-transform: uppercase;
-}
-
-.account-status-pill.is-online {
-    border-color: rgba(42, 190, 115, 0.4);
-    color: #62d99c;
-    background: rgba(42, 190, 115, 0.08);
-}
-
-.account-panel-heading {
-    margin-bottom: 1.25rem;
-}
-
-.account-dashboard {
-    min-height: 24rem;
-}
-
-.account-stat-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
-}
-
-.account-stat {
-    display: grid;
-    gap: 0.35rem;
-    border: 1px solid var(--ri-line);
-    border-radius: var(--ri-radius);
-    background: rgba(255, 255, 255, 0.035);
-}
-
-.account-stat span,
-.account-security-list span,
-.account-library-card-meta {
-    color: var(--ri-muted-2);
-    font-size: 0.82rem;
-}
-
-.account-stat strong {
-    color: #fff;
-    font-size: 1.35rem;
-    line-height: 1.1;
-}
-
-.account-security-list {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1rem;
-    align-items: center;
-    padding: 1rem 0;
-    border-top: 1px solid var(--ri-line);
-}
-
-.account-security-list:first-of-type {
-    border-top: 0;
-    padding-top: 0;
-}
-
-.account-library-heading {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
-}
-
-.account-library-list {
-    display: grid;
-    gap: 0.75rem;
-}
-
-.account-library-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border: 1px solid var(--ri-line);
-    border-radius: var(--ri-radius-xs);
-    background: rgba(255, 255, 255, 0.035);
-}
-
-.account-library-item strong {
-    display: block;
-    margin-bottom: 0.2rem;
-}
-
-.account-library-item span {
-    color: var(--ri-muted-2);
-    font-size: 0.86rem;
-}
-
-.account-library-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-}
-
-.account-empty-dashboard {
-    min-height: 20rem;
-    display: grid;
-    align-content: center;
-}
-
-.download-auth-panel {
-    display: grid;
-    gap: 0.35rem;
-    padding: 1rem;
-    border: 1px solid var(--ri-line);
-    border-radius: var(--ri-radius-xs);
-    background: rgba(255, 255, 255, 0.035);
 }
 
 .game-download-status:empty {
@@ -870,12 +693,10 @@ section {
     contain-intrinsic-size: 370px;
 }
 
-.card:hover,
-.card.is-tilting,
-.featured-game.is-tilting {
+.card:hover {
     border-color: var(--ri-line-strong);
     box-shadow: var(--ri-shadow);
-    transform: perspective(1000px) rotateX(var(--tilt-y, 0deg)) rotateY(var(--tilt-x, 0deg)) translateY(-3px);
+    transform: translateY(-3px);
 }
 
 .card-body {
@@ -1099,12 +920,10 @@ section {
     transition: transform 180ms var(--ri-ease), border-color 180ms var(--ri-ease), box-shadow 180ms var(--ri-ease);
 }
 
-.feature-card:hover,
-.feature-card.is-tilting,
-.surface-panel.is-tilting {
+.feature-card:hover {
     border-color: var(--ri-line-strong);
     box-shadow: var(--ri-shadow-sm);
-    transform: perspective(1000px) rotateX(var(--tilt-y, 0deg)) rotateY(var(--tilt-x, 0deg)) translateY(-3px);
+    transform: translateY(-3px);
 }
 
 .feature-card > * {
@@ -1643,13 +1462,6 @@ footer {
         position: static;
     }
 
-    .account-header {
-        grid-template-columns: 1fr;
-    }
-
-    .account-stat-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 767.98px) {
@@ -1729,29 +1541,6 @@ footer {
         flex-direction: column;
     }
 
-    .account-page {
-        padding-top: 4.5rem;
-    }
-
-    .account-library-heading,
-    .account-security-list,
-    .account-library-item {
-        align-items: stretch;
-        grid-template-columns: 1fr;
-    }
-
-    .account-library-heading {
-        flex-direction: column;
-    }
-
-    .account-library-actions {
-        justify-content: stretch;
-    }
-
-    .account-library-actions .btn,
-    .account-library-heading .btn {
-        width: 100%;
-    }
 }
 
 @media (max-width: 479.98px) {
@@ -1885,12 +1674,6 @@ h6,
     display: none;
 }
 
-.card::after,
-.feature-card::after,
-.featured-game::after {
-    background: radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 0%), rgba(255, 255, 255, 0.08), transparent 30%);
-}
-
 .card:hover,
 .feature-card:hover,
 .featured-game:hover,
@@ -1898,14 +1681,6 @@ h6,
     border-color: rgba(255, 255, 255, 0.18);
     box-shadow: var(--ri-shadow-sm);
     transform: translateY(-2px);
-}
-
-.card.is-tilting,
-.feature-card.is-tilting,
-.featured-game.is-tilting {
-    border-color: var(--ri-line-strong);
-    box-shadow: var(--ri-shadow-sm);
-    transform: perspective(1000px) rotateX(var(--tilt-y, 0deg)) rotateY(var(--tilt-x, 0deg)) translateY(-2px);
 }
 
 .btn {
@@ -2184,21 +1959,9 @@ section {
 }
 
 .support-card-meta span,
-.support-card-meta time,
-.account-status-pill {
+.support-card-meta time {
     border-radius: var(--ri-radius-xs);
     background: rgba(255, 255, 255, 0.035);
-}
-
-.account-page {
-    background: var(--ri-bg);
-}
-
-.account-session-panel,
-.account-stat,
-.account-library-item,
-.download-auth-panel {
-    border-radius: var(--ri-radius);
 }
 
 .form-control,
