@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18185116685"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'AW-18185116685');
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
@@ -21,7 +12,7 @@
     <meta name="application-name" content="Reflex Interactive">
     <meta name="theme-color" content="#000000">
     <meta name="format-detection" content="telephone=no">
-    <meta name="description" id="game-meta-description" content="Explore a Reflex Interactive game with official details, screenshots, trailers, account library access, and secure downloads.">
+    <meta name="description" id="game-meta-description" content="Explore a Reflex Interactive game with official details, screenshots, trailers, and release updates.">
     <link rel="canonical" id="canonical-url" href="https://reflexinteractive.com/game-details">
 
     <meta property="og:title" id="og-title" content="Game Details | Reflex Interactive">
@@ -104,8 +95,8 @@
                                 <h3 class="text-muted fw-bold small mb-2">Access</h3>
                                 <p id="game-detail-price" class="text-danger fs-4 fw-bold mb-0"></p>
                             </div>
-                            <a id="game-access-btn" href="#" class="btn btn-danger w-100 py-3 fw-bold" aria-label="Get or download the game">
-                                Get Game
+                            <a id="game-access-btn" href="#" class="btn btn-danger w-100 py-3 fw-bold opacity-50 cursor-not-allowed" aria-label="Game access is currently unavailable" aria-disabled="true">
+                                Currently unavailable
                             </a>
                             </div>
                         </div>
@@ -149,9 +140,6 @@
     <div id="footer"></div>
     
     <script src="./js/site-config.js"></script>
-    <script src="./js/firebase-config.js"></script>
     <script src="./js/app.js" defer></script>
-    <script type="module" src="./js/account-session.js"></script>
-    <script type="module" src="./js/game-downloads.js"></script>
 </body>
 </html>

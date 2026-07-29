@@ -1,7 +1,7 @@
 /**
  * @fileoverview Reflex Interactive Core Engine
  * @version v2.0.0
- * @description Highlights: redesigned launcher UX, secured account and download flows, free-only library claims, and clean Windows x64 release packaging.
+ * @description Core site interactions, content rendering, and launcher presentation.
  */
 (() => {
     "use strict";
@@ -25,10 +25,6 @@
         subdomains: {
             support: SITE_CONFIG.urls?.support || "https://support.reflexinteractive.com/",
             careers: SITE_CONFIG.urls?.careers || "https://careers.reflexinteractive.com/",
-            account: SITE_CONFIG.urls?.account || "https://reflexinteractive.com/account",
-        },
-        downloads: {
-            protectedBaseUrl: SITE_CONFIG.urls?.downloads || "https://downloads.reflexinteractive.com",
         },
         launcher: {
             baseUrl: SITE_CONFIG.urls?.launcherFiles || "https://cdn.reflexinteractive.com/launcher-files",
@@ -36,7 +32,6 @@
         },
         localRoutes: {
             "/about": "/about.html",
-            "/account": "/account.html",
             "/careers": "/careers.html",
             "/game-details": "/game-details.html",
             "/games": "/games.html",
@@ -122,19 +117,6 @@
 
         detailHref: (page, id) => utils.routeHref(`/${page}?id=${encodeURIComponent(id)}`),
 
-        accountHref: () => {
-            const isAccountPage = window.location.pathname.includes("account") || window.location.hostname.startsWith("account.");
-            const target = utils.isLocal()
-                ? new URL(CONFIG.localRoutes["/account"], window.location.origin)
-                : new URL("/account", CONFIG.siteUrl);
-
-            if (!isAccountPage) {
-                target.searchParams.set("return", `${window.location.pathname}${window.location.search}${window.location.hash}`);
-            }
-
-            return target.toString();
-        },
-
         linkedDetailId: (game = {}) => {
             if (!game.link) return "";
             try {
@@ -150,98 +132,6 @@
             if (utils.linkedDetailId(game) === value) return true;
             if (Array.isArray(game.aliases) && game.aliases.map(String).includes(value)) return true;
             return false;
-        },
-
-        protectedDownloadUrl: (key = "", filename = "", game = {}) => {
-            const url = new URL(`${CONFIG.downloads.protectedBaseUrl.replace(/\/$/, "")}/download`);
-            url.searchParams.set("key", key);
-            url.searchParams.set("gameId", String(game.numeric_id || game.id || ""));
-            if (filename) url.searchParams.set("filename", filename);
-            return url.toString();
-        },
-
-        downloadFilename: (url = "", fallback = "game.zip") => {
-            try {
-                const path = new URL(url, window.location.origin).pathname;
-                return decodeURIComponent(path.split("/").filter(Boolean).pop() || fallback);
-            } catch {
-                return fallback;
-            }
-        },
-
-        gameHasDownload: (game = {}, runtime = CONFIG.launcherRuntime) => {
-            const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64 || {};
-            const flags = [
-                game.hasDownload,
-                game.has_download,
-                game["has-download"],
-                game.downloadAvailable,
-                game.download_available,
-                game["download-available"],
-                platformDownload.hasDownload,
-                platformDownload.has_download,
-                platformDownload["has-download"],
-                platformDownload.available,
-                platformDownload.isAvailable,
-                platformDownload.is_available,
-            ];
-
-            return !flags.some((value) => value === false || String(value).toLowerCase() === "false");
-        },
-
-        gameDownloadInfo: (game = {}, runtime = CONFIG.launcherRuntime) => {
-            if (!utils.gameHasDownload(game, runtime)) {
-                return {
-                    url: "",
-                    filename: "",
-                    available: false,
-                };
-            }
-
-            const platformDownload = game.downloads?.[runtime] || game.downloads?.windows || game.downloads?.win64;
-            const platformFile = Array.isArray(platformDownload?.files) ? platformDownload.files[0] : null;
-            const protectedKey = platformFile?.key
-                || platformDownload?.key
-                || platformDownload?.r2_key
-                || platformDownload?.r2Key
-                || game.download_key
-                || game.downloadKey;
-
-            const filename = platformFile?.name
-                || platformDownload?.filename
-                || game.download_name
-                || utils.downloadFilename(protectedKey || "");
-
-            if (protectedKey) {
-                return {
-                    url: utils.protectedDownloadUrl(protectedKey, filename, game),
-                    filename,
-                };
-            }
-
-            const explicit = platformFile?.url
-                || platformDownload?.zip_url
-                || platformDownload?.zipUrl
-                || platformDownload?.archive_url
-                || platformDownload?.archiveUrl
-                || platformDownload?.url
-                || game.zip_url
-                || game.zipUrl
-                || game.archive_url
-                || game.archiveUrl
-                || game.download_url
-                || game.downloadUrl
-                || game.installer_url
-                || game.installerUrl;
-
-            if (explicit) {
-                return {
-                    url: explicit,
-                    filename: platformFile?.name || platformDownload?.filename || game.download_name || utils.downloadFilename(explicit),
-                };
-            }
-
-            return { url: "", filename: "" };
         },
 
         isMobileDevice: () => {
@@ -318,7 +208,6 @@
         spinner: (id, show) => dom.id(id)?.classList.toggle("d-none", !show),
 
         categoryLabel: (value = "general") => ({
-            account: "Account",
             technical: "Technical",
             "bug-report": "Bug Report",
             downloads: "Downloads",
@@ -337,12 +226,23 @@
 
     const data = {
         json: async (url) => {
-            if (state.cache.has(url)) return state.cache.get(url);
-            const response = await fetch(url, { headers: { Accept: "application/json" } });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const payload = await response.json();
-            state.cache.set(url, payload);
-            return payload;
+            const cached = state.cache.get(url);
+            if (cached) return cached;
+
+            const request = fetch(url, { headers: { Accept: "application/json" } })
+                .then((response) => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                });
+
+            state.cache.set(url, request);
+
+            try {
+                return await request;
+            } catch (error) {
+                state.cache.delete(url);
+                throw error;
+            }
         },
 
         component: async (id, path, callback) => {
@@ -459,11 +359,6 @@
                 if (!rawHref || rawHref === "#" || rawHref.startsWith("mailto:") || rawHref.startsWith("tel:")) return;
 
                 if (subdomain && CONFIG.subdomains[subdomain]) {
-                    if (subdomain === "account") {
-                        link.href = utils.accountHref();
-                        return;
-                    }
-
                     link.href = local ? `/${subdomain}.html` : CONFIG.subdomains[subdomain];
                     return;
                 }
@@ -628,8 +523,8 @@
                 entries.forEach((entry) => {
                     if (!entry.isIntersecting) return;
                     const node = entry.target;
-                    const siblings = Array.from(node.parentElement?.children || []);
-                    const index = Math.max(siblings.indexOf(node), 0);
+                    const siblings = node.parentElement?.children;
+                    const index = siblings ? Math.max(Array.prototype.indexOf.call(siblings, node), 0) : 0;
                     node.style.transitionDelay = `${Math.min(index, 6) * CONFIG.revealDelay}ms`;
                     node.classList.add("visible");
                     state.revealObserver.unobserve(node);
@@ -675,51 +570,6 @@
             update();
         },
 
-        initDepthInteraction: () => {
-            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-            const targets = ".card, .featured-game, .feature-card";
-            dom.qsa(targets).forEach((node) => node.classList.add("depth-card"));
-
-            let tiltFrame = 0;
-            let tiltEvent = null;
-
-            const updateTilt = () => {
-                const event = tiltEvent;
-                tiltFrame = 0;
-                if (!event) return;
-
-                const card = event.target.closest(targets);
-                if (!card) return;
-
-                const rect = card.getBoundingClientRect();
-                const x = (event.clientX - rect.left) / rect.width;
-                const y = (event.clientY - rect.top) / rect.height;
-                const rotateY = (x - 0.5) * 4;
-                const rotateX = (0.5 - y) * 4;
-
-                card.style.setProperty("--tilt-x", `${rotateY.toFixed(2)}deg`);
-                card.style.setProperty("--tilt-y", `${rotateX.toFixed(2)}deg`);
-                card.style.setProperty("--shine-x", `${(x * 100).toFixed(1)}%`);
-                card.style.setProperty("--shine-y", `${(y * 100).toFixed(1)}%`);
-                card.classList.add("is-tilting");
-            };
-
-            document.addEventListener("pointermove", (event) => {
-                tiltEvent = event;
-                if (!tiltFrame) tiltFrame = window.requestAnimationFrame(updateTilt);
-            }, { passive: true });
-
-            document.addEventListener("pointerout", (event) => {
-                const card = event.target.closest(targets);
-                if (!card || card.contains(event.relatedTarget)) return;
-                card.classList.remove("is-tilting");
-                card.style.removeProperty("--tilt-x");
-                card.style.removeProperty("--tilt-y");
-                card.style.removeProperty("--shine-x");
-                card.style.removeProperty("--shine-y");
-            }, { passive: true });
-        },
     };
 
     const render = {
@@ -1176,42 +1026,19 @@
                 dom.setText("game-detail-publisher", game.publisher || "Reflex Interactive");
                 dom.setText("game-detail-genre", game.genre || "Action");
                 dom.setText("game-detail-description", game.description);
-                const actualPrice = 0;
-                dom.setText("game-detail-price", "Free");
+                dom.setText("game-detail-price", "Unavailable");
 
                 const cta = dom.id("game-access-btn");
                 if (cta) {
-                    const downloadInfo = utils.gameDownloadInfo(game);
-                    cta.textContent = "Checking Account...";
+                    cta.textContent = "Currently unavailable";
+                    cta.setAttribute("aria-label", "Game access is currently unavailable");
                     cta.href = "#";
-                    cta.dataset.gameId = game.id || "";
-                    cta.dataset.gameNumericId = game.numeric_id || "";
-                    cta.dataset.gameTitle = game.title || "";
-                    cta.dataset.gamePrice = String(actualPrice);
-                    cta.dataset.downloadUrl = downloadInfo.url;
-                    cta.dataset.downloadName = downloadInfo.filename;
-                    cta.dataset.gameHasDownload = String(utils.gameHasDownload(game));
                     cta.classList.add("opacity-50", "cursor-not-allowed");
                     cta.setAttribute("aria-disabled", "true");
                     cta.removeAttribute("download");
                 }
 
                 render.gameMedia(game);
-                const downloadInfo = utils.gameDownloadInfo(game);
-                document.dispatchEvent(new CustomEvent("reflex:game-detail-ready", {
-                    detail: {
-                        game: {
-                            id: game.id || "",
-                            numeric_id: game.numeric_id || "",
-                            title: game.title || "",
-                            price: actualPrice,
-                            exe_name: game.exe_name || "",
-                            download_url: downloadInfo.url,
-                            download_name: downloadInfo.filename,
-                            hasDownload: utils.gameHasDownload(game),
-                        },
-                    },
-                }));
             } catch (error) {
                 console.error("[Render] game detail", error);
                 app.message("Failed to load game details.", "/games", "Back to Games");
@@ -1254,6 +1081,11 @@
         },
 
         click: (event) => {
+            if (event.target.closest('[aria-disabled="true"]')) {
+                event.preventDefault();
+                return;
+            }
+
             const prev = event.target.closest("[data-rail-prev]");
             const next = event.target.closest("[data-rail-next]");
             const hash = event.target.closest('a[href^="#"]');
@@ -1519,7 +1351,6 @@
             document.dispatchEvent(new CustomEvent("reflex:components-ready"));
             ui.initReveal();
             ui.initBackToTop();
-            ui.initDepthInteraction();
             events.init();
             router.run();
         },

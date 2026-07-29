@@ -6,7 +6,6 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
     launcherRuntime: "win-x64",
     urls: {
         site: "https://reflexinteractive.com",
-        account: "https://reflexinteractive.com/account",
         support: "https://support.reflexinteractive.com/",
         careers: "https://careers.reflexinteractive.com/",
         downloads: "https://downloads.reflexinteractive.com",
@@ -18,13 +17,8 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
         logo: "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
     },
     routes: {
-        account: "/account",
-        accountLocal: "/account.html",
         gameDetails: "/game-details",
         games: "/games",
-    },
-    endpoints: {
-        claimFreeGame: "/.netlify/functions/claim-free-game",
     },
     ui: {
         revealDelay: 70,
