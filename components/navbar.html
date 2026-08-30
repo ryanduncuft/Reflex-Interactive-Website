@@ -6,7 +6,7 @@
                 <span class="text-white">Reflex</span><span class="text-danger">Interactive</span>
             </a>
 
-            <div class="d-none d-md-flex align-items-center mx-auto">
+            <div class="nav-primary-links d-none d-md-flex align-items-center mx-auto">
                 <ul class="navbar-nav d-flex flex-row gap-1">
                     <li class="nav-item">
                         <button id="nav-games-toggle" class="nav-games-toggle" type="button" aria-expanded="false" aria-controls="nav-games-menu">
@@ -15,7 +15,6 @@
                     </li>
                     <li class="nav-item"><a class="nav-link" href="/newswire">Newswire</a></li>
                     <li class="nav-item"><a class="nav-link" href="/support">Support</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
                 </ul>
             </div>
 
@@ -24,12 +23,21 @@
                     Launcher
                 </a> -->
 
-                <button class="menu-trigger d-md-none" id="mobile-menu-trigger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu-overlay">
+                <button class="menu-trigger" id="mobile-menu-trigger" data-menu-trigger type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu-overlay">
                     <span class="menu-lines" aria-hidden="true"></span>
                 </button>
             </div>
         </div>
     </nav>
+
+    <div class="compact-site-controls" aria-label="Compact navigation">
+        <a class="compact-site-logo" href="/" aria-label="Reflex Interactive home">
+            <img src="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto,w_96/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png" alt="">
+        </a>
+        <button class="menu-trigger compact-menu-trigger" data-menu-trigger type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu-overlay">
+            <span class="menu-lines" aria-hidden="true"></span>
+        </button>
+    </div>
 
     <div id="nav-games-menu" class="nav-mega" aria-label="Featured games">
         <div class="container nav-mega-inner">
@@ -49,6 +57,5 @@
         <a class="mobile-nav-link" href="/games">Games</a>
         <a class="mobile-nav-link" href="/newswire">Newswire</a>
         <a class="mobile-nav-link" href="/support">Support</a>
-        <a class="mobile-nav-link" href="/about">About</a>
     </div>
 </header>

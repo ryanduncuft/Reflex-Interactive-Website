@@ -162,7 +162,6 @@
             width: 100vw;
             height: 100vh;
             background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
             z-index: 99999;
             display: flex;
             align-items: center;
@@ -187,7 +186,7 @@
             width: 100%;
             padding: 2.5rem 2rem;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            box-shadow: none;
             transform: scale(0.9);
             transition: transform 0.3s ease;
         }
@@ -206,10 +205,10 @@
             <div class="position-absolute inset-0 bg-hero-image" aria-hidden="true"></div>
             <div class="hero-overlay" aria-hidden="true"></div>
             <div class="position-relative z-3 px-3 px-md-4 container hero-content">
-                <p class="section-kicker mb-3 hero-entry">Game Studio</p>
-                <h1 id="home-heading" class="display-1 fw-black text-shadow-lg mb-4 hero-entry">Reflex Interactive</h1>
-                <p class="fs-4 fw-light text-light hero-entry">Focused action games from Manchester.</p>
-                <div class="hero-actions mt-4 hero-entry">
+                <p class="section-kicker mb-3">Game Studio</p>
+                <h1 id="home-heading" class="display-1 fw-black mb-4">Reflex Interactive</h1>
+                <p class="fs-4 fw-light text-light">Focused action games from Manchester.</p>
+                <div class="hero-actions mt-4">
                     <a href="#featured-game" class="btn btn-danger btn-lg" aria-label="Explore the featured Reflex Interactive game">Featured Game</a>
                     <a href="#newswire" class="btn btn-outline-light btn-lg" aria-label="Read the latest Reflex Interactive news">Studio News</a>
                 </div>
@@ -279,7 +278,7 @@
                         Featured Release
                     </h2>
                 </div>
-                <div id="featured-game-slot" class="featured-game reveal-on-scroll">
+                <div id="featured-game-slot" class="featured-game">
                     <div class="featured-body text-center">
                         <p class="text-muted mb-0">Loading featured game...</p>
                     </div>

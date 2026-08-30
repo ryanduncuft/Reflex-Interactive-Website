@@ -21,7 +21,6 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
         games: "/games",
     },
     ui: {
-        revealDelay: 70,
         navScrollY: 24,
         railRatio: 0.86,
     },
