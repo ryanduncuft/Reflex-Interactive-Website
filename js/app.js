@@ -19,7 +19,6 @@
         locale: SITE_CONFIG.locale || "en-GB",
         defaultCurrency: SITE_CONFIG.defaultCurrency || "GBP",
         launcherRuntime: SITE_CONFIG.launcherRuntime || "win-x64",
-        revealDelay: SITE_CONFIG.ui?.revealDelay || 70,
         navScrollY: SITE_CONFIG.ui?.navScrollY || 24,
         railRatio: SITE_CONFIG.ui?.railRatio || 0.86,
         subdomains: {
@@ -31,7 +30,6 @@
             versionUrl: SITE_CONFIG.urls?.launcherVersion || "https://cdn.reflexinteractive.com/launcher-files/version.json",
         },
         localRoutes: {
-            "/about": "/about.html",
             "/careers": "/careers.html",
             "/game-details": "/game-details.html",
             "/games": "/games.html",
@@ -45,7 +43,6 @@
 
     const state = {
         cache: new Map(),
-        revealObserver: null,
         supportHost: window.location.hostname.startsWith("support."),
         support: {
             articles: [],
@@ -197,11 +194,32 @@
 
         throttle: (fn, wait = 80) => {
             let last = 0;
+            let timer = 0;
+            let frame = 0;
+            let latestArgs;
+
             return (...args) => {
-                const now = performance.now();
-                if (now - last < wait) return;
-                last = now;
-                fn(...args);
+                latestArgs = args;
+                if (timer || frame) return;
+
+                const run = () => {
+                    frame = requestAnimationFrame(() => {
+                        frame = 0;
+                        last = performance.now();
+                        fn(...latestArgs);
+                    });
+                };
+                const delay = Math.max(0, wait - (performance.now() - last));
+
+                if (delay) {
+                    timer = window.setTimeout(() => {
+                        timer = 0;
+                        run();
+                    }, delay);
+                    return;
+                }
+
+                run();
             };
         },
 
@@ -272,7 +290,7 @@
         newsCard: (article) => `
             <article class="card modern-card news-card h-100">
                 <a href="${utils.detailHref("newswire-details", article.id)}" class="d-flex h-100 flex-column">
-                    <img src="${utils.normalizeMedia(article.image_url, 720)}" alt="${utils.escape(article.title)}" width="720" height="405" class="modern-card-img" loading="lazy" decoding="async">
+                    <img src="${utils.normalizeMedia(article.image_url, 720)}" alt="${utils.escape(article.title)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
                     <div class="card-body d-flex flex-column">
                         <time class="modern-card-date" datetime="${utils.escape(article.date)}">${utils.escape(article.date)}</time>
                         <h3 class="modern-card-title">${utils.escape(article.title)}</h3>
@@ -285,7 +303,7 @@
         gameCard: (game) => `
             <article class="card modern-game-card h-100">
                 <a href="${utils.detailHref("game-details", game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
-                    <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="lazy" decoding="async">
+                    <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="eager" decoding="async">
                     <div class="modern-game-card-overlay">
                         <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
                         <span class="modern-game-card-link">Explore game ${templates.arrow}</span>
@@ -296,16 +314,16 @@
 
         navGame: (game) => `
             <a class="navbar-game-tile" href="${utils.detailHref("game-details", game.id)}">
-                <img src="${utils.normalizeMedia(game.image_url, 480)}" alt="${utils.escape(game.title)}" width="480" height="270" loading="lazy" decoding="async">
+                <img src="${utils.normalizeMedia(game.image_url, 480)}" alt="${utils.escape(game.title)}" width="480" height="270" loading="eager" decoding="async">
                 <span>${utils.escape(game.title)}</span>
             </a>
         `,
 
         supportGame: (game) => `
             <button type="button" class="card modern-card h-100 text-decoration-none support-game-card" data-support-game="${utils.escape(game.id)}" data-support-game-title="${utils.escape(game.title)}">
-                <img src="${utils.normalizeMedia(game.image_url, 700)}" alt="${utils.escape(game.title)} support category" width="700" height="394" class="modern-game-card-img support-tile-img" loading="lazy" decoding="async">
+                <img src="${utils.normalizeMedia(game.image_url, 700)}" alt="${utils.escape(game.title)} support category" width="700" height="394" class="modern-game-card-img support-tile-img" loading="eager" decoding="async">
                 <div class="card-img-overlay d-flex align-items-center justify-content-center">
-                    <h3 class="text-white fw-bold m-0 text-shadow-lg">${utils.escape(game.title)}</h3>
+                    <h3 class="text-white fw-bold m-0">${utils.escape(game.title)}</h3>
                 </div>
             </button>
         `,
@@ -335,9 +353,20 @@
 
             ui.initEnvironmentLinks();
 
-            const update = () => nav.classList.toggle("scrolled", window.scrollY > CONFIG.navScrollY);
+            const desktop = window.matchMedia("(min-width: 768px)");
+            const update = () => {
+                const scrolled = desktop.matches && window.scrollY > CONFIG.navScrollY;
+                nav.classList.toggle("scrolled", scrolled);
+                document.body.classList.toggle("nav-collapsed", scrolled);
+
+                if (scrolled) {
+                    dom.id("nav-games-menu")?.classList.remove("is-open");
+                    dom.id("nav-games-toggle")?.setAttribute("aria-expanded", "false");
+                }
+            };
             update();
             window.addEventListener("scroll", utils.throttle(update, 40), { passive: true });
+            desktop.addEventListener("change", update);
 
             const current = window.location.pathname.replace(/\.html$/, "").replace(/\/$/, "") || "/";
             dom.qsa(".nav-link[href]").forEach((link) => {
@@ -407,19 +436,19 @@
         },
 
         initMobileMenu: () => {
-            const trigger = dom.id("mobile-menu-trigger");
+            const triggers = dom.qsa("[data-menu-trigger]");
             const overlay = dom.id("mobile-menu-overlay");
             const close = dom.id("mobile-menu-close");
-            if (!trigger || !overlay) return;
+            if (!triggers.length || !overlay) return;
 
             const setOpen = (open) => {
                 overlay.classList.toggle("active", open);
                 overlay.setAttribute("aria-hidden", String(!open));
-                trigger.setAttribute("aria-expanded", String(open));
+                triggers.forEach((trigger) => trigger.setAttribute("aria-expanded", String(open)));
                 document.body.style.overflow = open ? "hidden" : "";
             };
 
-            trigger.addEventListener("click", () => setOpen(true));
+            triggers.forEach((trigger) => trigger.addEventListener("click", () => setOpen(true)));
             close?.addEventListener("click", () => setOpen(false));
             dom.qsa("a", overlay).forEach((link) => link.addEventListener("click", () => setOpen(false)));
             document.addEventListener("keydown", (event) => {
@@ -511,38 +540,6 @@
             }
         },
 
-        initReveal: () => {
-            const revealables = ".reveal-on-scroll, .reveal-on-load, .hero-entry, .card, .feature-card";
-
-            if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-                dom.qsa(revealables).forEach((node) => node.classList.add("visible"));
-                return;
-            }
-
-            state.revealObserver = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
-                    const node = entry.target;
-                    const siblings = node.parentElement?.children;
-                    const index = siblings ? Math.max(Array.prototype.indexOf.call(siblings, node), 0) : 0;
-                    node.style.transitionDelay = `${Math.min(index, 6) * CONFIG.revealDelay}ms`;
-                    node.classList.add("visible");
-                    state.revealObserver.unobserve(node);
-                });
-            }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
-
-            dom.qsa(revealables).forEach((node) => state.revealObserver.observe(node));
-            dom.qsa(".hero-entry, .reveal-on-load").forEach((node, index) => {
-                window.setTimeout(() => node.classList.add("visible"), 90 + index * CONFIG.revealDelay);
-            });
-        },
-
-        observe: (node) => {
-            if (!node) return;
-            node.classList.add("reveal-on-scroll");
-            if (state.revealObserver) state.revealObserver.observe(node);
-        },
-
         scrollRail: (id, direction) => {
             const rail = dom.id(id);
             if (!rail) return;
@@ -589,7 +586,6 @@
                     const wrapper = document.createElement("div");
                     wrapper.className = isRail ? "rail-item" : "col";
                     wrapper.innerHTML = template(item);
-                    ui.observe(wrapper.firstElementChild);
                     fragment.appendChild(wrapper);
                 });
 
@@ -699,7 +695,6 @@
                     const wrapper = document.createElement("div");
                     wrapper.className = "col";
                     wrapper.innerHTML = templates.supportGame(game);
-                    ui.observe(wrapper.firstElementChild);
                     fragment.appendChild(wrapper);
                 });
                 container.replaceChildren(fragment);
@@ -792,7 +787,6 @@
                     : "All games";
                 const wrapper = document.createElement("div");
                 wrapper.innerHTML = templates.supportArticleCard(article, gameTitle);
-                ui.observe(wrapper.firstElementChild);
                 fragment.appendChild(wrapper.firstElementChild);
             });
             container.replaceChildren(fragment);
@@ -854,7 +848,7 @@
                     <div class="row g-0 align-items-stretch">
                         <div class="col-12 col-lg-5">
                             <div class="featured-media">
-                                <img src="${image}" alt="${utils.escape(game.title)} key art" width="900" height="506" loading="lazy" decoding="async">
+                                <img src="${image}" alt="${utils.escape(game.title)} key art" width="900" height="506" loading="eager" decoding="async">
                             </div>
                         </div>
                         <div class="col-12 col-lg-7">
@@ -938,7 +932,6 @@
                 const img = dom.id("article-image");
                 if (img) {
                     img.src = image;
-                    img.alt = `Newswire key art for ${article.title}`;
                 }
             } catch (error) {
                 console.error("[Render] article detail", error);
@@ -1054,7 +1047,7 @@
             if (game.trailer_url) {
                 const col = document.createElement("div");
                 col.className = "col-12";
-                col.innerHTML = `<iframe src="${utils.escape(game.trailer_url)}" class="w-100 rounded-lg shadow-md aspect-video mb-2" title="${utils.escape(game.title)} trailer" loading="lazy" allowfullscreen></iframe>`;
+                col.innerHTML = `<iframe src="${utils.escape(game.trailer_url)}" class="w-100 rounded-lg aspect-video mb-2" title="${utils.escape(game.title)} trailer" loading="eager" allowfullscreen></iframe>`;
                 fragment.appendChild(col);
             }
 
@@ -1063,7 +1056,7 @@
                     const src = utils.normalizeMedia(shot.url || shot, 900);
                     const col = document.createElement("div");
                     col.className = "col";
-                    col.innerHTML = `<img src="${src}" alt="${utils.escape(shot.caption || `${game.title} screenshot`)}" width="900" height="506" class="img-fluid rounded-lg shadow-md" loading="lazy" decoding="async">`;
+                    col.innerHTML = `<img src="${src}" alt="${utils.escape(shot.caption || `${game.title} screenshot`)}" width="900" height="506" class="img-fluid rounded-lg" loading="eager" decoding="async">`;
                     fragment.appendChild(col);
                 });
             }
@@ -1349,7 +1342,6 @@
             ]);
             ui.initEnvironmentLinks();
             document.dispatchEvent(new CustomEvent("reflex:components-ready"));
-            ui.initReveal();
             ui.initBackToTop();
             events.init();
             router.run();

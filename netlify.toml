@@ -108,11 +108,6 @@
   to = "/newswire-details.html"
   status = 200
 
-[[redirects]]
-  from = "/about"
-  to = "/about.html"
-  status = 200
-
 # === 5. Fallbacks & Headers ===
 [[redirects]]
   from = "/*"
