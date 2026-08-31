@@ -1,5 +1,5 @@
 window.REFLEX_SITE_CONFIG = Object.freeze({
-    version: "v2.0.0",
+    version: "v3.0.0",
     locale: "en-GB",
     defaultCountry: "GB",
     defaultCurrency: "GBP",
