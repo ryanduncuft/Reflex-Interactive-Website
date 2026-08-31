@@ -1,9 +1,0 @@
-{
-  "name": "reflex-interactive-site",
-  "version": "2.0.0",
-  "description": "Reflex Interactive website.",
-  "private": true,
-  "scripts": {
-    "check": "node --check js/site-config.js && node --check js/app.js"
-  }
-}
