@@ -13,22 +13,32 @@
     <meta name="application-name" content="Reflex Interactive">
     <meta name="theme-color" content="#000000">
     <meta name="format-detection" content="telephone=no">
+
+    <!-- Geo / Technical Meta Tags -->
+    <meta name="geo.region" content="GB-MAN">
+    <meta name="geo.placename" content="Manchester">
+    <meta name="geo.position" content="53.4808;-2.2426">
+    <meta name="ICBM" content="53.4808, -2.2426">
+
     <link rel="canonical" href="https://reflexinteractive.com/support">
     <link rel="alternate" hreflang="en-gb" href="https://reflexinteractive.com/support">
     <link rel="alternate" hreflang="x-default" href="https://reflexinteractive.com/support">
     
+    <!-- Open Graph / Facebook -->
     <meta property="og:title" content="Support | Reflex Interactive">
     <meta property="og:description" content="Official support for Reflex Interactive games, technical issues, bug reports, and studio contact requests.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://reflexinteractive.com/support">
     <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
     <meta property="og:image:secure_url" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:image:alt" content="Reflex Interactive support key art">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="675">
     <meta property="og:site_name" content="Reflex Interactive">
     <meta property="og:locale" content="en_GB">
 
+    <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@MadeByReflex">
     <meta name="twitter:creator" content="@MadeByReflex">
@@ -37,59 +47,79 @@
     <meta name="twitter:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532765/Reflex_Interactive_f3zylo.png">
     <meta name="twitter:image:alt" content="Reflex Interactive support key art">
 
+    <!-- Favicons & Icons -->
+    <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico" sizes="any">
+    <link rel="apple-touch-icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png">
+
+    <!-- Resource Hints & Performance Optimizations -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- CSS Dependencies -->
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
     <link rel="stylesheet" href="./css/styles.css">
 
+    <!-- Schema.org Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "ContactPage",
-      "name": "Reflex Interactive Support",
-      "description": "Official support and contact page for Reflex Interactive games, technical issues, and bug reports.",
-      "url": "https://reflexinteractive.com/support",
-      "inLanguage": "en-GB",
-      "isPartOf": {
-        "@type": "WebSite",
-        "@id": "https://reflexinteractive.com/#website",
-        "name": "Reflex Interactive",
-        "url": "https://reflexinteractive.com/"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "@id": "https://reflexinteractive.com/#organization",
-        "name": "Reflex Interactive"
-      },
-      "mainEntity": {
-        "@type": "ContactPoint",
-        "contactType": "customer support",
-        "url": "https://reflexinteractive.com/support",
-        "email": "support@reflexinteractive.com",
-        "areaServed": "Worldwide",
-        "availableLanguage": ["en-GB", "en"]
-      },
-      "breadcrumb": {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://reflexinteractive.com/"
+      "@graph": [
+        {
+          "@type": "ContactPage",
+          "@id": "https://reflexinteractive.com/support#webpage",
+          "name": "Reflex Interactive Support",
+          "description": "Official support and contact page for Reflex Interactive games, technical issues, and bug reports.",
+          "url": "https://reflexinteractive.com/support",
+          "inLanguage": "en-GB",
+          "isPartOf": {
+            "@type": "WebSite",
+            "@id": "https://reflexinteractive.com/#website",
+            "name": "Reflex Interactive",
+            "url": "https://reflexinteractive.com/"
           },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Support",
-            "item": "https://reflexinteractive.com/support"
+          "publisher": {
+            "@type": "Organization",
+            "@id": "https://reflexinteractive.com/#organization",
+            "name": "Reflex Interactive",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png"
+            }
+          },
+          "mainEntity": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "url": "https://reflexinteractive.com/support",
+            "email": "support@reflexinteractive.com",
+            "areaServed": "Worldwide",
+            "availableLanguage": ["en-GB", "en"]
+          },
+          "breadcrumb": {
+            "@id": "https://reflexinteractive.com/support#breadcrumb"
           }
-        ]
-      }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://reflexinteractive.com/support#breadcrumb",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://reflexinteractive.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Support",
+              "item": "https://reflexinteractive.com/support"
+            }
+          ]
+        }
+      ]
     }
     </script>
 </head>

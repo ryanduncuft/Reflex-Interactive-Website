@@ -1,4 +1,11 @@
+# www.robotstxt.org/
+
 User-agent: *
 Allow: /
 
+# Prevent indexing of internal netlify functions and standalone page components
+Disallow: /.netlify/
+Disallow: /components/
+
+# Sitemaps
 Sitemap: https://reflexinteractive.com/sitemap.xml

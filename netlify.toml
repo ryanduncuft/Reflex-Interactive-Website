@@ -6,7 +6,7 @@
   node_bundler = "esbuild"
 
 # === 1. Domain Normalization ===
-# Redirect WWW and Netlify subdomain to Naked Domain
+# Redirect WWW and Netlify default subdomain to Naked Domain
 [[redirects]]
   from = "https://www.reflexinteractive.com/*"
   to = "https://reflexinteractive.com/:splat"
@@ -37,14 +37,14 @@
   to = "/components/:splat"
   status = 200
 
-# 1. Serve support.html at the root of the support subdomain
+# Serve support.html at the root of the support subdomain
 [[redirects]]
   from = "https://support.reflexinteractive.com/"
   to = "/support.html"
   status = 200
   force = true
 
-# 2. If a user clicks a link like "/games" while on the support subdomain, force them back to the main domain
+# Fallback for other routes on the support subdomain back to main domain
 [[redirects]]
   from = "https://support.reflexinteractive.com/*"
   to = "https://reflexinteractive.com/:splat"
@@ -52,7 +52,7 @@
   force = true
 
 # === 3. Main Domain Route Rewrites ===
-# Rewrite /support to serve support.html directly without redirecting the browser URL
+# Rewrite /support to serve support.html directly without changing URL
 [[redirects]]
   from = "/support"
   to = "/support.html"
@@ -64,6 +64,7 @@
   status = 200
 
 # === 4. Clean URLs & Routing ===
+# Query parameter routing for individual games and news posts
 [[redirects]]
   from = "/games"
   query = {id = ":id"}
@@ -79,7 +80,7 @@
 [[redirects]]
   from = "/newswire"
   query = {id = ":id"}
-  to = "/newswire-details?id=:id"
+  to = "/newswire-details.html?id=:id"
   status = 301
 
 [[redirects]]
@@ -88,6 +89,7 @@
   to = "/newswire-details.html"
   status = 200
 
+# Clean HTML extension masking for root pages
 [[redirects]]
   from = "/games"
   to = "/games.html"
@@ -108,12 +110,19 @@
   to = "/newswire-details.html"
   status = 200
 
-# === 5. Fallbacks & Headers ===
+# Prevent direct access to raw .html files by redirecting to clean URLs
+[[redirects]]
+  from = "/*.html"
+  to = "/:splat"
+  status = 301
+
+# === 5. Fallback ===
 [[redirects]]
   from = "/*"
   to = "/404.html"
   status = 404
 
+# === 6. Headers & Security ===
 [[headers]]
   for = "/*"
   [headers.values]
@@ -123,7 +132,7 @@
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com https://www.google-analytics.com; connect-src 'self' https://gist.githubusercontent.com https://cdn.reflexinteractive.com https://downloads.reflexinteractive.com https://www.google-analytics.com; frame-src 'none'"
 
 [[headers]]
