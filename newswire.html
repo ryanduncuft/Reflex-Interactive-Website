@@ -13,22 +13,32 @@
     <meta name="application-name" content="Reflex Interactive">
     <meta name="theme-color" content="#000000">
     <meta name="format-detection" content="telephone=no">
+
+    <!-- Geo / Technical Meta Tags -->
+    <meta name="geo.region" content="GB-MAN">
+    <meta name="geo.placename" content="Manchester">
+    <meta name="geo.position" content="53.4808;-2.2426">
+    <meta name="ICBM" content="53.4808, -2.2426">
+
     <link rel="canonical" href="https://reflexinteractive.com/newswire">
     <link rel="alternate" hreflang="en-gb" href="https://reflexinteractive.com/newswire">
     <link rel="alternate" hreflang="x-default" href="https://reflexinteractive.com/newswire">
     
+    <!-- Open Graph / Facebook -->
     <meta property="og:title" id="og-title" content="Newswire | Reflex Interactive">
     <meta property="og:description" id="og-description" content="Studio news, release updates, patch notes, and development stories from Reflex Interactive.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://reflexinteractive.com/newswire">
     <meta property="og:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_512px_ovsgi1.jpg">
     <meta property="og:image:secure_url" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_512px_ovsgi1.jpg">
+    <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:alt" content="Reflex Interactive Newswire key art">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="675">
     <meta property="og:site_name" content="Reflex Interactive">
     <meta property="og:locale" content="en_GB">
 
+    <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@MadeByReflex">
     <meta name="twitter:creator" content="@MadeByReflex">
@@ -37,55 +47,71 @@
     <meta name="twitter:image" content="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_512px_ovsgi1.jpg">
     <meta name="twitter:image:alt" content="Reflex Interactive Newswire key art">
 
-    <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico">
+    <!-- Favicons & Icons -->
+    <link rel="icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto/f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.ico" sizes="any">
+    <link rel="apple-touch-icon" href="https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png">
+
+    <!-- Resource Hints & Performance Optimizations -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- CSS Dependencies -->
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="./css/styles.css">
     
+    <!-- Schema.org Structured Data -->
     <script type="application/ld+json" id="news-schema">
     {
-        "@context": "https://schema.org",
-        "@type": "Blog",
-        "name": "Reflex Interactive Newswire",
-        "url": "https://reflexinteractive.com/newswire",
-        "description": "Studio announcements, development blogs, game updates, patch notes, and release news from Reflex Interactive.",
-        "inLanguage": "en-GB",
-        "isPartOf": {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Blog",
+          "@id": "https://reflexinteractive.com/newswire#blog",
+          "name": "Reflex Interactive Newswire",
+          "url": "https://reflexinteractive.com/newswire",
+          "description": "Studio announcements, development blogs, game updates, patch notes, and release news from Reflex Interactive.",
+          "inLanguage": "en-GB",
+          "isPartOf": {
             "@type": "WebSite",
             "@id": "https://reflexinteractive.com/#website",
             "name": "Reflex Interactive",
             "url": "https://reflexinteractive.com/"
-        },
-        "publisher": {
+          },
+          "publisher": {
             "@type": "Organization",
             "@id": "https://reflexinteractive.com/#organization",
             "name": "Reflex Interactive",
             "logo": {
-                "@type": "ImageObject",
-                "url": "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png"
+              "@type": "ImageObject",
+              "url": "https://res.cloudinary.com/dvju1xiaw/image/upload/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png"
             }
+          },
+          "breadcrumb": {
+            "@id": "https://reflexinteractive.com/newswire#breadcrumb"
+          }
         },
-        "breadcrumb": {
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-                {
-                    "@type": "ListItem",
-                    "position": 1,
-                    "name": "Home",
-                    "item": "https://reflexinteractive.com/"
-                },
-                {
-                    "@type": "ListItem",
-                    "position": 2,
-                    "name": "Newswire",
-                    "item": "https://reflexinteractive.com/newswire"
-                }
-            ]
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://reflexinteractive.com/newswire#breadcrumb",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://reflexinteractive.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Newswire",
+              "item": "https://reflexinteractive.com/newswire"
+            }
+          ]
         }
+      ]
     }
     </script>
 </head>
@@ -94,8 +120,8 @@
     
     <div id="navbar"></div>
 
-    <main id="main-content" class="min-vh-100 pt-4 pt-md-5" role="main">
-        <section class="container py-5 page-hero" role="region" aria-labelledby="news-heading">
+    <main id="main-content" class="min-vh-100 pt-4 pt-md-5">
+        <section class="container py-5 page-hero" aria-labelledby="news-heading">
             <div class="page-intro text-center mx-auto mb-5">
                 <p class="section-kicker mb-3">Newswire</p>
                 <h1 id="news-heading" class="display-3 fw-bold">
