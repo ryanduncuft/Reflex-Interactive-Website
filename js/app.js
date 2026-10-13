@@ -1433,11 +1433,13 @@
             const params = new URLSearchParams(window.location.search);
             const id = params.get("id");
 
+            // CHECK STORE FIRST BEFORE ANYTHING ELSE
+            if (path.includes("store")) return render.storePage(); 
+
             if (path.includes("game-details") || (id && dom.id("game-hero"))) return render.gameDetail(id);
             if (path.includes("newswire-details") || (id && dom.id("article-detail"))) return render.articleDetail(id);
             if (path.includes("games")) return render.gameList("full-games-container");
             if (path.includes("newswire")) return render.newsList("news-container");
-            if (path.includes("store")) return render.storePage(); // <-- Added store router handler
             if (state.supportHost || path.includes("support")) return render.supportPage();
 
             if (path === "/" || path.endsWith("index.html")) {
