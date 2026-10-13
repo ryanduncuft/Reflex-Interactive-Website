@@ -338,11 +338,11 @@
 
         gameCard: (game) => `
             <article class="card modern-game-card h-100">
-                <a href="/store.html?id=${encodeURIComponent(game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
+                <a href="/game-details.html?id=${encodeURIComponent(game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
                     <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="eager" decoding="async">
                     <div class="modern-game-card-overlay">
                         <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
-                        <span class="modern-game-card-link">View in Store ${templates.arrow}</span>
+                        <span class="modern-game-card-link">View Details ${templates.arrow}</span>
                     </div>
                 </a>
             </article>
