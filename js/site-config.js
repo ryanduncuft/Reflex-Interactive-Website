@@ -18,7 +18,12 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
     },
     routes: {
         gameDetails: "/game-details",
-        games: "/games",
+        games: "/store.html",
+        store: "/store.html", // <-- Added for store redirects
+    },
+    api: {
+        products: "/.netlify/functions/products",           // <-- Added for fetching game products
+        createCheckout: "/.netlify/functions/create-checkout-session", // <-- Added for starting Stripe checkout
     },
     ui: {
         navScrollY: 24,

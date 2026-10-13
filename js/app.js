@@ -8,37 +8,41 @@
 
     const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
 
-    const CONFIG = {
+    window.REFLEX_SITE_CONFIG = Object.freeze({
+        version: "v3.0.0",
+        locale: "en-GB",
+        defaultCountry: "GB",
+        defaultCurrency: "GBP",
+        launcherRuntime: "win-x64",
+        stripe: {
+            publishableKey: "pk_live_51PT9k42NK0sbWKG5rBp6QAhS9Kro8f1Duxq7x1JgLMSi60JTtxnE2UAl0eCddx3E9wOTvwsBmJGs46CLctDE6fQQ00iQJy6B5A",
+        },
+        urls: {
+            site: "https://reflexinteractive.com",
+            support: "https://support.reflexinteractive.com/",
+            careers: "https://careers.reflexinteractive.com/",
+            downloads: "https://downloads.reflexinteractive.com",
+            launcherFiles: "https://cdn.reflexinteractive.com/launcher-files",
+            launcherVersion: "https://cdn.reflexinteractive.com/launcher-files/version.json",
+            news: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
+            games: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
+            supportArticles: "https://gist.githubusercontent.com/ryanduncuft/3308af53408db611254490f5c0b8611f/raw/reflex-support.json",
+            logo: "https://res.cloudinary.1com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+        },
+        routes: {
+            gameDetails: "/game-details",
+            games: "/games",
+            store: "/store.html",
+        },
         api: {
-            news: SITE_CONFIG.urls?.news || "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
-            games: SITE_CONFIG.urls?.games || "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
+            products: "/.netlify/functions/products",
+            createCheckout: "/.netlify/functions/create-checkout-session",
         },
-        siteUrl: SITE_CONFIG.urls?.site || "https://reflexinteractive.com",
-        logo: SITE_CONFIG.urls?.logo || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
-        locale: SITE_CONFIG.locale || "en-GB",
-        defaultCurrency: SITE_CONFIG.defaultCurrency || "GBP",
-        launcherRuntime: SITE_CONFIG.launcherRuntime || "win-x64",
-        navScrollY: SITE_CONFIG.ui?.navScrollY || 24,
-        railRatio: SITE_CONFIG.ui?.railRatio || 0.86,
-        subdomains: {
-            support: SITE_CONFIG.urls?.support || "https://support.reflexinteractive.com/",
-            careers: SITE_CONFIG.urls?.careers || "https://careers.reflexinteractive.com/",
+        ui: {
+            navScrollY: 24,
+            railRatio: 0.86,
         },
-        launcher: {
-            baseUrl: SITE_CONFIG.urls?.launcherFiles || "https://cdn.reflexinteractive.com/launcher-files",
-            versionUrl: SITE_CONFIG.urls?.launcherVersion || "https://cdn.reflexinteractive.com/launcher-files/version.json",
-        },
-        localRoutes: {
-            "/careers": "/careers.html",
-            "/game-details": "/game-details.html",
-            "/games": "/games.html",
-            "/newswire": "/newswire.html",
-            "/newswire-details": "/newswire-details.html",
-            "/privacy": "/privacy.html",
-            "/support": "/support.html",
-            "/tos": "/tos.html",
-        },
-    };
+    });
 
     const state = {
         cache: new Map(),
@@ -343,6 +347,30 @@
                 </div>
             </article>
         `,
+
+        storeCard: (product) => {
+            const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
+                style: "currency",
+                currency: product.currency.toUpperCase(),
+            }).format(product.unitAmount / 100);
+
+            return `
+                <article class="card modern-card store-card h-100">
+                    <img src="${utils.normalizeMedia(product.image, 720)}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
+                    <div class="card-body d-flex flex-column">
+                        <span class="badge bg-secondary mb-2 align-self-start">${utils.escape(product.type)}</span>
+                        <h3 class="modern-card-title">${utils.escape(product.name)}</h3>
+                        <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
+                        <div class="d-flex align-items-center justify-content-between mt-auto">
+                            <span class="fs-5 fw-bold text-white">${priceFormatted}</span>
+                            <button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">
+                                Buy Now
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            `;
+        },
     };
 
     const ui = {
@@ -938,6 +966,43 @@
             }
         },
 
+        storePage: async () => {
+            const container = dom.id("store-products-container");
+            if (!container) return;
+
+            utils.spinner("store-loading-spinner", true);
+
+            try {
+                const response = await fetch(CONFIG.api.products, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const dataPayload = await response.json();
+                const products = dataPayload.products || [];
+
+                if (!products.length) {
+                    container.innerHTML = '<div class="text-center text-muted py-5">No products available in the store right now.</div>';
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                products.forEach((product) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "col";
+                    wrapper.innerHTML = templates.storeCard(product);
+                    fragment.appendChild(wrapper);
+                });
+
+                container.replaceChildren(fragment);
+            } catch (error) {
+                console.error("[Render] store products", error);
+                container.innerHTML = '<div class="text-center text-danger py-5">Unable to load store products. Please try again later.</div>';
+            } finally {
+                utils.spinner("store-loading-spinner", false);
+            }
+        },
+
         gameDetail: async (id) => {
             if (!id) return app.message("Game not found.", "/games", "Back to Games");
 
@@ -1088,6 +1153,7 @@
             const supportCloseArticle = event.target.closest("[data-support-close-article]");
             const supportClear = event.target.closest("#support-clear-filters");
             const supportTicketArticle = event.target.closest("[data-support-article-ticket]");
+            const checkoutBtn = event.target.closest("[data-checkout-product]");
 
             if (prev || next) {
                 event.preventDefault();
@@ -1130,6 +1196,12 @@
             if (supportTicketArticle) {
                 event.preventDefault();
                 events.useArticleInTicket(supportTicketArticle.dataset.supportArticleTicket);
+                return;
+            }
+
+            if (checkoutBtn) {
+                event.preventDefault();
+                events.startCheckout(checkoutBtn.dataset.checkoutProduct, checkoutBtn.dataset.checkoutPrice, checkoutBtn);
                 return;
             }
 
@@ -1306,6 +1378,34 @@
             if (status) status.textContent = "Opening your email app with the ticket details. If nothing opens, use the direct email button below.";
             window.location.href = href;
         },
+
+        startCheckout: async (productId, priceId, button) => {
+            if (!productId || !priceId) return;
+
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = "Processing...";
+
+            try {
+                const response = await fetch(CONFIG.api.createCheckout, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Accept: "application/json" },
+                    body: JSON.stringify({ productId, priceId }),
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.url) {
+                    throw new Error(data.error || "Failed to create checkout session");
+                }
+
+                window.location.href = data.url;
+            } catch (error) {
+                console.error("[Checkout] Error:", error);
+                alert(error.message || "Unable to start checkout. Please try again.");
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        },
     };
 
     const router = {
@@ -1318,6 +1418,7 @@
             if (path.includes("newswire-details") || (id && dom.id("article-detail"))) return render.articleDetail(id);
             if (path.includes("games")) return render.gameList("full-games-container");
             if (path.includes("newswire")) return render.newsList("news-container");
+            if (path.includes("store")) return render.storePage(); // <-- Added store router handler
             if (state.supportHost || path.includes("support")) return render.supportPage();
 
             if (path === "/" || path.endsWith("index.html")) {
