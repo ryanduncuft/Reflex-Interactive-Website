@@ -1172,7 +1172,19 @@
                 dom.setText("game-detail-title", product.name);
                 dom.setText("game-detail-developer", product.developer || "Reflex Interactive");
                 dom.setText("game-detail-publisher", product.publisher || "Reflex Interactive");
-                dom.setText("game-detail-genre", product.genre || "Action");
+                
+                // Conditionally show/hide genre
+                const genreContainer = dom.id("genre-container");
+                if (genreContainer) {
+                    if (product.genre) {
+                        genreContainer.classList.remove("d-none");
+                        dom.setText("game-detail-genre", product.genre);
+                    } else {
+                        genreContainer.classList.add("d-none");
+                    }
+                }
+
+                // Fallback for release date if missing
                 dom.setText("game-detail-release-date", product.releaseDate || "To be announced");
                 dom.setText("game-detail-description", product.description);
 
