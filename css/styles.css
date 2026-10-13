@@ -2166,3 +2166,30 @@ footer {
         padding: 1.1rem;
     }
 }
+
+/* Universal clean image auto-sizing for Stripe and store products */
+.modern-card-img,
+.modern-game-card-img,
+.store-card img,
+.store-product-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Ensure store product cards have a uniform display aspect ratio */
+.store-card .modern-card-img {
+    aspect-ratio: 16 / 9; 
+}
+
+/* Ensure single product detail view scales portrait/landscape images nicely */
+#store-detail-view .store-product-media,
+#store-detail-view .col-lg-6 > div {
+    aspect-ratio: 3 / 4;
+    max-height: 550px;
+    background-color: #0b0b0b;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--ri-radius);
+}

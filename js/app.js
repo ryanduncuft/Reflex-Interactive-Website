@@ -91,6 +91,10 @@
 
         normalizeMedia: (url = "", width = 1200) => {
             if (!url) return "";
+            // Do not rewrite Stripe hosted files or external non-cloudinary URLs
+            if (url.includes("files.stripe.com") || url.includes("stripe.com")) {
+                return url;
+            }
             if (url.includes("cloudinary.com") && !url.includes("q_auto")) {
                 return url.replace("/upload/", `/upload/q_auto,f_auto,w_${width}/`);
             }
