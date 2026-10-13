@@ -8,41 +8,40 @@
 
     const SITE_CONFIG = window.REFLEX_SITE_CONFIG || {};
 
-    window.REFLEX_SITE_CONFIG = Object.freeze({
-        version: "v3.0.0",
-        locale: "en-GB",
-        defaultCountry: "GB",
-        defaultCurrency: "GBP",
-        launcherRuntime: "win-x64",
-        stripe: {
-            publishableKey: "pk_live_51PT9k42NK0sbWKG5rBp6QAhS9Kro8f1Duxq7x1JgLMSi60JTtxnE2UAl0eCddx3E9wOTvwsBmJGs46CLctDE6fQQ00iQJy6B5A",
-        },
-        urls: {
-            site: "https://reflexinteractive.com",
-            support: "https://support.reflexinteractive.com/",
-            careers: "https://careers.reflexinteractive.com/",
-            downloads: "https://downloads.reflexinteractive.com",
-            launcherFiles: "https://cdn.reflexinteractive.com/launcher-files",
-            launcherVersion: "https://cdn.reflexinteractive.com/launcher-files/version.json",
-            news: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
-            games: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
-            supportArticles: "https://gist.githubusercontent.com/ryanduncuft/3308af53408db611254490f5c0b8611f/raw/reflex-support.json",
-            logo: "https://res.cloudinary.1com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
-        },
-        routes: {
-            gameDetails: "/game-details",
-            games: "/games",
-            store: "/store.html",
-        },
+    const CONFIG = {
         api: {
-            products: "/.netlify/functions/products",
-            createCheckout: "/.netlify/functions/create-checkout-session",
+            news: SITE_CONFIG.urls?.news || "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
+            games: SITE_CONFIG.urls?.games || "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
+            products: SITE_CONFIG.api?.products || "/.netlify/functions/products",
+            createCheckout: SITE_CONFIG.api?.createCheckout || "/.netlify/functions/create-checkout-session",
         },
-        ui: {
-            navScrollY: 24,
-            railRatio: 0.86,
+        siteUrl: SITE_CONFIG.urls?.site || "https://reflexinteractive.com",
+        logo: SITE_CONFIG.urls?.logo || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+        locale: SITE_CONFIG.locale || "en-GB",
+        defaultCurrency: SITE_CONFIG.defaultCurrency || "GBP",
+        launcherRuntime: SITE_CONFIG.launcherRuntime || "win-x64",
+        navScrollY: SITE_CONFIG.ui?.navScrollY || 24,
+        railRatio: SITE_CONFIG.ui?.railRatio || 0.86,
+        subdomains: {
+            support: SITE_CONFIG.urls?.support || "https://support.reflexinteractive.com/",
+            careers: SITE_CONFIG.urls?.careers || "https://careers.reflexinteractive.com/",
         },
-    });
+        launcher: {
+            baseUrl: SITE_CONFIG.urls?.launcherFiles || "https://cdn.reflexinteractive.com/launcher-files",
+            versionUrl: SITE_CONFIG.urls?.launcherVersion || "https://cdn.reflexinteractive.com/launcher-files/version.json",
+        },
+        localRoutes: {
+            "/careers": "/careers.html",
+            "/game-details": "/game-details.html",
+            "/games": "/games.html",
+            "/newswire": "/newswire.html",
+            "/newswire-details": "/newswire-details.html",
+            "/privacy": "/privacy.html",
+            "/store": "/store.html",
+            "/support": "/support.html",
+            "/tos": "/tos.html",
+        },
+    };
 
     const state = {
         cache: new Map(),
