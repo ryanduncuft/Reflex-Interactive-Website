@@ -54,8 +54,9 @@ exports.handler = async (event) => {
                 developer: product.metadata.developer || "Reflex Interactive",
                 publisher: product.metadata.publisher || "Reflex Interactive",
                 trailerUrl: product.metadata.trailer_url || "",
+                releaseDate: product.metadata.release_date || "", // <-- Added release date capture
                 unitAmount: price.unit_amount,
-                currency: price.currency,
+                currency: product.currency,
                 comingSoon,
                 available: product.active && price.active && !comingSoon,
                 metadata: product.metadata || {}

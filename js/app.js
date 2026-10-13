@@ -1142,7 +1142,25 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const dataPayload = await response.json();
-                const products = dataPayload.products || [];
+                let products = dataPayload.products || [];
+
+                // Sort: Missing or future dates first (highest priority at top), then newest to oldest past dates
+                products.sort((a, b) => {
+                    const dateA = a.releaseDate ? Date.parse(a.releaseDate) : NaN;
+                    const dateB = b.releaseDate ? Date.parse(b.releaseDate) : NaN;
+                    const now = Date.now();
+
+                    const isFutureOrMissingA = Number.isNaN(dateA) || dateA > now;
+                    const isFutureOrMissingB = Number.isNaN(dateB) || dateB > now;
+
+                    if (isFutureOrMissingA && !isFutureOrMissingB) return -1;
+                    if (!isFutureOrMissingA && isFutureOrMissingB) return 1;
+                    if (isFutureOrMissingA && isFutureOrMissingB) return 0;
+
+                    // If both are past release dates, sort newest first
+                    return dateB - dateA;
+                });
+
                 const product = products.find(p => String(p.id) === String(id));
 
                 if (!product) throw new Error("Product not found");
@@ -1155,6 +1173,7 @@
                 dom.setText("game-detail-developer", product.developer || "Reflex Interactive");
                 dom.setText("game-detail-publisher", product.publisher || "Reflex Interactive");
                 dom.setText("game-detail-genre", product.genre || "Action");
+                dom.setText("game-detail-release-date", product.releaseDate || "To be announced");
                 dom.setText("game-detail-description", product.description);
 
                 const cover = dom.id("game-detail-cover");
