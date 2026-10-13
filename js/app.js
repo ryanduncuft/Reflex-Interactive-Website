@@ -1098,17 +1098,18 @@
 
                 dom.setText("detail-type", product.type || "Game");
                 dom.setText("detail-title", product.name);
-                dom.setText("detail-price", priceFormatted);
                 dom.setText("detail-description", product.description);
 
-                const isComingSoon = product.comingSoon;
+                // Calculate price first
                 const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
                     style: "currency",
                     currency: product.currency.toUpperCase(),
                 }).format(product.unitAmount / 100);
 
-                dom.setText("detail-price", isComingSoon ? "Coming Soon (Unreleased)" : priceFormatted);
+                // Always show the price text
+                dom.setText("detail-price", priceFormatted);
 
+                const isComingSoon = product.comingSoon;
                 const checkoutBtn = dom.id("detail-checkout-btn");
                 if (checkoutBtn) {
                     if (isComingSoon) {
@@ -1150,7 +1151,6 @@
 
                 document.title = title;
                 dom.setText("game-detail-title", product.name);
-                dom.setText("game-detail-price", priceFormatted);
                 dom.setText("game-detail-developer", product.developer || "Reflex Interactive");
                 dom.setText("game-detail-publisher", product.publisher || "Reflex Interactive");
                 dom.setText("game-detail-genre", product.genre || "Action");
@@ -1181,14 +1181,16 @@
                     screenshots: screenshots
                 });
 
-                const isComingSoon = product.comingSoon;
+                // Calculate price first
                 const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
                     style: "currency",
                     currency: product.currency.toUpperCase(),
                 }).format(product.unitAmount / 100);
 
-                dom.setText("game-detail-price", isComingSoon ? "Coming Soon" : priceFormatted);
+                // Always display the price
+                dom.setText("game-detail-price", priceFormatted);
 
+                const isComingSoon = product.comingSoon;
                 const cta = dom.id("game-access-btn");
                 if (cta) {
                     if (isComingSoon) {
