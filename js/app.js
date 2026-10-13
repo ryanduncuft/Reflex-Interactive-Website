@@ -291,7 +291,24 @@
                 const response = await fetch(CONFIG.api.products, { headers: { Accept: "application/json" } });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const payload = await response.json();
-                const products = payload.products || [];
+                let products = payload.products || [];
+
+                // Sort globally: Missing or future dates first (highest priority at top), then newest to oldest past dates
+                products.sort((a, b) => {
+                    const dateA = a.releaseDate ? Date.parse(a.releaseDate) : NaN;
+                    const dateB = b.releaseDate ? Date.parse(b.releaseDate) : NaN;
+                    const now = Date.now();
+
+                    const isFutureOrMissingA = Number.isNaN(dateA) || dateA > now;
+                    const isFutureOrMissingB = Number.isNaN(dateB) || dateB > now;
+
+                    if (isFutureOrMissingA && !isFutureOrMissingB) return -1;
+                    if (!isFutureOrMissingA && isFutureOrMissingB) return 1;
+                    if (isFutureOrMissingA && isFutureOrMissingB) return 0;
+
+                    // If both are past release dates, sort newest first
+                    return dateB - dateA;
+                });
 
                 return products.map(product => ({
                     id: product.id,
@@ -300,15 +317,16 @@
                     description: product.description,
                     image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
                     hero_image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
-                    genre: product.genre || "Action",
+                    genre: product.genre || "",
                     developer: product.developer || "Reflex Interactive",
                     publisher: product.publisher || "Reflex Interactive",
                     trailer_url: product.trailerUrl || "",
                     priceId: product.priceId,
                     unitAmount: product.unitAmount,
                     currency: product.currency,
-                    comingSoon: product.comingSoon || false, // <-- Preserves coming_soon flag
-                    date: product.metadata?.release_date || new Date().toISOString().split('T')[0]
+                    comingSoon: product.comingSoon || false,
+                    releaseDate: product.releaseDate || "",
+                    date: product.releaseDate || ""
                 }));
             } catch (error) {
                 console.error("[Data] Failed to load games from Stripe products", error);
