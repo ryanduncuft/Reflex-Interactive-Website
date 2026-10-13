@@ -382,10 +382,12 @@
         `,
 
         storeCard: (product) => {
-            const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
-                style: "currency",
-                currency: product.currency.toUpperCase(),
-            }).format(product.unitAmount / 100);
+            const priceFormatted = product.unitAmount === 0 
+                ? "FREE" 
+                : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
+                    style: "currency",
+                    currency: product.currency.toUpperCase(),
+                }).format(product.unitAmount / 100);
 
             const imageUrl = product.image ? utils.normalizeMedia(product.image, 720) : "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
             const isComingSoon = product.comingSoon;
@@ -403,11 +405,10 @@
                         </h3>
                         <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
                         <div class="d-flex align-items-center justify-content-between mt-auto">
-                            <!-- Always show the price here -->
                             <span class="fs-5 fw-bold text-white">${priceFormatted}</span>
                             ${isComingSoon 
                                 ? '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>'
-                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">Buy Now</button>`
+                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">${product.unitAmount === 0 ? "Get Free" : "Buy Now"}</button>`
                             }
                         </div>
                     </div>
@@ -1100,13 +1101,13 @@
                 dom.setText("detail-title", product.name);
                 dom.setText("detail-description", product.description);
 
-                // Calculate price first
-                const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
-                    style: "currency",
-                    currency: product.currency.toUpperCase(),
-                }).format(product.unitAmount / 100);
+                const priceFormatted = product.unitAmount === 0 
+                    ? "FREE" 
+                    : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
+                        style: "currency",
+                        currency: product.currency.toUpperCase(),
+                    }).format(product.unitAmount / 100);
 
-                // Always show the price text
                 dom.setText("detail-price", priceFormatted);
 
                 const isComingSoon = product.comingSoon;
@@ -1122,7 +1123,7 @@
                     } else {
                         checkoutBtn.setAttribute("data-checkout-product", product.id);
                         checkoutBtn.setAttribute("data-checkout-price", product.priceId);
-                        checkoutBtn.textContent = `Buy Now - ${priceFormatted}`;
+                        checkoutBtn.textContent = product.unitAmount === 0 ? "Get Free" : `Buy Now - ${priceFormatted}`;
                     }
                 }
             } catch (error) {
@@ -1132,7 +1133,7 @@
         },
 
         gameDetail: async (id) => {
-            if (!id) return app.message("Game not found.", "/games", "Back to Games");
+            if (!id) return app.message("Game not found.", "/store", "Back to Store");
 
             try {
                 const response = await fetch(CONFIG.api.products, {
@@ -1165,7 +1166,6 @@
                 const heroNode = dom.id("game-hero");
                 if (heroNode) heroNode.style.backgroundImage = `url('${image}')`;
 
-                // Gather extra images from metadata (image_1, image_2, etc.)
                 const screenshots = [];
                 if (product.metadata) {
                     Object.keys(product.metadata).forEach((key) => {
@@ -1181,13 +1181,13 @@
                     screenshots: screenshots
                 });
 
-                // Calculate price first
-                const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
-                    style: "currency",
-                    currency: product.currency.toUpperCase(),
-                }).format(product.unitAmount / 100);
+                const priceFormatted = product.unitAmount === 0 
+                    ? "FREE" 
+                    : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
+                        style: "currency",
+                        currency: product.currency.toUpperCase(),
+                    }).format(product.unitAmount / 100);
 
-                // Always display the price
                 dom.setText("game-detail-price", priceFormatted);
 
                 const isComingSoon = product.comingSoon;
@@ -1199,7 +1199,7 @@
                         cta.classList.remove("btn-danger");
                         cta.setAttribute("aria-disabled", "true");
                     } else {
-                        cta.textContent = `Buy Now - ${priceFormatted}`;
+                        cta.textContent = product.unitAmount === 0 ? "Get Free" : `Buy Now - ${priceFormatted}`;
                         cta.classList.remove("disabled", "opacity-50", "cursor-not-allowed", "btn-secondary");
                         cta.classList.add("btn-danger");
                         cta.removeAttribute("aria-disabled");
@@ -1209,7 +1209,7 @@
                 }
             } catch (error) {
                 console.error("[Render] game detail error:", error);
-                app.message("Failed to load game details.", "/games", "Back to Games");
+                app.message("Failed to load game details.", "/store", "Back to Store");
             }
         },
 
