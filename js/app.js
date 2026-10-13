@@ -281,7 +281,37 @@
             }
         },
 
-        games: async () => utils.newestFirst(await data.json(CONFIG.api.games)),
+        // Fetch games directly from Stripe product endpoint instead of Gists
+        games: async () => {
+            try {
+                const response = await fetch(CONFIG.api.products, { headers: { Accept: "application/json" } });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const payload = await response.json();
+                const products = payload.products || [];
+
+                // Map Stripe products to match game schema expectations
+                return products.map(product => ({
+                    id: product.id,
+                    numeric_id: product.id,
+                    title: product.name,
+                    description: product.description,
+                    image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
+                    hero_image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
+                    genre: product.genre || "Action",
+                    developer: product.developer || "Reflex Interactive",
+                    publisher: product.publisher || "Reflex Interactive",
+                    trailer_url: product.trailerUrl || "",
+                    priceId: product.priceId,
+                    unitAmount: product.unitAmount,
+                    currency: product.currency,
+                    date: product.metadata?.release_date || new Date().toISOString().split('T')[0]
+                }));
+            } catch (error) {
+                console.error("[Data] Failed to load games from Stripe products", error);
+                return [];
+            }
+        },
+
         news: async () => utils.newestFirst(await data.json(CONFIG.api.news)),
         supportArticles: async () => utils.newestFirst(await data.json(CONFIG.api.supportArticles)),
     };
@@ -304,11 +334,11 @@
 
         gameCard: (game) => `
             <article class="card modern-game-card h-100">
-                <a href="${utils.detailHref("game-details", game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
+                <a href="/store.html?id=${encodeURIComponent(game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
                     <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="eager" decoding="async">
                     <div class="modern-game-card-overlay">
                         <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
-                        <span class="modern-game-card-link">Explore game ${templates.arrow}</span>
+                        <span class="modern-game-card-link">View in Store ${templates.arrow}</span>
                     </div>
                 </a>
             </article>
@@ -353,12 +383,18 @@
                 currency: product.currency.toUpperCase(),
             }).format(product.unitAmount / 100);
 
+            const imageUrl = product.image ? utils.normalizeMedia(product.image, 720) : "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
+
             return `
                 <article class="card modern-card store-card h-100">
-                    <img src="${utils.normalizeMedia(product.image, 720)}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
+                    <a href="/store.html?id=${encodeURIComponent(product.id)}" class="text-decoration-none">
+                        <img src="${imageUrl}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
+                    </a>
                     <div class="card-body d-flex flex-column">
                         <span class="badge bg-secondary mb-2 align-self-start">${utils.escape(product.type)}</span>
-                        <h3 class="modern-card-title">${utils.escape(product.name)}</h3>
+                        <h3 class="modern-card-title">
+                            <a href="/store.html?id=${encodeURIComponent(product.id)}" class="text-white text-decoration-none">${utils.escape(product.name)}</a>
+                        </h3>
                         <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
                         <div class="d-flex align-items-center justify-content-between mt-auto">
                             <span class="fs-5 fw-bold text-white">${priceFormatted}</span>
@@ -1022,6 +1058,58 @@
             }
         },
 
+        storeDetail: async (productId) => {
+            const gridView = dom.id("store-grid-view");
+            const detailView = dom.id("store-detail-view");
+            if (!gridView || !detailView) return;
+
+            try {
+                const response = await fetch(CONFIG.api.products, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const dataPayload = await response.json();
+                const products = dataPayload.products || [];
+                const product = products.find(p => String(p.id) === String(productId));
+
+                if (!product) {
+                    throw new Error("Product not found");
+                }
+
+                gridView.classList.add("d-none");
+                detailView.classList.remove("d-none");
+
+                const imageUrl = product.image ? utils.normalizeMedia(product.image, 1200) : "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
+                
+                const imgNode = dom.id("detail-image");
+                if (imgNode) {
+                    imgNode.src = imageUrl;
+                    imgNode.alt = product.name;
+                }
+
+                dom.setText("detail-type", product.type || "Game");
+                dom.setText("detail-title", product.name);
+                dom.setText("detail-description", product.description);
+
+                const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
+                    style: "currency",
+                    currency: product.currency.toUpperCase(),
+                }).format(product.unitAmount / 100);
+                dom.setText("detail-price", priceFormatted);
+
+                const checkoutBtn = dom.id("detail-checkout-btn");
+                if (checkoutBtn) {
+                    checkoutBtn.setAttribute("data-checkout-product", product.id);
+                    checkoutBtn.setAttribute("data-checkout-price", product.priceId);
+                    checkoutBtn.textContent = `Buy Now - ${priceFormatted}`;
+                }
+            } catch (error) {
+                console.error("[Store Detail] Error:", error);
+                app.message("Product not found.", "/store.html", "Back to Store");
+            }
+        },
+
         gameDetail: async (id) => {
             if (!id) return app.message("Game not found.", "/games", "Back to Games");
 
@@ -1433,8 +1521,10 @@
             const params = new URLSearchParams(window.location.search);
             const id = params.get("id");
 
-            // CHECK STORE FIRST BEFORE ANYTHING ELSE
-            if (path.includes("store")) return render.storePage(); 
+            if (path.includes("store")) {
+                if (id) return render.storeDetail(id);
+                return render.storePage();
+            }
 
             if (path.includes("game-details") || (id && dom.id("game-hero"))) return render.gameDetail(id);
             if (path.includes("newswire-details") || (id && dom.id("article-detail"))) return render.articleDetail(id);
