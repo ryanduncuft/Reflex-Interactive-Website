@@ -291,7 +291,24 @@
                 const response = await fetch(CONFIG.api.products, { headers: { Accept: "application/json" } });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const payload = await response.json();
-                const products = payload.products || [];
+                let products = payload.products || [];
+
+                // Sort globally: Missing or future dates first (highest priority at top), then newest to oldest past dates
+                products.sort((a, b) => {
+                    const dateA = a.releaseDate ? Date.parse(a.releaseDate) : NaN;
+                    const dateB = b.releaseDate ? Date.parse(b.releaseDate) : NaN;
+                    const now = Date.now();
+
+                    const isFutureOrMissingA = Number.isNaN(dateA) || dateA > now;
+                    const isFutureOrMissingB = Number.isNaN(dateB) || dateB > now;
+
+                    if (isFutureOrMissingA && !isFutureOrMissingB) return -1;
+                    if (!isFutureOrMissingA && isFutureOrMissingB) return 1;
+                    if (isFutureOrMissingA && isFutureOrMissingB) return 0;
+
+                    // If both are past release dates, sort newest first
+                    return dateB - dateA;
+                });
 
                 return products.map(product => ({
                     id: product.id,
@@ -300,15 +317,16 @@
                     description: product.description,
                     image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
                     hero_image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
-                    genre: product.genre || "Action",
+                    genre: product.genre || "",
                     developer: product.developer || "Reflex Interactive",
                     publisher: product.publisher || "Reflex Interactive",
                     trailer_url: product.trailerUrl || "",
                     priceId: product.priceId,
                     unitAmount: product.unitAmount,
                     currency: product.currency,
-                    comingSoon: product.comingSoon || false, // <-- Preserves coming_soon flag
-                    date: product.metadata?.release_date || new Date().toISOString().split('T')[0]
+                    comingSoon: product.comingSoon || false,
+                    releaseDate: product.releaseDate || "",
+                    date: product.releaseDate || ""
                 }));
             } catch (error) {
                 console.error("[Data] Failed to load games from Stripe products", error);
@@ -382,10 +400,12 @@
         `,
 
         storeCard: (product) => {
-            const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
-                style: "currency",
-                currency: product.currency.toUpperCase(),
-            }).format(product.unitAmount / 100);
+            const priceFormatted = product.unitAmount === 0 
+                ? "FREE" 
+                : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
+                    style: "currency",
+                    currency: product.currency.toUpperCase(),
+                }).format(product.unitAmount / 100);
 
             const imageUrl = product.image ? utils.normalizeMedia(product.image, 720) : "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
             const isComingSoon = product.comingSoon;
@@ -403,10 +423,10 @@
                         </h3>
                         <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
                         <div class="d-flex align-items-center justify-content-between mt-auto">
-                            <span class="fs-5 fw-bold text-white">${isComingSoon ? '<span class="text-muted fs-6">Unreleased</span>' : priceFormatted}</span>
+                            <span class="fs-5 fw-bold text-white">${priceFormatted}</span>
                             ${isComingSoon 
                                 ? '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>'
-                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">Buy Now</button>`
+                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">${product.unitAmount === 0 ? "Get Free" : "Buy Now"}</button>`
                             }
                         </div>
                     </div>
@@ -1099,14 +1119,16 @@
                 dom.setText("detail-title", product.name);
                 dom.setText("detail-description", product.description);
 
+                const priceFormatted = product.unitAmount === 0 
+                    ? "FREE" 
+                    : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
+                        style: "currency",
+                        currency: product.currency.toUpperCase(),
+                    }).format(product.unitAmount / 100);
+
+                dom.setText("detail-price", priceFormatted);
+
                 const isComingSoon = product.comingSoon;
-                const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
-                    style: "currency",
-                    currency: product.currency.toUpperCase(),
-                }).format(product.unitAmount / 100);
-
-                dom.setText("detail-price", isComingSoon ? "Coming Soon (Unreleased)" : priceFormatted);
-
                 const checkoutBtn = dom.id("detail-checkout-btn");
                 if (checkoutBtn) {
                     if (isComingSoon) {
@@ -1119,7 +1141,7 @@
                     } else {
                         checkoutBtn.setAttribute("data-checkout-product", product.id);
                         checkoutBtn.setAttribute("data-checkout-price", product.priceId);
-                        checkoutBtn.textContent = `Buy Now - ${priceFormatted}`;
+                        checkoutBtn.textContent = product.unitAmount === 0 ? "Get Free" : `Buy Now - ${priceFormatted}`;
                     }
                 }
             } catch (error) {
@@ -1129,7 +1151,7 @@
         },
 
         gameDetail: async (id) => {
-            if (!id) return app.message("Game not found.", "/games", "Back to Games");
+            if (!id) return app.message("Game not found.", "/store", "Back to Store");
 
             try {
                 const response = await fetch(CONFIG.api.products, {
@@ -1138,7 +1160,25 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const dataPayload = await response.json();
-                const products = dataPayload.products || [];
+                let products = dataPayload.products || [];
+
+                // Sort: Missing or future dates first (highest priority at top), then newest to oldest past dates
+                products.sort((a, b) => {
+                    const dateA = a.releaseDate ? Date.parse(a.releaseDate) : NaN;
+                    const dateB = b.releaseDate ? Date.parse(b.releaseDate) : NaN;
+                    const now = Date.now();
+
+                    const isFutureOrMissingA = Number.isNaN(dateA) || dateA > now;
+                    const isFutureOrMissingB = Number.isNaN(dateB) || dateB > now;
+
+                    if (isFutureOrMissingA && !isFutureOrMissingB) return -1;
+                    if (!isFutureOrMissingA && isFutureOrMissingB) return 1;
+                    if (isFutureOrMissingA && isFutureOrMissingB) return 0;
+
+                    // If both are past release dates, sort newest first
+                    return dateB - dateA;
+                });
+
                 const product = products.find(p => String(p.id) === String(id));
 
                 if (!product) throw new Error("Product not found");
@@ -1150,7 +1190,34 @@
                 dom.setText("game-detail-title", product.name);
                 dom.setText("game-detail-developer", product.developer || "Reflex Interactive");
                 dom.setText("game-detail-publisher", product.publisher || "Reflex Interactive");
-                dom.setText("game-detail-genre", product.genre || "Action");
+                
+                // Conditionally show/hide genre
+                const genreContainer = dom.id("genre-container");
+                if (genreContainer) {
+                    if (product.genre) {
+                        genreContainer.classList.remove("d-none");
+                        dom.setText("game-detail-genre", product.genre);
+                    } else {
+                        genreContainer.classList.add("d-none");
+                    }
+                }
+
+                // Localized formatting for release date
+                let formattedReleaseDate = "To be announced";
+                if (product.releaseDate) {
+                    const parsedDate = Date.parse(product.releaseDate);
+                    if (!Number.isNaN(parsedDate)) {
+                        formattedReleaseDate = new Intl.DateTimeFormat(navigator.language || CONFIG.locale, {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric"
+                        }).format(new Date(parsedDate));
+                    } else {
+                        formattedReleaseDate = product.releaseDate;
+                    }
+                }
+                dom.setText("game-detail-release-date", formattedReleaseDate);
+
                 dom.setText("game-detail-description", product.description);
 
                 const cover = dom.id("game-detail-cover");
@@ -1162,14 +1229,31 @@
                 const heroNode = dom.id("game-hero");
                 if (heroNode) heroNode.style.backgroundImage = `url('${image}')`;
 
+                const screenshots = [];
+                if (product.metadata) {
+                    Object.keys(product.metadata).forEach((key) => {
+                        if (/^image_\d+$/i.test(key) && product.metadata[key]) {
+                            screenshots.push(product.metadata[key]);
+                        }
+                    });
+                }
+
+                render.gameMedia({
+                    title: product.name,
+                    trailer_url: product.trailerUrl || "",
+                    screenshots: screenshots
+                });
+
+                const priceFormatted = product.unitAmount === 0 
+                    ? "FREE" 
+                    : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
+                        style: "currency",
+                        currency: (product.currency || "gbp").toUpperCase(),
+                    }).format(product.unitAmount / 100);
+
+                dom.setText("game-detail-price", priceFormatted);
+
                 const isComingSoon = product.comingSoon;
-                const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
-                    style: "currency",
-                    currency: product.currency.toUpperCase(),
-                }).format(product.unitAmount / 100);
-
-                dom.setText("game-detail-price", isComingSoon ? "Coming Soon" : priceFormatted);
-
                 const cta = dom.id("game-access-btn");
                 if (cta) {
                     if (isComingSoon) {
@@ -1178,7 +1262,7 @@
                         cta.classList.remove("btn-danger");
                         cta.setAttribute("aria-disabled", "true");
                     } else {
-                        cta.textContent = `Buy Now - ${priceFormatted}`;
+                        cta.textContent = product.unitAmount === 0 ? "Get Free" : `Buy Now - ${priceFormatted}`;
                         cta.classList.remove("disabled", "opacity-50", "cursor-not-allowed", "btn-secondary");
                         cta.classList.add("btn-danger");
                         cta.removeAttribute("aria-disabled");
@@ -1188,7 +1272,7 @@
                 }
             } catch (error) {
                 console.error("[Render] game detail error:", error);
-                app.message("Failed to load game details.", "/games", "Back to Games");
+                app.message("Failed to load game details.", "/store", "Back to Store");
             }
         },
 
