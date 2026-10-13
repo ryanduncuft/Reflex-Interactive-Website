@@ -1,0 +1,10 @@
+{
+  "name": "reflex-interactive-storefront",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "stripe": "22.6.2"
+  }
+}

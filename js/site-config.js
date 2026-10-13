@@ -4,6 +4,9 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
     defaultCountry: "GB",
     defaultCurrency: "GBP",
     launcherRuntime: "win-x64",
+    stripe: {
+        publishableKey: "pk_live_51PT9k42NK0sbWKG5rBp6QAhS9Kro8f1Duxq7x1JgLMSi60JTtxnE2UAl0eCddx3E9wOTvwsBmJGs46CLctDE6fQQ00iQJy6B5A",
+    },
     urls: {
         site: "https://reflexinteractive.com",
         support: "https://support.reflexinteractive.com/",
@@ -14,11 +17,16 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
         news: "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
         games: "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
         supportArticles: "https://gist.githubusercontent.com/ryanduncuft/3308af53408db611254490f5c0b8611f/raw/reflex-support.json",
-        logo: "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
+        logo: "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png", // <-- Fixed typo here
     },
     routes: {
         gameDetails: "/game-details",
-        games: "/games",
+        games: "/store.html",
+        store: "/store.html",
+    },
+    api: {
+        products: "/.netlify/functions/products",
+        createCheckout: "/.netlify/functions/create-checkout-session",
     },
     ui: {
         navScrollY: 24,

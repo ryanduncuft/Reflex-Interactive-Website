@@ -12,6 +12,8 @@
         api: {
             news: SITE_CONFIG.urls?.news || "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json",
             games: SITE_CONFIG.urls?.games || "https://gist.githubusercontent.com/ryanduncuft/a24915ce0cace4ce24e8eee2e4140caa/raw/reflex_games.json",
+            products: SITE_CONFIG.api?.products || "/.netlify/functions/products",
+            createCheckout: SITE_CONFIG.api?.createCheckout || "/.netlify/functions/create-checkout-session",
         },
         siteUrl: SITE_CONFIG.urls?.site || "https://reflexinteractive.com",
         logo: SITE_CONFIG.urls?.logo || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
@@ -35,6 +37,7 @@
             "/newswire": "/newswire.html",
             "/newswire-details": "/newswire-details.html",
             "/privacy": "/privacy.html",
+            "/store": "/store.html",
             "/support": "/support.html",
             "/tos": "/tos.html",
         },
@@ -88,6 +91,10 @@
 
         normalizeMedia: (url = "", width = 1200) => {
             if (!url) return "";
+            // Do not rewrite Stripe hosted files or external non-cloudinary URLs
+            if (url.includes("files.stripe.com") || url.includes("stripe.com")) {
+                return url;
+            }
             if (url.includes("cloudinary.com") && !url.includes("q_auto")) {
                 return url.replace("/upload/", `/upload/q_auto,f_auto,w_${width}/`);
             }
@@ -278,7 +285,37 @@
             }
         },
 
-        games: async () => utils.newestFirst(await data.json(CONFIG.api.games)),
+        // Fetch games directly from Stripe product endpoint instead of Gists
+        games: async () => {
+            try {
+                const response = await fetch(CONFIG.api.products, { headers: { Accept: "application/json" } });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const payload = await response.json();
+                const products = payload.products || [];
+
+                return products.map(product => ({
+                    id: product.id,
+                    numeric_id: product.id,
+                    title: product.name,
+                    description: product.description,
+                    image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
+                    hero_image_url: product.image || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png",
+                    genre: product.genre || "Action",
+                    developer: product.developer || "Reflex Interactive",
+                    publisher: product.publisher || "Reflex Interactive",
+                    trailer_url: product.trailerUrl || "",
+                    priceId: product.priceId,
+                    unitAmount: product.unitAmount,
+                    currency: product.currency,
+                    comingSoon: product.comingSoon || false, // <-- Preserves coming_soon flag
+                    date: product.metadata?.release_date || new Date().toISOString().split('T')[0]
+                }));
+            } catch (error) {
+                console.error("[Data] Failed to load games from Stripe products", error);
+                return [];
+            }
+        },
+
         news: async () => utils.newestFirst(await data.json(CONFIG.api.news)),
         supportArticles: async () => utils.newestFirst(await data.json(CONFIG.api.supportArticles)),
     };
@@ -301,11 +338,11 @@
 
         gameCard: (game) => `
             <article class="card modern-game-card h-100">
-                <a href="${utils.detailHref("game-details", game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
+                <a href="/game-details.html?id=${encodeURIComponent(game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
                     <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="eager" decoding="async">
                     <div class="modern-game-card-overlay">
                         <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
-                        <span class="modern-game-card-link">Explore game ${templates.arrow}</span>
+                        <span class="modern-game-card-link">View Details ${templates.arrow}</span>
                     </div>
                 </a>
             </article>
@@ -343,6 +380,39 @@
                 </div>
             </article>
         `,
+
+        storeCard: (product) => {
+            const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
+                style: "currency",
+                currency: product.currency.toUpperCase(),
+            }).format(product.unitAmount / 100);
+
+            const imageUrl = product.image ? utils.normalizeMedia(product.image, 720) : "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
+            const isComingSoon = product.comingSoon;
+
+            return `
+                <article class="card modern-card store-card h-100">
+                    <a href="/game-details.html?id=${encodeURIComponent(product.id)}" class="text-decoration-none position-relative">
+                        ${isComingSoon ? '<span class="position-absolute top-0 start-0 m-3 badge bg-danger text-uppercase fw-bold shadow">Coming Soon</span>' : ''}
+                        <img src="${imageUrl}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
+                    </a>
+                    <div class="card-body d-flex flex-column">
+                        <span class="badge bg-secondary mb-2 align-self-start">${utils.escape(product.type)}</span>
+                        <h3 class="modern-card-title">
+                            <a href="/game-details.html?id=${encodeURIComponent(product.id)}" class="text-white text-decoration-none">${utils.escape(product.name)}</a>
+                        </h3>
+                        <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
+                        <div class="d-flex align-items-center justify-content-between mt-auto">
+                            <span class="fs-5 fw-bold text-white">${isComingSoon ? '<span class="text-muted fs-6">Unreleased</span>' : priceFormatted}</span>
+                            ${isComingSoon 
+                                ? '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>'
+                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">Buy Now</button>`
+                            }
+                        </div>
+                    </div>
+                </article>
+            `;
+        },
     };
 
     const ui = {
@@ -938,101 +1008,186 @@
             }
         },
 
+        storePage: async () => {
+            const container = dom.id("store-products-container");
+            if (!container) {
+                console.error("[Store] Critical Error: #store-products-container element not found in DOM!");
+                return;
+            }
+
+            utils.spinner("store-loading-spinner", true);
+            console.log("[Store] Initiating product fetch from API endpoint:", CONFIG.api.products);
+
+            try {
+                const response = await fetch(CONFIG.api.products, {
+                    headers: { Accept: "application/json" },
+                });
+                
+                console.log("[Store] Response received with status:", response.status, response.statusText);
+
+                if (!response.ok) {
+                    let errorDetails = "";
+                    try {
+                        errorDetails = await response.text();
+                    } catch {
+                        errorDetails = "Could not parse error body";
+                    }
+                    throw new Error(`HTTP ${response.status}: ${errorDetails}`);
+                }
+
+                const dataPayload = await response.json();
+                console.log("[Store] Raw data payload parsed successfully:", dataPayload);
+
+                const products = dataPayload.products || [];
+
+                if (!products.length) {
+                    console.warn("[Store] API returned zero products. Check if products are active in your Stripe Dashboard with valid one-time prices.");
+                    container.innerHTML = '<div class="text-center text-muted py-5">No products available in the store right now. Please ensure your Stripe products are active with valid prices.</div>';
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                products.forEach((product) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "col";
+                    wrapper.innerHTML = templates.storeCard(product);
+                    fragment.appendChild(wrapper);
+                });
+
+                container.replaceChildren(fragment);
+                console.log(`[Store] Successfully rendered ${products.length} product cards into the DOM.`);
+            } catch (error) {
+                console.error("[Store] Failed to load store products:", error);
+                container.innerHTML = `<div class="text-center text-danger py-5">Unable to load store products.<br><small class="text-muted">Details: ${utils.escape(error.message)}</small></div>`;
+            } finally {
+                utils.spinner("store-loading-spinner", false);
+                console.log("[Store] Loading sequence completed, spinner hidden.");
+            }
+        },
+
+        storeDetail: async (productId) => {
+            const gridView = dom.id("store-grid-view");
+            const detailView = dom.id("store-detail-view");
+            if (!gridView || !detailView) return;
+
+            try {
+                const response = await fetch(CONFIG.api.products, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const dataPayload = await response.json();
+                const products = dataPayload.products || [];
+                const product = products.find(p => String(p.id) === String(productId));
+
+                if (!product) {
+                    throw new Error("Product not found");
+                }
+
+                gridView.classList.add("d-none");
+                detailView.classList.remove("d-none");
+
+                const imageUrl = product.image ? utils.normalizeMedia(product.image, 1200) : "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
+                
+                const imgNode = dom.id("detail-image");
+                if (imgNode) {
+                    imgNode.src = imageUrl;
+                    imgNode.alt = product.name;
+                }
+
+                dom.setText("detail-type", product.type || "Game");
+                dom.setText("detail-title", product.name);
+                dom.setText("detail-description", product.description);
+
+                const isComingSoon = product.comingSoon;
+                const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
+                    style: "currency",
+                    currency: product.currency.toUpperCase(),
+                }).format(product.unitAmount / 100);
+
+                dom.setText("detail-price", isComingSoon ? "Coming Soon (Unreleased)" : priceFormatted);
+
+                const checkoutBtn = dom.id("detail-checkout-btn");
+                if (checkoutBtn) {
+                    if (isComingSoon) {
+                        checkoutBtn.removeAttribute("data-checkout-product");
+                        checkoutBtn.removeAttribute("data-checkout-price");
+                        checkoutBtn.classList.remove("btn-danger");
+                        checkoutBtn.classList.add("btn-secondary", "opacity-50", "cursor-not-allowed");
+                        checkoutBtn.setAttribute("disabled", "true");
+                        checkoutBtn.textContent = "Coming Soon";
+                    } else {
+                        checkoutBtn.setAttribute("data-checkout-product", product.id);
+                        checkoutBtn.setAttribute("data-checkout-price", product.priceId);
+                        checkoutBtn.textContent = `Buy Now - ${priceFormatted}`;
+                    }
+                }
+            } catch (error) {
+                console.error("[Store Detail] Error:", error);
+                app.message("Product not found.", "/store.html", "Back to Store");
+            }
+        },
+
         gameDetail: async (id) => {
             if (!id) return app.message("Game not found.", "/games", "Back to Games");
 
             try {
-                const games = await data.games();
-                const game = games.find((item) => utils.gameMatchesId(item, id));
-                if (!game) throw new Error("Game not found");
+                const response = await fetch(CONFIG.api.products, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-                const image = utils.normalizeMedia(game.image_url, 1200);
-                const hero = utils.normalizeMedia(game.hero_image_url || game.image_url, 1800);
-                const url = `${CONFIG.siteUrl}${utils.detailHref("game-details", game.id)}`;
-                const description = utils.clampDescription(game.description);
-                const title = `${game.title} | Reflex Interactive`;
+                const dataPayload = await response.json();
+                const products = dataPayload.products || [];
+                const product = products.find(p => String(p.id) === String(id));
+
+                if (!product) throw new Error("Product not found");
+
+                const image = utils.normalizeMedia(product.image, 1200);
+                const title = `${product.name} | Reflex Interactive`;
 
                 document.title = title;
-                dom.setCanonical(url);
-                dom.setMeta('meta[name="description"]', description);
-                dom.setMeta('meta[property="og:title"]', title);
-                dom.setMeta('meta[property="og:description"]', description);
-                dom.setMeta('meta[property="og:image"]', image);
-                dom.setMeta('meta[property="og:image:secure_url"]', image);
-                dom.setMeta('meta[property="og:image:alt"]', `${game.title} official cover art`);
-                dom.setMeta('meta[property="og:url"]', url);
-                dom.setMeta('meta[name="twitter:title"]', title);
-                dom.setMeta('meta[name="twitter:description"]', description);
-                dom.setMeta('meta[name="twitter:image"]', image);
-                dom.setMeta('meta[name="twitter:image:alt"]', `${game.title} official cover art`);
-
-                const schema = dom.id("game-json-ld");
-                if (schema) {
-                    const payload = utils.parseJSON(schema.text);
-                    Object.assign(payload, {
-                        name: game.title,
-                        description,
-                        genre: game.genre,
-                        image,
-                        url,
-                        inLanguage: CONFIG.locale,
-                        publisher: {
-                            "@type": "Organization",
-                            "@id": "https://reflexinteractive.com/#organization",
-                            name: "Reflex Interactive",
-                            logo: { "@type": "ImageObject", url: CONFIG.logo },
-                            address: {
-                                "@type": "PostalAddress",
-                                streetAddress: "Bartle House, 9 Oxford Court",
-                                addressLocality: "Manchester",
-                                postalCode: "M2 3WQ",
-                                addressCountry: "GB",
-                            },
-                        },
-                        author: {
-                            "@type": "Organization",
-                            "@id": "https://reflexinteractive.com/#organization",
-                            name: "Reflex Interactive",
-                        },
-                        offers: {
-                            "@type": "Offer",
-                            price: 0,
-                            priceCurrency: CONFIG.defaultCurrency,
-                            availability: "https://schema.org/InStock",
-                        },
-                    });
-                    schema.text = JSON.stringify(payload);
-                }
-
-                const heroNode = dom.id("game-hero");
-                if (heroNode) heroNode.style.backgroundImage = `url('${hero}')`;
+                dom.setText("game-detail-title", product.name);
+                dom.setText("game-detail-developer", product.developer || "Reflex Interactive");
+                dom.setText("game-detail-publisher", product.publisher || "Reflex Interactive");
+                dom.setText("game-detail-genre", product.genre || "Action");
+                dom.setText("game-detail-description", product.description);
 
                 const cover = dom.id("game-detail-cover");
                 if (cover) {
                     cover.src = image;
-                    cover.alt = `${game.title} official cover art`;
+                    cover.alt = `${product.name} official cover art`;
                 }
 
-                dom.setText("game-detail-title", game.title);
-                dom.setText("game-detail-developer", game.developer || "Reflex Interactive");
-                dom.setText("game-detail-publisher", game.publisher || "Reflex Interactive");
-                dom.setText("game-detail-genre", game.genre || "Action");
-                dom.setText("game-detail-description", game.description);
-                dom.setText("game-detail-price", "Unavailable");
+                const heroNode = dom.id("game-hero");
+                if (heroNode) heroNode.style.backgroundImage = `url('${image}')`;
+
+                const isComingSoon = product.comingSoon;
+                const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
+                    style: "currency",
+                    currency: product.currency.toUpperCase(),
+                }).format(product.unitAmount / 100);
+
+                dom.setText("game-detail-price", isComingSoon ? "Coming Soon" : priceFormatted);
 
                 const cta = dom.id("game-access-btn");
                 if (cta) {
-                    cta.textContent = "Currently unavailable";
-                    cta.setAttribute("aria-label", "Game access is currently unavailable");
-                    cta.href = "#";
-                    cta.classList.add("opacity-50", "cursor-not-allowed");
-                    cta.setAttribute("aria-disabled", "true");
-                    cta.removeAttribute("download");
+                    if (isComingSoon) {
+                        cta.textContent = "Coming Soon";
+                        cta.classList.add("btn-secondary", "disabled", "opacity-50", "cursor-not-allowed");
+                        cta.classList.remove("btn-danger");
+                        cta.setAttribute("aria-disabled", "true");
+                    } else {
+                        cta.textContent = `Buy Now - ${priceFormatted}`;
+                        cta.classList.remove("disabled", "opacity-50", "cursor-not-allowed", "btn-secondary");
+                        cta.classList.add("btn-danger");
+                        cta.removeAttribute("aria-disabled");
+                        cta.setAttribute("data-checkout-product", product.id);
+                        cta.setAttribute("data-checkout-price", product.priceId);
+                    }
                 }
-
-                render.gameMedia(game);
             } catch (error) {
-                console.error("[Render] game detail", error);
+                console.error("[Render] game detail error:", error);
                 app.message("Failed to load game details.", "/games", "Back to Games");
             }
         },
@@ -1088,6 +1243,7 @@
             const supportCloseArticle = event.target.closest("[data-support-close-article]");
             const supportClear = event.target.closest("#support-clear-filters");
             const supportTicketArticle = event.target.closest("[data-support-article-ticket]");
+            const checkoutBtn = event.target.closest("[data-checkout-product]");
 
             if (prev || next) {
                 event.preventDefault();
@@ -1130,6 +1286,12 @@
             if (supportTicketArticle) {
                 event.preventDefault();
                 events.useArticleInTicket(supportTicketArticle.dataset.supportArticleTicket);
+                return;
+            }
+
+            if (checkoutBtn) {
+                event.preventDefault();
+                events.startCheckout(checkoutBtn.dataset.checkoutProduct, checkoutBtn.dataset.checkoutPrice, checkoutBtn);
                 return;
             }
 
@@ -1306,6 +1468,34 @@
             if (status) status.textContent = "Opening your email app with the ticket details. If nothing opens, use the direct email button below.";
             window.location.href = href;
         },
+
+        startCheckout: async (productId, priceId, button) => {
+            if (!productId || !priceId) return;
+
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = "Processing...";
+
+            try {
+                const response = await fetch(CONFIG.api.createCheckout, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Accept: "application/json" },
+                    body: JSON.stringify({ productId, priceId }),
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.url) {
+                    throw new Error(data.error || "Failed to create checkout session");
+                }
+
+                window.location.href = data.url;
+            } catch (error) {
+                console.error("[Checkout] Error:", error);
+                alert(error.message || "Unable to start checkout. Please try again.");
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        },
     };
 
     const router = {
@@ -1313,6 +1503,11 @@
             const path = window.location.pathname.replace(/\/$/, "") || "/";
             const params = new URLSearchParams(window.location.search);
             const id = params.get("id");
+
+            if (path.includes("store")) {
+                if (id) return render.storeDetail(id);
+                return render.storePage();
+            }
 
             if (path.includes("game-details") || (id && dom.id("game-hero"))) return render.gameDetail(id);
             if (path.includes("newswire-details") || (id && dom.id("article-detail"))) return render.articleDetail(id);
