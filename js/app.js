@@ -967,21 +967,39 @@
 
         storePage: async () => {
             const container = dom.id("store-products-container");
-            if (!container) return;
+            if (!container) {
+                console.error("[Store] Critical Error: #store-products-container element not found in DOM!");
+                return;
+            }
 
             utils.spinner("store-loading-spinner", true);
+            console.log("[Store] Initiating product fetch from API endpoint:", CONFIG.api.products);
 
             try {
                 const response = await fetch(CONFIG.api.products, {
                     headers: { Accept: "application/json" },
                 });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                console.log("[Store] Response received with status:", response.status, response.statusText);
+
+                if (!response.ok) {
+                    let errorDetails = "";
+                    try {
+                        errorDetails = await response.text();
+                    } catch {
+                        errorDetails = "Could not parse error body";
+                    }
+                    throw new Error(`HTTP ${response.status}: ${errorDetails}`);
+                }
 
                 const dataPayload = await response.json();
+                console.log("[Store] Raw data payload parsed successfully:", dataPayload);
+
                 const products = dataPayload.products || [];
 
                 if (!products.length) {
-                    container.innerHTML = '<div class="text-center text-muted py-5">No products available in the store right now.</div>';
+                    console.warn("[Store] API returned zero products. Check if products are active in your Stripe Dashboard with valid one-time prices.");
+                    container.innerHTML = '<div class="text-center text-muted py-5">No products available in the store right now. Please ensure your Stripe products are active with valid prices.</div>';
                     return;
                 }
 
@@ -994,11 +1012,13 @@
                 });
 
                 container.replaceChildren(fragment);
+                console.log(`[Store] Successfully rendered ${products.length} product cards into the DOM.`);
             } catch (error) {
-                console.error("[Render] store products", error);
-                container.innerHTML = '<div class="text-center text-danger py-5">Unable to load store products. Please try again later.</div>';
+                console.error("[Store] Failed to load store products:", error);
+                container.innerHTML = `<div class="text-center text-danger py-5">Unable to load store products.<br><small class="text-muted">Details: ${utils.escape(error.message)}</small></div>`;
             } finally {
                 utils.spinner("store-loading-spinner", false);
+                console.log("[Store] Loading sequence completed, spinner hidden.");
             }
         },
 
