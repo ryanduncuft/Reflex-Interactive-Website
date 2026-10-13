@@ -1216,7 +1216,7 @@
                     ? "FREE" 
                     : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
                         style: "currency",
-                        currency: product.currency.toUpperCase(),
+                        currency: (product.currency || "gbp").toUpperCase(),
                     }).format(product.unitAmount / 100);
 
                 dom.setText("game-detail-price", priceFormatted);

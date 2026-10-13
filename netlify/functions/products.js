@@ -50,13 +50,13 @@ exports.handler = async (event) => {
                 description: product.description || "",
                 image: product.images[0] || "",
                 type: product.metadata.category || product.metadata.type || "Game",
-                genre: product.metadata.genre || "", // <-- Leaves empty if not set
+                genre: product.metadata.genre || "",
                 developer: product.metadata.developer || "Reflex Interactive",
                 publisher: product.metadata.publisher || "Reflex Interactive",
                 trailerUrl: product.metadata.trailer_url || "",
-                releaseDate: product.metadata.release_date || "", // <-- Leaves empty if not set
+                releaseDate: product.metadata.release_date || "",
                 unitAmount: price.unit_amount,
-                currency: product.currency,
+                currency: price.currency || "gbp", // <-- Fixed: pull currency from price object
                 comingSoon,
                 available: product.active && price.active && !comingSoon,
                 metadata: product.metadata || {}
