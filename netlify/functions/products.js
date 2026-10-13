@@ -16,7 +16,6 @@ const getStripe = () => {
     if (!process.env.STRIPE_SECRET_KEY) {
         throw new Error("STRIPE_SECRET_KEY is not configured");
     }
-
     if (!stripeClient) stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
     return stripeClient;
 };
@@ -51,11 +50,15 @@ exports.handler = async (event) => {
                 description: product.description || "",
                 image: product.images[0] || "",
                 type: product.metadata.category || product.metadata.type || "Game",
+                genre: product.metadata.genre || "Action",
+                developer: product.metadata.developer || "Reflex Interactive",
+                publisher: product.metadata.publisher || "Reflex Interactive",
+                trailerUrl: product.metadata.trailer_url || "",
                 unitAmount: price.unit_amount,
                 currency: price.currency,
                 comingSoon,
                 available: product.active && price.active && !comingSoon,
-                metadata: product.metadata || {} 
+                metadata: product.metadata || {}
             };
         }))).filter(Boolean);
 
