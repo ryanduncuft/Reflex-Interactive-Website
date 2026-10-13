@@ -1162,6 +1162,22 @@
                 const heroNode = dom.id("game-hero");
                 if (heroNode) heroNode.style.backgroundImage = `url('${image}')`;
 
+                // Gather extra images from metadata (image_1, image_2, etc.)
+                const screenshots = [];
+                if (product.metadata) {
+                    Object.keys(product.metadata).forEach((key) => {
+                        if (/^image_\d+$/i.test(key) && product.metadata[key]) {
+                            screenshots.push(product.metadata[key]);
+                        }
+                    });
+                }
+
+                render.gameMedia({
+                    title: product.name,
+                    trailer_url: product.trailerUrl || "",
+                    screenshots: screenshots
+                });
+
                 const isComingSoon = product.comingSoon;
                 const priceFormatted = new Intl.NumberFormat(CONFIG.locale, {
                     style: "currency",
