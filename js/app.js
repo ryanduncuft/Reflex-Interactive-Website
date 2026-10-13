@@ -403,7 +403,8 @@
                         </h3>
                         <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
                         <div class="d-flex align-items-center justify-content-between mt-auto">
-                            <span class="fs-5 fw-bold text-white">${isComingSoon ? '<span class="text-muted fs-6">Unreleased</span>' : priceFormatted}</span>
+                            <!-- Always show the price here -->
+                            <span class="fs-5 fw-bold text-white">${priceFormatted}</span>
                             ${isComingSoon 
                                 ? '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>'
                                 : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">Buy Now</button>`
@@ -1097,6 +1098,7 @@
 
                 dom.setText("detail-type", product.type || "Game");
                 dom.setText("detail-title", product.name);
+                dom.setText("detail-price", priceFormatted);
                 dom.setText("detail-description", product.description);
 
                 const isComingSoon = product.comingSoon;
@@ -1148,6 +1150,7 @@
 
                 document.title = title;
                 dom.setText("game-detail-title", product.name);
+                dom.setText("game-detail-price", priceFormatted);
                 dom.setText("game-detail-developer", product.developer || "Reflex Interactive");
                 dom.setText("game-detail-publisher", product.publisher || "Reflex Interactive");
                 dom.setText("game-detail-genre", product.genre || "Action");
