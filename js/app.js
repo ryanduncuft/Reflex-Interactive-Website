@@ -1184,8 +1184,22 @@
                     }
                 }
 
-                // Fallback for release date if missing
-                dom.setText("game-detail-release-date", product.releaseDate || "To be announced");
+                // Localized formatting for release date
+                let formattedReleaseDate = "To be announced";
+                if (product.releaseDate) {
+                    const parsedDate = Date.parse(product.releaseDate);
+                    if (!Number.isNaN(parsedDate)) {
+                        formattedReleaseDate = new Intl.DateTimeFormat(navigator.language || CONFIG.locale, {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric"
+                        }).format(new Date(parsedDate));
+                    } else {
+                        formattedReleaseDate = product.releaseDate;
+                    }
+                }
+                dom.setText("game-detail-release-date", formattedReleaseDate);
+
                 dom.setText("game-detail-description", product.description);
 
                 const cover = dom.id("game-detail-cover");
