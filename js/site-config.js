@@ -21,8 +21,9 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
     },
     routes: {
         gameDetails: "/game-details",
-        games: "/store.html",
+        games: "/games.html",
         store: "/store.html",
+        shop: "/store.html",
     },
     api: {
         products: "/.netlify/functions/products",
@@ -30,6 +31,5 @@ window.REFLEX_SITE_CONFIG = Object.freeze({
     },
     ui: {
         navScrollY: 24,
-        railRatio: 0.86,
     },
 });

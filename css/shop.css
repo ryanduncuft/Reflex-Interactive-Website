@@ -1,0 +1,14 @@
+/* Merchandise and Stripe catalog presentation */
+.store-card .modern-card-img {
+    aspect-ratio: 16 / 9;
+}
+
+#store-detail-view .store-product-media,
+#store-detail-view .col-lg-6 > div {
+    aspect-ratio: 3 / 4;
+    max-height: 550px;
+    background-color: #0b0b0b;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--ri-radius);
+}

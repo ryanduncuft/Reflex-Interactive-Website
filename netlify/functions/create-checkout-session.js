@@ -41,6 +41,7 @@ exports.handler = async (event) => {
 
     const productId = typeof request.productId === "string" ? request.productId.trim() : "";
     const priceId = typeof request.priceId === "string" ? request.priceId.trim() : "";
+    const catalog = request.catalog === "shop" ? "shop" : "games";
     if (!productId || !priceId) {
         return json(400, { error: "Product and price IDs are required" });
     }
@@ -61,20 +62,33 @@ exports.handler = async (event) => {
         const product = await stripe.products.retrieve(productId);
         if (!product.active) return json(400, { error: "This item is not available" });
 
+        const productIsGame = String(product.metadata.game || "").toLowerCase() === "true";
+        const productIsApparel = [product.metadata.apparel, product.metadata.merch].some(value => String(value || "").toLowerCase() === "true");
+        const priceIsGame = String(price.metadata.game || "").toLowerCase() === "true";
+        const priceIsApparel = [price.metadata.apparel, price.metadata.merch].some(value => String(value || "").toLowerCase() === "true");
+        const isCorrectCatalog = catalog === "shop"
+            ? (productIsApparel || priceIsApparel) && !(productIsGame || priceIsGame)
+            : (productIsGame || priceIsGame) && !(productIsApparel || priceIsApparel);
+        if (!isCorrectCatalog) return json(400, { error: "This item is not available in this catalog" });
+
         const siteUrl = getSiteUrl();
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
             line_items: [{ price: price.id, quantity: 1 }],
+            ...(catalog === "shop" ? {
+                shipping_address_collection: { allowed_countries: ["GB"] },
+            } : {}),
             
-            // Digital storefront - collecting customer email for receipts/future account linking
+            // Collect customer email for receipts and future account linking.
             customer_creation: "always",
             phone_number_collection: { enabled: false },
 
-            success_url: `${siteUrl}/store.html?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${siteUrl}/store.html?checkout=cancel`,
+            success_url: `${siteUrl}/${catalog === "shop" ? "shop" : "games"}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${siteUrl}/${catalog === "shop" ? "shop" : "games"}?checkout=cancel`,
             metadata: { 
                 productId: product.id, 
-                priceId: price.id 
+                priceId: price.id,
+                catalog
             }
         });
 

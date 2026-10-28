@@ -269,6 +269,7 @@
                     <button class="rail-control rail-control-left" type="button" data-rail-prev="latest-news-container" aria-label="Previous news">&larr;</button>
                     <div id="latest-news-container" class="content-rail" aria-label="Latest news"></div>
                     <button class="rail-control rail-control-right" type="button" data-rail-next="latest-news-container" aria-label="Next news">&rarr;</button>
+                    <div class="rail-pagination" role="group" aria-label="Newswire pages" hidden></div>
                 </div>
                 
                 <div class="text-center mt-4">
@@ -296,11 +297,12 @@
                     <button class="rail-control rail-control-left" type="button" data-rail-prev="latest-games-container" aria-label="Previous games">&larr;</button>
                     <div id="latest-games-container" class="content-rail" aria-label="Latest games"></div>
                     <button class="rail-control rail-control-right" type="button" data-rail-next="latest-games-container" aria-label="Next games">&rarr;</button>
+                    <div class="rail-pagination" role="group" aria-label="Games pages" hidden></div>
                 </div>
                 
                 <div class="text-center mt-4">
-                    <a href="./store" class="btn btn-danger btn-lg px-5 py-3 fw-bold" aria-label="View all games from Reflex Interactive">
-                        View Store
+                    <a href="./games" class="btn btn-danger btn-lg px-5 py-3 fw-bold" aria-label="View all games from Reflex Interactive">
+                        View Games
                     </a>
                 </div>
             </div>
@@ -340,6 +342,9 @@
     </script>
     
     <script src="./js/site-config.js"></script>
-    <script src="./js/app.js" defer></script>
+    <script src="./js/navigation.js" defer></script>
+    <script src="./js/stripe.js" defer></script>
+    <script src="./js/settings.js" defer></script>
+    <script src="./js/core.js" defer></script>
 </body>
 </html>

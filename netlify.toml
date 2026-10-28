@@ -52,6 +52,41 @@
   force = true
 
 # === 3. Main Domain Route Rewrites ===
+# Stripe-backed, server-rendered catalogs and crawlable product detail routes.
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/shop"
+  query = { id = ":id" }
+  to = "/.netlify/functions/store-ssr?catalog=shop&id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/shop"
+  to = "/.netlify/functions/store-ssr?catalog=shop"
+  status = 200
+
+[[redirects]]
+  from = "/games"
+  query = { id = ":id" }
+  to = "/.netlify/functions/store-ssr?catalog=games&id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/games"
+  to = "/.netlify/functions/store-ssr?catalog=games"
+  status = 200
+
+[[redirects]]
+  from = "/game-details"
+  query = { id = ":id" }
+  to = "/.netlify/functions/store-ssr?catalog=games&id=:id"
+  status = 200
+
 # Rewrite /support to serve support.html directly without changing URL
 [[redirects]]
   from = "/support"
@@ -64,19 +99,13 @@
   status = 200
 
 # === 4. Clean URLs & Routing ===
+# Legacy store URLs now resolve to the merchandise-only catalog.
+[[redirects]]
+  from = "/store"
+  to = "/shop"
+  status = 301
+
 # Query parameter routing for individual games and news posts
-[[redirects]]
-  from = "/games"
-  query = {id = ":id"}
-  to = "/game-details.html"
-  status = 200
-
-[[redirects]]
-  from = "/game-details"
-  query = {id = ":id"}
-  to = "/game-details.html"
-  status = 200
-
 [[redirects]]
   from = "/newswire"
   query = {id = ":id"}
@@ -90,11 +119,6 @@
   status = 200
 
 # Clean HTML extension masking for root pages
-[[redirects]]
-  from = "/games"
-  to = "/games.html"
-  status = 200
-
 [[redirects]]
   from = "/game-details"
   to = "/game-details.html"

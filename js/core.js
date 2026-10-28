@@ -21,7 +21,6 @@
         defaultCurrency: SITE_CONFIG.defaultCurrency || "GBP",
         launcherRuntime: SITE_CONFIG.launcherRuntime || "win-x64",
         navScrollY: SITE_CONFIG.ui?.navScrollY || 24,
-        railRatio: SITE_CONFIG.ui?.railRatio || 0.86,
         subdomains: {
             support: SITE_CONFIG.urls?.support || "https://support.reflexinteractive.com/",
             careers: SITE_CONFIG.urls?.careers || "https://careers.reflexinteractive.com/",
@@ -288,7 +287,7 @@
         // Fetch games directly from Stripe product endpoint instead of Gists
         games: async () => {
             try {
-                const response = await fetch(CONFIG.api.products, { headers: { Accept: "application/json" } });
+                const response = await fetch(`${CONFIG.api.products}?catalog=games`, { headers: { Accept: "application/json" } });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const payload = await response.json();
                 let products = payload.products || [];
@@ -366,13 +365,6 @@
             </article>
         `,
 
-        navGame: (game) => `
-            <a class="navbar-game-tile" href="${utils.detailHref("game-details", game.id)}">
-                <img src="${utils.normalizeMedia(game.image_url, 480)}" alt="${utils.escape(game.title)}" width="480" height="270" loading="eager" decoding="async">
-                <span>${utils.escape(game.title)}</span>
-            </a>
-        `,
-
         supportGame: (game) => `
             <button type="button" class="card modern-card h-100 text-decoration-none support-game-card" data-support-game="${utils.escape(game.id)}" data-support-game-title="${utils.escape(game.title)}">
                 <img src="${utils.normalizeMedia(game.image_url, 700)}" alt="${utils.escape(game.title)} support category" width="700" height="394" class="modern-game-card-img support-tile-img" loading="eager" decoding="async">
@@ -400,8 +392,9 @@
         `,
 
         storeCard: (product) => {
-            const priceFormatted = product.unitAmount === 0 
-                ? "FREE" 
+            const isGameCatalog = document.body.dataset.catalog === "games";
+            const priceFormatted = product.unitAmount === 0
+                ? "FREE"
                 : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
                     style: "currency",
                     currency: product.currency.toUpperCase(),
@@ -412,21 +405,21 @@
 
             return `
                 <article class="card modern-card store-card h-100">
-                    <a href="/game-details.html?id=${encodeURIComponent(product.id)}" class="text-decoration-none position-relative">
+                    <div class="position-relative">
                         ${isComingSoon ? '<span class="position-absolute top-0 start-0 m-3 badge bg-danger text-uppercase fw-bold shadow">Coming Soon</span>' : ''}
                         <img src="${imageUrl}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
-                    </a>
+                    </div>
                     <div class="card-body d-flex flex-column">
                         <span class="badge bg-secondary mb-2 align-self-start">${utils.escape(product.type)}</span>
                         <h3 class="modern-card-title">
-                            <a href="/game-details.html?id=${encodeURIComponent(product.id)}" class="text-white text-decoration-none">${utils.escape(product.name)}</a>
+                            ${document.body.dataset.catalog === "games" ? `<a href="/game-details?id=${encodeURIComponent(product.id)}" class="text-white text-decoration-none">${utils.escape(product.name)}</a>` : utils.escape(product.name)}
                         </h3>
                         <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
                         <div class="d-flex align-items-center justify-content-between mt-auto">
                             <span class="fs-5 fw-bold text-white">${priceFormatted}</span>
-                            ${isComingSoon 
+                            ${isComingSoon
                                 ? '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>'
-                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}">${product.unitAmount === 0 ? "Get Free" : "Buy Now"}</button>`
+                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}" data-checkout-catalog="${document.body.dataset.catalog || "games"}">${product.unitAmount === 0 ? "Get Free" : isGameCatalog ? "Buy Game" : "Buy Merch"}</button>`
                             }
                         </div>
                     </div>
@@ -435,116 +428,9 @@
         },
     };
 
+    const railControllers = new WeakMap();
+
     const ui = {
-        initNav: () => {
-            const nav = dom.qs(".navbar-custom");
-            if (!nav) return;
-
-            ui.initEnvironmentLinks();
-
-            const desktop = window.matchMedia("(min-width: 768px)");
-            const update = () => {
-                const scrolled = desktop.matches && window.scrollY > CONFIG.navScrollY;
-                nav.classList.toggle("scrolled", scrolled);
-                document.body.classList.toggle("nav-collapsed", scrolled);
-
-                if (scrolled) {
-                    dom.id("nav-games-menu")?.classList.remove("is-open");
-                    dom.id("nav-games-toggle")?.setAttribute("aria-expanded", "false");
-                }
-            };
-            update();
-            window.addEventListener("scroll", utils.throttle(update, 40), { passive: true });
-            desktop.addEventListener("change", update);
-
-            const current = window.location.pathname.replace(/\.html$/, "").replace(/\/$/, "") || "/";
-            dom.qsa(".nav-link[href]").forEach((link) => {
-                const href = new URL(link.getAttribute("href"), window.location.origin).pathname.replace(/\/$/, "") || "/";
-                link.classList.toggle("active", href === current);
-            });
-
-            ui.initMegaMenu();
-        },
-
-        initEnvironmentLinks: () => {
-            const local = utils.isLocal();
-            const host = window.location.hostname;
-            const appSubdomain = utils.isReflexHost() && host !== "reflexinteractive.com" && host !== "www.reflexinteractive.com";
-
-            dom.qsa("a[href]").forEach((link) => {
-                const subdomain = link.dataset.subdomain;
-                const rawHref = link.getAttribute("href");
-                if (!rawHref || rawHref === "#" || rawHref.startsWith("mailto:") || rawHref.startsWith("tel:")) return;
-
-                if (subdomain && CONFIG.subdomains[subdomain]) {
-                    link.href = local ? `/${subdomain}.html` : CONFIG.subdomains[subdomain];
-                    return;
-                }
-
-                if (!local && appSubdomain && rawHref.startsWith("/")) {
-                    link.href = `${CONFIG.siteUrl}${rawHref}`;
-                    return;
-                }
-
-                if (!local) return;
-
-                const url = new URL(rawHref, window.location.href);
-                if (url.origin !== window.location.origin) return;
-                const localPath = CONFIG.localRoutes[url.pathname];
-                if (localPath) link.href = `${localPath}${url.search}${url.hash}`;
-            });
-        },
-
-        initMegaMenu: () => {
-            const trigger = dom.id("nav-games-toggle");
-            const menu = dom.id("nav-games-menu");
-            if (!trigger || !menu) return;
-
-            let closeTimer = 0;
-            const setOpen = (open) => {
-                window.clearTimeout(closeTimer);
-                menu.classList.toggle("is-open", open);
-                trigger.setAttribute("aria-expanded", String(open));
-            };
-            const queueClose = () => {
-                closeTimer = window.setTimeout(() => setOpen(false), 140);
-            };
-
-            trigger.addEventListener("click", () => setOpen(!menu.classList.contains("is-open")));
-            trigger.addEventListener("mouseenter", () => setOpen(true));
-            trigger.addEventListener("focus", () => setOpen(true));
-            trigger.addEventListener("mouseleave", queueClose);
-            menu.addEventListener("mouseenter", () => setOpen(true));
-            menu.addEventListener("mouseleave", queueClose);
-            document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape") setOpen(false);
-            });
-            document.addEventListener("click", (event) => {
-                if (!menu.contains(event.target) && !trigger.contains(event.target)) setOpen(false);
-            });
-        },
-
-        initMobileMenu: () => {
-            const triggers = dom.qsa("[data-menu-trigger]");
-            const overlay = dom.id("mobile-menu-overlay");
-            const close = dom.id("mobile-menu-close");
-            if (!triggers.length || !overlay) return;
-
-            const setOpen = (open) => {
-                overlay.classList.toggle("active", open);
-                overlay.setAttribute("aria-hidden", String(!open));
-                triggers.forEach((trigger) => trigger.setAttribute("aria-expanded", String(open)));
-                document.body.style.overflow = open ? "hidden" : "";
-            };
-
-            triggers.forEach((trigger) => trigger.addEventListener("click", () => setOpen(true)));
-            close?.addEventListener("click", () => setOpen(false));
-            dom.qsa("a", overlay).forEach((link) => link.addEventListener("click", () => setOpen(false)));
-            document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape") setOpen(false);
-            });
-        },
-
         initDownloadButtons: async () => {
             const buttons = dom.qsa(".launcher-download-btn");
             if (!buttons.length) return;
@@ -629,17 +515,138 @@
             }
         },
 
+        initRail: (rail) => {
+            if (!rail) return null;
+            const existing = railControllers.get(rail);
+            if (existing) {
+                existing.refresh();
+                return existing;
+            }
+
+            const shell = rail.closest(".rail-shell");
+            if (!shell) return null;
+            const label = rail.getAttribute("aria-label") || "Carousel";
+            rail.setAttribute("role", "region");
+            rail.setAttribute("aria-roledescription", "carousel");
+
+            let pages = [0];
+            let dots = [];
+            let updateFrame = 0;
+            let observer = null;
+            let requestedPage = null;
+            let settleTimer = 0;
+            const reducedMotion = () => document.documentElement.dataset.motion === "reduced"
+                || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+            const currentPage = () => pages.reduce((best, offset, index) =>
+                Math.abs(offset - rail.scrollLeft) < Math.abs(pages[best] - rail.scrollLeft) ? index : best, 0);
+
+            const update = () => {
+                updateFrame = 0;
+                const maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+                const page = currentPage();
+                shell.querySelectorAll("[data-rail-prev]").forEach((button) => {
+                    const disabled = maxScroll <= 1 || rail.scrollLeft <= 1;
+                    button.disabled = disabled;
+                    button.setAttribute("aria-disabled", String(disabled));
+                });
+                shell.querySelectorAll("[data-rail-next]").forEach((button) => {
+                    const disabled = maxScroll <= 1 || rail.scrollLeft >= maxScroll - 1;
+                    button.disabled = disabled;
+                    button.setAttribute("aria-disabled", String(disabled));
+                });
+                dots.forEach((dot, index) => {
+                    const active = index === page;
+                    dot.classList.toggle("is-active", active);
+                    if (active) dot.setAttribute("aria-current", "true");
+                    else dot.removeAttribute("aria-current");
+                });
+            };
+
+            const scheduleUpdate = () => {
+                if (!updateFrame) updateFrame = requestAnimationFrame(update);
+                window.clearTimeout(settleTimer);
+                settleTimer = window.setTimeout(() => { requestedPage = null; }, 450);
+            };
+
+            const goToPage = (index) => {
+                requestedPage = Math.max(0, Math.min(index, pages.length - 1));
+                const target = pages[requestedPage] || 0;
+                rail.scrollTo({ left: target, behavior: reducedMotion() ? "auto" : "smooth" });
+            };
+
+            const refresh = () => {
+                const items = Array.from(rail.children).filter((item) => item.classList.contains("rail-item"));
+                const railRect = rail.getBoundingClientRect();
+                const offsets = items.map((item) => Math.max(0, item.getBoundingClientRect().left - railRect.left - rail.clientLeft + rail.scrollLeft));
+                items.forEach((item, index) => {
+                    item.setAttribute("role", "group");
+                    item.setAttribute("aria-roledescription", "slide");
+                    item.setAttribute("aria-label", `${index + 1} of ${items.length}`);
+                });
+
+                const maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+                pages = [0];
+                requestedPage = null;
+                const pageStep = Math.max(1, rail.clientWidth - (items[0]?.getBoundingClientRect().width || 0) * 0.12);
+                let pageOffset = 0;
+                while (pageOffset < maxScroll - 1 && pages.length <= items.length) {
+                    const threshold = pageOffset + pageStep;
+                    let next = offsets.find((offset) => offset > pageOffset + 2 && offset >= threshold - 2);
+                    if (next === undefined || next >= maxScroll - 1) next = maxScroll;
+                    if (next <= pageOffset + 1) next = maxScroll;
+                    if (next <= pageOffset + 1) break;
+                    pages.push(next);
+                    pageOffset = next;
+                }
+
+                let pagination = shell.querySelector(".rail-pagination");
+                if (!pagination) {
+                    pagination = document.createElement("div");
+                    pagination.className = "rail-pagination";
+                    pagination.setAttribute("role", "group");
+                    pagination.setAttribute("aria-label", `${label} pages`);
+                    shell.appendChild(pagination);
+                }
+                pagination.replaceChildren();
+                dots = pages.length > 1 ? pages.map((_, index) => {
+                    const dot = document.createElement("button");
+                    dot.type = "button";
+                    dot.className = "rail-dot";
+                    dot.setAttribute("aria-label", `Go to ${label.toLowerCase()} page ${index + 1}`);
+                    dot.addEventListener("click", () => goToPage(index));
+                    pagination.appendChild(dot);
+                    return dot;
+                }) : [];
+                pagination.hidden = dots.length < 2;
+                rail.scrollLeft = Math.min(rail.scrollLeft, maxScroll);
+                scheduleUpdate();
+            };
+
+            const controller = {
+                refresh,
+                move: (direction) => goToPage((requestedPage ?? currentPage()) + direction),
+                observer: null,
+            };
+            railControllers.set(rail, controller);
+            rail.addEventListener("scroll", scheduleUpdate, { passive: true });
+            rail.addEventListener("scrollend", () => { requestedPage = null; }, { passive: true });
+            if ("ResizeObserver" in window) {
+                observer = new window.ResizeObserver(refresh);
+                observer.observe(rail);
+                if (rail.firstElementChild) observer.observe(rail.firstElementChild);
+                controller.observer = observer;
+            } else {
+                window.addEventListener("resize", refresh, { passive: true });
+            }
+            refresh();
+            return controller;
+        },
+
         scrollRail: (id, direction) => {
             const rail = dom.id(id);
-            if (!rail) return;
-
-            const firstItem = rail.querySelector(".rail-item, .navbar-game-tile");
-            const styles = window.getComputedStyle(rail);
-            const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
-            const itemWidth = firstItem?.getBoundingClientRect().width || 0;
-            const distance = itemWidth ? itemWidth + gap : Math.max(rail.clientWidth * CONFIG.railRatio, 280);
-
-            rail.scrollBy({ left: direction * distance, behavior: "smooth" });
+            const controller = rail && (railControllers.get(rail) || ui.initRail(rail));
+            controller?.move(direction);
         },
 
         initBackToTop: () => {
@@ -684,6 +691,7 @@
                 container.innerHTML = `<div class="text-center text-danger py-5">${utils.escape(empty)}</div>`;
             } finally {
                 utils.spinner(spinnerId, false);
+                if (container.classList.contains("content-rail")) ui.initRail(container);
             }
         },
 
@@ -748,19 +756,6 @@
                 schema.text = JSON.stringify(payload);
             } catch (error) {
                 console.warn("[Schema] news", error);
-            }
-        },
-
-        navGames: async () => {
-            const rail = dom.id("navbar-games-rail");
-            if (!rail) return;
-
-            try {
-                const games = await data.games();
-                rail.innerHTML = games.slice(0, 8).map(templates.navGame).join("");
-            } catch (error) {
-                console.error("[Render] nav games", error);
-                rail.innerHTML = '<p class="text-danger mb-0">Games unavailable.</p>';
             }
         },
 
@@ -1036,14 +1031,13 @@
             }
 
             utils.spinner("store-loading-spinner", true);
-            console.log("[Store] Initiating product fetch from API endpoint:", CONFIG.api.products);
 
             try {
-                const response = await fetch(CONFIG.api.products, {
+                const catalog = document.body.dataset.catalog === "shop" ? "shop" : "games";
+                const response = await fetch(`${CONFIG.api.products}?catalog=${catalog}`, {
                     headers: { Accept: "application/json" },
                 });
-                
-                console.log("[Store] Response received with status:", response.status, response.statusText);
+
 
                 if (!response.ok) {
                     let errorDetails = "";
@@ -1056,12 +1050,10 @@
                 }
 
                 const dataPayload = await response.json();
-                console.log("[Store] Raw data payload parsed successfully:", dataPayload);
 
                 const products = dataPayload.products || [];
 
                 if (!products.length) {
-                    console.warn("[Store] API returned zero products. Check if products are active in your Stripe Dashboard with valid one-time prices.");
                     container.innerHTML = '<div class="text-center text-muted py-5">No products available in the store right now. Please ensure your Stripe products are active with valid prices.</div>';
                     return;
                 }
@@ -1075,13 +1067,11 @@
                 });
 
                 container.replaceChildren(fragment);
-                console.log(`[Store] Successfully rendered ${products.length} product cards into the DOM.`);
             } catch (error) {
                 console.error("[Store] Failed to load store products:", error);
                 container.innerHTML = `<div class="text-center text-danger py-5">Unable to load store products.<br><small class="text-muted">Details: ${utils.escape(error.message)}</small></div>`;
             } finally {
                 utils.spinner("store-loading-spinner", false);
-                console.log("[Store] Loading sequence completed, spinner hidden.");
             }
         },
 
@@ -1091,7 +1081,7 @@
             if (!gridView || !detailView) return;
 
             try {
-                const response = await fetch(CONFIG.api.products, {
+                const response = await fetch(`${CONFIG.api.products}?catalog=shop`, {
                     headers: { Accept: "application/json" },
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1108,7 +1098,7 @@
                 detailView.classList.remove("d-none");
 
                 const imageUrl = product.image ? utils.normalizeMedia(product.image, 1200) : "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
-                
+
                 const imgNode = dom.id("detail-image");
                 if (imgNode) {
                     imgNode.src = imageUrl;
@@ -1119,8 +1109,8 @@
                 dom.setText("detail-title", product.name);
                 dom.setText("detail-description", product.description);
 
-                const priceFormatted = product.unitAmount === 0 
-                    ? "FREE" 
+                const priceFormatted = product.unitAmount === 0
+                    ? "FREE"
                     : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
                         style: "currency",
                         currency: product.currency.toUpperCase(),
@@ -1141,20 +1131,21 @@
                     } else {
                         checkoutBtn.setAttribute("data-checkout-product", product.id);
                         checkoutBtn.setAttribute("data-checkout-price", product.priceId);
+                        checkoutBtn.setAttribute("data-checkout-catalog", "shop");
                         checkoutBtn.textContent = product.unitAmount === 0 ? "Get Free" : `Buy Now - ${priceFormatted}`;
                     }
                 }
             } catch (error) {
                 console.error("[Store Detail] Error:", error);
-                app.message("Product not found.", "/store.html", "Back to Store");
+                app.message("Product not found.", "/shop", "Back to Shop");
             }
         },
 
         gameDetail: async (id) => {
-            if (!id) return app.message("Game not found.", "/store", "Back to Store");
+            if (!id) return app.message("Game not found.", "/games", "Back to Games");
 
             try {
-                const response = await fetch(CONFIG.api.products, {
+                const response = await fetch(`${CONFIG.api.products}?catalog=games`, {
                     headers: { Accept: "application/json" },
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1190,7 +1181,7 @@
                 dom.setText("game-detail-title", product.name);
                 dom.setText("game-detail-developer", product.developer || "Reflex Interactive");
                 dom.setText("game-detail-publisher", product.publisher || "Reflex Interactive");
-                
+
                 // Conditionally show/hide genre
                 const genreContainer = dom.id("genre-container");
                 if (genreContainer) {
@@ -1244,8 +1235,8 @@
                     screenshots: screenshots
                 });
 
-                const priceFormatted = product.unitAmount === 0 
-                    ? "FREE" 
+                const priceFormatted = product.unitAmount === 0
+                    ? "FREE"
                     : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
                         style: "currency",
                         currency: (product.currency || "gbp").toUpperCase(),
@@ -1272,7 +1263,7 @@
                 }
             } catch (error) {
                 console.error("[Render] game detail error:", error);
-                app.message("Failed to load game details.", "/store", "Back to Store");
+                app.message("Failed to load game details.", "/games", "Back to Games");
             }
         },
 
@@ -1375,7 +1366,7 @@
 
             if (checkoutBtn) {
                 event.preventDefault();
-                events.startCheckout(checkoutBtn.dataset.checkoutProduct, checkoutBtn.dataset.checkoutPrice, checkoutBtn);
+                events.startCheckout(checkoutBtn.dataset.checkoutProduct, checkoutBtn.dataset.checkoutPrice, checkoutBtn.dataset.checkoutCatalog, checkoutBtn);
                 return;
             }
 
@@ -1553,40 +1544,20 @@
             window.location.href = href;
         },
 
-        startCheckout: async (productId, priceId, button) => {
-            if (!productId || !priceId) return;
-
-            const originalText = button.textContent;
-            button.disabled = true;
-            button.textContent = "Processing...";
-
-            try {
-                const response = await fetch(CONFIG.api.createCheckout, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", Accept: "application/json" },
-                    body: JSON.stringify({ productId, priceId }),
-                });
-
-                const data = await response.json();
-                if (!response.ok || !data.url) {
-                    throw new Error(data.error || "Failed to create checkout session");
-                }
-
-                window.location.href = data.url;
-            } catch (error) {
-                console.error("[Checkout] Error:", error);
-                alert(error.message || "Unable to start checkout. Please try again.");
-                button.disabled = false;
-                button.textContent = originalText;
-            }
-        },
+        startCheckout: (productId, priceId, catalog, button) => window.ReflexStripe?.startCheckout(CONFIG.api.createCheckout, productId, priceId, catalog, button),
     };
 
     const router = {
         run: () => {
+            if (document.body.dataset.ssrCatalog === "true") return;
             const path = window.location.pathname.replace(/\/$/, "") || "/";
             const params = new URLSearchParams(window.location.search);
             const id = params.get("id");
+
+            if (path.includes("games")) {
+                if (id) return render.gameDetail(id);
+                return render.storePage();
+            }
 
             if (path.includes("store")) {
                 if (id) return render.storeDetail(id);
@@ -1595,7 +1566,6 @@
 
             if (path.includes("game-details") || (id && dom.id("game-hero"))) return render.gameDetail(id);
             if (path.includes("newswire-details") || (id && dom.id("article-detail"))) return render.articleDetail(id);
-            if (path.includes("games")) return render.gameList("full-games-container");
             if (path.includes("newswire")) return render.newsList("news-container");
             if (state.supportHost || path.includes("support")) return render.supportPage();
 
@@ -1611,14 +1581,13 @@
         init: async () => {
             await Promise.all([
                 data.component("navbar", "/components/navbar.html", () => {
-                    ui.initNav();
-                    ui.initMobileMenu();
+                    window.ReflexNavigation?.init(CONFIG);
                     ui.initDownloadButtons();
-                    render.navGames();
                 }),
                 data.component("footer", "/components/footer.html"),
             ]);
-            ui.initEnvironmentLinks();
+            window.ReflexNavigation?.initLinks(CONFIG);
+            window.ReflexSettings?.init();
             document.dispatchEvent(new CustomEvent("reflex:components-ready"));
             ui.initBackToTop();
             events.init();

@@ -6,14 +6,13 @@
                 <span class="text-white">Reflex</span><span class="text-danger">Interactive</span>
             </a>
 
-            <div class="nav-primary-links d-none d-md-flex align-items-center mx-auto">
+            <div class="nav-primary-links d-none d-md-flex align-items-center ms-auto me-3">
                 <ul class="navbar-nav d-flex flex-row gap-1">
                     <li class="nav-item">
-                        <button id="nav-games-toggle" class="nav-games-toggle" type="button" aria-expanded="false" aria-controls="nav-games-menu">
-                            Store
-                        </button>
+                        <a class="nav-link" href="/games">Games</a>
                     </li>
                     <li class="nav-item"><a class="nav-link" href="/newswire">Newswire</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/shop">Shop</a></li>
                     <li class="nav-item">
                         <a class="nav-link d-inline-flex align-items-center gap-1" href="/support" target="_blank" rel="noopener noreferrer">
                             Support
@@ -27,11 +26,10 @@
                 </ul>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-                <!-- <a href="#" class="btn btn-primary btn-launcher d-none d-md-inline-flex launcher-download-btn">
-                    Launcher
-                </a> -->
-
+            <div class="navbar-actions d-flex align-items-center gap-2">
+                <button class="settings-trigger settings-trigger--desktop d-none d-md-inline-flex" type="button" data-settings-open aria-label="Open settings" title="Settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 13.5 1.1.9-1.1 1.9-1.4-.5a7.8 7.8 0 0 1-1.5.9l-.2 1.5h-2.2l-.4-1.5a7.8 7.8 0 0 1-1.5-.9l-1.4.5-1.1-1.9 1.1-.9a7 7 0 0 1 0-1.8l-1.1-.9 1.1-1.9 1.4.5a7.8 7.8 0 0 1 1.5-.9l.4-1.5h2.2l.2 1.5a7.8 7.8 0 0 1 1.5.9l1.4-.5 1.1 1.9-1.1.9a7 7 0 0 1 0 1.8Z"/></svg>
+                </button>
                 <button class="menu-trigger" id="mobile-menu-trigger" data-menu-trigger type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu-overlay">
                     <span class="menu-lines" aria-hidden="true"></span>
                 </button>
@@ -41,30 +39,17 @@
 
     <div class="compact-site-controls" aria-label="Compact navigation">
         <a class="compact-site-logo" href="/" aria-label="Reflex Interactive home">
-            <img src="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto,w_96/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png" alt="">
+            <img src="https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto,w_96/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png" alt="Reflex Interactive logo">
         </a>
         <button class="menu-trigger compact-menu-trigger" data-menu-trigger type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu-overlay">
             <span class="menu-lines" aria-hidden="true"></span>
         </button>
     </div>
-
-    <div id="nav-games-menu" class="nav-mega" aria-label="Featured games">
-        <div class="container nav-mega-inner">
-            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-                <a href="/store" class="footer-link text-danger">View all games</a>
-                <div class="d-flex gap-2">
-                    <button class="rail-control" type="button" data-rail-prev="navbar-games-rail" aria-label="Previous games">&lt;</button>
-                    <button class="rail-control" type="button" data-rail-next="navbar-games-rail" aria-label="Next games">&gt;</button>
-                </div>
-            </div>
-            <div id="navbar-games-rail" class="content-rail navbar-game-rail" aria-live="polite"></div>
-        </div>
-    </div>
-
     <div id="mobile-menu-overlay" aria-hidden="true">
         <button id="mobile-menu-close" type="button" aria-label="Close menu">&times;</button>
-        <a class="mobile-nav-link" href="/store">Store</a>
+        <a class="mobile-nav-link" href="/games">Games</a>
         <a class="mobile-nav-link" href="/newswire">Newswire</a>
+        <a class="mobile-nav-link" href="/shop">Shop</a>
         <a class="mobile-nav-link d-inline-flex align-items-center gap-1" href="/support" target="_blank" rel="noopener noreferrer">
             Support
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -73,5 +58,6 @@
                 <line x1="10" y1="14" x2="21" y2="3"></line>
             </svg>
         </a>
+        <button class="mobile-nav-link mobile-settings-trigger" type="button" data-settings-open data-menu-close>Settings</button>
     </div>
 </header>

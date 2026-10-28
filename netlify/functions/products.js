@@ -1,6 +1,7 @@
 "use strict";
 
 const Stripe = require("stripe");
+const isTrue = value => String(value || "").toLowerCase() === "true";
 
 const json = (statusCode, body) => ({
     statusCode,
@@ -29,6 +30,7 @@ exports.handler = async (event) => {
         const stripe = getStripe();
         const productList = await stripe.products.list({ active: true, limit: 100 });
 
+        const catalog = event.queryStringParameters?.catalog || "";
         const products = (await Promise.all(productList.data.map(async product => {
             const prices = await stripe.prices.list({
                 product: product.id,
@@ -40,6 +42,12 @@ exports.handler = async (event) => {
             const price = prices.data.find(item => Number.isInteger(item.unit_amount));
             if (!price) return null;
 
+            const isGame = isTrue(product.metadata.game) || isTrue(price.metadata.game);
+            const isApparel = isTrue(product.metadata.apparel) || isTrue(product.metadata.merch)
+                || isTrue(price.metadata.apparel) || isTrue(price.metadata.merch);
+            if (catalog === "games" && (!isGame || isApparel)) return null;
+            if (catalog === "shop" && (!isApparel || isGame)) return null;
+
             const metadataComingSoon = String(product.metadata.coming_soon || product.metadata.status || "").toLowerCase();
             const comingSoon = metadataComingSoon === "true" || metadataComingSoon === "coming_soon";
 
@@ -49,7 +57,7 @@ exports.handler = async (event) => {
                 name: product.name,
                 description: product.description || "",
                 image: product.images[0] || "",
-                type: product.metadata.category || product.metadata.type || "Game",
+                type: product.metadata.category || product.metadata.type || (isGame ? "Game" : "Apparel"),
                 genre: product.metadata.genre || "",
                 developer: product.metadata.developer || "Reflex Interactive",
                 publisher: product.metadata.publisher || "Reflex Interactive",
@@ -59,7 +67,9 @@ exports.handler = async (event) => {
                 currency: price.currency || "gbp", // <-- Fixed: pull currency from price object
                 comingSoon,
                 available: product.active && price.active && !comingSoon,
-                metadata: product.metadata || {}
+                metadata: product.metadata || {},
+                priceMetadata: price.metadata || {},
+                catalog: isGame ? "games" : isApparel ? "shop" : ""
             };
         }))).filter(Boolean);
 
