@@ -35,10 +35,47 @@
         });
     };
 
+    const initLauncher = () => {
+        const button = document.querySelector("[data-launcher-open]");
+        const dialog = document.getElementById("launcher-dialog");
+        if (!button || !dialog) return;
+
+        const desktopWidth = window.matchMedia("(min-width: 992px)");
+        let updateFrame = 0;
+        const update = async () => {
+            const supported = await window.ReflexDevice?.isWindowsX64?.() || false;
+            button.hidden = !(supported && desktopWidth.matches);
+            const list = document.querySelector(".nav-primary-links .navbar-nav");
+            const wrapper = document.querySelector(".nav-primary-links");
+            if (list && wrapper) wrapper.style.setProperty("--nav-links-half-width", `${list.getBoundingClientRect().width / 2}px`);
+        };
+        const scheduleUpdate = () => {
+            if (updateFrame) return;
+            updateFrame = window.requestAnimationFrame(() => {
+                updateFrame = 0;
+                update();
+            });
+        };
+        update();
+        window.addEventListener("resize", scheduleUpdate, { passive: true });
+        desktopWidth.addEventListener("change", scheduleUpdate);
+        if ("ResizeObserver" in window) {
+            const list = document.querySelector(".nav-primary-links .navbar-nav");
+            if (list) new ResizeObserver(scheduleUpdate).observe(list);
+        }
+
+        button.addEventListener("click", () => dialog.showModal());
+        dialog.querySelector("[data-launcher-close]")?.addEventListener("click", () => dialog.close());
+        dialog.addEventListener("click", event => {
+            if (event.target === dialog) dialog.close();
+        });
+    };
+
     const init = (config) => {
         const nav = document.querySelector(".navbar-custom");
         if (!nav) return;
         initLinks(config);
+        initLauncher();
 
         const desktop = window.matchMedia("(min-width: 768px)");
         const update = () => {

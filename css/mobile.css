@@ -86,7 +86,7 @@
 }
 
 .mobile-settings-trigger {
-    display: block;
+    display: none;
     border-top: 0;
     border-right: 0;
     border-left: 0;
@@ -146,6 +146,14 @@
 
 /* Extracted from base.css */
 @media (max-width: 767.98px) {
+    .mobile-settings-trigger {
+        display: block !important;
+    }
+
+    .launcher-nav-button {
+        display: none !important;
+    }
+
     :root {
         --ri-nav-h: 64px;
     }

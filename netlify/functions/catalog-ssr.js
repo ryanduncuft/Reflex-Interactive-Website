@@ -41,6 +41,12 @@ const getPrice = async (stripe, productId) => {
     return result.data.find(price => Number.isInteger(price.unit_amount)) || null;
 };
 
+const belongsToCatalog = (product, catalog) => {
+    const game = truthyTag(product, "game");
+    const apparel = truthyTag(product, "apparel") || truthyTag(product, "merch");
+    return catalog === "games" ? game && !apparel : apparel && !game;
+};
+
 const normalizeProduct = (product, price) => {
     const game = truthyTag(product, "game");
     const apparel = truthyTag(product, "apparel") || truthyTag(product, "merch");
@@ -73,14 +79,16 @@ const normalizeProduct = (product, price) => {
 
 const listCatalog = async (stripe, catalog) => {
     const stripeProducts = [];
-    for await (const product of stripe.products.list({ active: true, limit: 100 })) stripeProducts.push(product);
+    for await (const product of stripe.products.list({ active: true, limit: 100 })) {
+        if (belongsToCatalog(product, catalog)) stripeProducts.push(product);
+    }
 
     const products = [];
     const batchSize = 8;
     for (let index = 0; index < stripeProducts.length; index += batchSize) {
         const batch = stripeProducts.slice(index, index + batchSize);
         const normalized = await Promise.all(batch.map(async product => normalizeProduct(product, await getPrice(stripe, product.id))));
-        products.push(...normalized.filter(item => item && (catalog === "games" ? item.game : item.apparel)));
+        products.push(...normalized.filter(Boolean));
     }
     return products;
 };
@@ -125,7 +133,7 @@ const productSchema = (product, catalog, url) => {
             ...common,
             "@type": "SoftwareApplication",
             applicationCategory: "GameApplication",
-            operatingSystem: product.metadata.operating_system || "Windows",
+            operatingSystem: "Windows 10/11 (64-bit)",
             publisher: { "@type": "Organization", name: product.metadata.publisher || "Reflex Interactive" },
             ...(product.metadata.genre ? { genre: product.metadata.genre } : {}),
         };
@@ -164,7 +172,7 @@ const pageShell = ({ title, description, image, canonical, catalog, body, schema
     <link rel="stylesheet" href="/css/styles.css">
     <script type="application/ld+json">${safeJson(schema)}</script>
 </head>
-<body class="bg-black text-white overflow-x-hidden" data-catalog="${catalog}" data-ssr-catalog="true">
+<body class="bg-black text-white overflow-x-hidden" data-catalog="${catalog}" data-ssr-catalog="true" data-ssr-page="true">
     <div id="navbar"></div>
     <main id="main-content" class="container pt-4 pt-md-5 flex-grow-1 w-100">${body}</main>
     <div id="footer"></div>
@@ -180,7 +188,7 @@ const listingPage = (catalog, products) => {
     const isGames = catalog === "games";
     const pageTitle = isGames ? "Games | Reflex Interactive" : "Shop | Reflex Interactive";
     const description = isGames
-        ? "Explore and buy Reflex Interactive games, with release information, pricing, and availability."
+        ? "Explore and buy Reflex Interactive PC games for Windows 10/11 64-bit, with release information, pricing, and availability."
         : "Shop official Reflex Interactive apparel and physical merchandise, with current prices and availability.";
     const canonical = `${SITE_URL}/${isGames ? "games" : "shop"}`;
     const cards = products.map(product => {
@@ -190,6 +198,7 @@ const listingPage = (catalog, products) => {
                 <div class="card-body d-flex flex-column">
                     <span class="badge bg-secondary mb-2 align-self-start">${escapeHtml(product.metadata.category || (isGames ? "Game" : "Apparel"))}</span>
                     <h2 class="modern-card-title h4">${escapeHtml(product.name)}</h2>
+                    ${isGames ? '<p class="small text-muted mb-1">PC · Windows 10/11 · 64-bit</p>' : ""}
                     ${product.metadata.genre ? `<p class="small text-muted mb-1">${escapeHtml(product.metadata.genre)}</p>` : ""}
                     ${product.metadata.release_date ? `<p class="small text-muted mb-2">Release: ${escapeHtml(product.metadata.release_date)}</p>` : ""}
                     <p class="text-muted small mb-3">${escapeHtml(product.description)}</p>
@@ -246,9 +255,10 @@ const detailPage = (catalog, product) => {
                     <dt class="col-sm-4 text-muted">Publisher</dt><dd class="col-sm-8">${escapeHtml(product.metadata.publisher || "Reflex Interactive")}</dd>
                     ${product.metadata.genre ? `<dt class="col-sm-4 text-muted">Genre</dt><dd class="col-sm-8">${escapeHtml(product.metadata.genre)}</dd>` : ""}
                     ${product.metadata.release_date ? `<dt class="col-sm-4 text-muted">Release date</dt><dd class="col-sm-8">${escapeHtml(product.metadata.release_date)}</dd>` : ""}
+                    <dt class="col-sm-4 text-muted">Platform</dt><dd class="col-sm-8">Windows 10/11 PC, 64-bit</dd>
                 </dl>` : ""}
                 <p class="display-6 fw-bold mt-4">${escapeHtml(money(product))}</p>${action}
-                <p class="small text-muted mt-3 mb-0">Secure checkout powered by Stripe.</p>
+                <p class="small text-muted mt-3 mb-0">Secure checkout powered by Stripe.${isGame ? " Game downloads are for Windows 10/11 64-bit PCs." : ""}</p>
             </article></div>
         </div>
     </section>`;

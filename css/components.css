@@ -115,8 +115,10 @@ h6,
 }
 
 .navbar-custom > .container {
+    position: relative;
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    min-height: var(--ri-nav-h);
 }
 
 .navbar-custom .navbar-brand {
@@ -126,14 +128,49 @@ h6,
 }
 
 .navbar-custom .nav-primary-links {
-    grid-column: 2;
-    justify-self: center;
-    margin-inline: 0 !important;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block !important;
+    width: 100%;
+    height: 100%;
+    margin: 0 !important;
+    pointer-events: none;
+}
+
+.navbar-custom .nav-primary-links .navbar-nav {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    pointer-events: auto;
+}
+
+.launcher-nav-button {
+    position: absolute;
+    top: 50%;
+    left: calc(50% + var(--nav-links-half-width, 15rem) + 1.5rem);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transform: translateY(-50%);
+    pointer-events: auto;
+}
+
+.launcher-nav-button svg {
+    width: 1.1rem;
+    height: 1.1rem;
 }
 
 .navbar-custom .navbar-actions {
     grid-column: 3;
     justify-self: end;
+    z-index: 2;
+}
+
+.navbar-custom .navbar-brand {
+    z-index: 2;
 }
 
 .navbar-custom.scrolled {
@@ -150,6 +187,23 @@ h6,
 
 .compact-site-controls {
     display: none;
+}
+
+.mobile-settings-trigger,
+.launcher-nav-button[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 991.98px) {
+    .launcher-nav-button {
+        display: none !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .launcher-nav-button:not([hidden]) {
+        display: inline-flex !important;
+    }
 }
 
 
@@ -418,6 +472,22 @@ section {
 .settings-option small,.settings-note { color: var(--ri-muted); font-size: 0.82rem; line-height: 1.45; }
 .settings-option input { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; accent-color: var(--ri-red); }
 .settings-note { margin: 0.9rem 0 0; }
+.settings-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.9rem; }
+.settings-footer .settings-note { margin: 0; }
+.settings-reset { min-height: 44px; padding: 0.5rem 0.75rem; border: 1px solid var(--ri-line); border-radius: var(--ri-radius-xs); background: transparent; color: var(--ri-text); }
+.settings-reset:hover,.settings-reset:focus-visible { border-color: var(--ri-line-strong); background: var(--ri-surface-2); }
+
+html:not([data-download-platform="windows-x64"]) :is([data-game-download], [data-launcher-download], .game-download-btn, .launcher-download-btn) {
+    display: none !important;
+}
+
+html[data-contrast="high"] {
+    --ri-muted: #d0d4dc;
+    --ri-line: rgba(255, 255, 255, 0.26);
+    --ri-line-strong: rgba(255, 255, 255, 0.48);
+}
+
+html[data-text-size="large"] { font-size: 112.5%; }
 
 html[data-motion="reduced"] *,
 html[data-motion="reduced"] *::before,

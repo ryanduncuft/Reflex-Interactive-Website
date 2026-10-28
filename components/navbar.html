@@ -24,6 +24,10 @@
                         </a>
                     </li>
                 </ul>
+                <button class="btn btn-outline-light btn-launcher launcher-nav-button" type="button" data-launcher-open aria-controls="launcher-dialog" aria-haspopup="dialog" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>Launcher</span>
+                </button>
             </div>
 
             <div class="navbar-actions d-flex align-items-center gap-2">
@@ -60,4 +64,14 @@
         </a>
         <button class="mobile-nav-link mobile-settings-trigger" type="button" data-settings-open data-menu-close>Settings</button>
     </div>
+
+    <dialog id="launcher-dialog" class="settings-dialog launcher-dialog" aria-labelledby="launcher-dialog-title">
+        <div class="settings-panel">
+            <div class="settings-heading">
+                <div><p class="settings-eyebrow">Windows PC · 64-bit</p><h2 id="launcher-dialog-title">Reflex Launcher</h2></div>
+                <button class="settings-close" type="button" data-launcher-close aria-label="Close launcher information">&times;</button>
+            </div>
+            <p class="settings-note">The Reflex Launcher download is not available yet. Windows 10/11 x64 downloads will appear here once file hosting is ready.</p>
+        </div>
+    </dialog>
 </header>

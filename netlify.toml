@@ -62,32 +62,35 @@
 [[redirects]]
   from = "/shop"
   query = { id = ":id" }
-  to = "/.netlify/functions/store-ssr?catalog=shop&id=:id"
+  to = "/.netlify/functions/shop-ssr?id=:id"
   status = 200
   force = true
 
 [[redirects]]
   from = "/shop"
-  to = "/.netlify/functions/store-ssr?catalog=shop"
+  to = "/.netlify/functions/shop-ssr"
   status = 200
   force = true
 
 [[redirects]]
   from = "/games"
   query = { id = ":id" }
-  to = "/.netlify/functions/store-ssr?catalog=games&id=:id"
+  to = "/.netlify/functions/games-ssr?id=:id"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/games"
-  to = "/.netlify/functions/store-ssr?catalog=games"
+  to = "/.netlify/functions/games-ssr"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/game-details"
   query = { id = ":id" }
-  to = "/.netlify/functions/store-ssr?catalog=games&id=:id"
+  to = "/.netlify/functions/games-ssr?id=:id"
   status = 200
+  force = true
 
 # Rewrite /support to serve support.html directly without changing URL
 [[redirects]]
@@ -107,33 +110,37 @@
   to = "/shop"
   status = 301
 
-# Query parameter routing for individual games and news posts
+# Server-rendered newswire archive and article details.
 [[redirects]]
   from = "/newswire"
-  query = {id = ":id"}
-  to = "/newswire-details.html?id=:id"
-  status = 301
+  query = { id = ":id" }
+  to = "/.netlify/functions/newswire-ssr?id=:id"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/newswire"
+  to = "/.netlify/functions/newswire-ssr"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/newswire-details"
-  query = {id = ":id"}
-  to = "/newswire-details.html"
+  query = { id = ":id" }
+  to = "/.netlify/functions/newswire-ssr?id=:id"
   status = 200
+  force = true
+
+[[redirects]]
+  from = "/newswire-details"
+  to = "/newswire"
+  status = 301
+  force = true
 
 # Clean HTML extension masking for root pages
 [[redirects]]
   from = "/game-details"
   to = "/game-details.html"
-  status = 200
-
-[[redirects]]
-  from = "/newswire"
-  to = "/newswire.html"
-  status = 200
-
-[[redirects]]
-  from = "/newswire-details"
-  to = "/newswire-details.html"
   status = 200
 
 [[redirects]]
@@ -186,7 +193,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com https://www.google-analytics.com https://files.stripe.com; connect-src 'self' https://gist.githubusercontent.com https://cdn.reflexinteractive.com https://downloads.reflexinteractive.com https://www.google-analytics.com https://cdn.jsdelivr.net; frame-src 'none'"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com https://www.google-analytics.com https://files.stripe.com; connect-src 'self' https://gist.githubusercontent.com https://www.google-analytics.com https://cdn.jsdelivr.net; frame-src 'none'"
 
 [[headers]]
   for = "/css/*"

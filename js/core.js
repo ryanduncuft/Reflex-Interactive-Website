@@ -19,15 +19,10 @@
         logo: SITE_CONFIG.urls?.logo || "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532761/Reflex_Interactive_Logo_no_back_srtf76.png",
         locale: SITE_CONFIG.locale || "en-GB",
         defaultCurrency: SITE_CONFIG.defaultCurrency || "GBP",
-        launcherRuntime: SITE_CONFIG.launcherRuntime || "win-x64",
         navScrollY: SITE_CONFIG.ui?.navScrollY || 24,
         subdomains: {
             support: SITE_CONFIG.urls?.support || "https://support.reflexinteractive.com/",
             careers: SITE_CONFIG.urls?.careers || "https://careers.reflexinteractive.com/",
-        },
-        launcher: {
-            baseUrl: SITE_CONFIG.urls?.launcherFiles || "https://cdn.reflexinteractive.com/launcher-files",
-            versionUrl: SITE_CONFIG.urls?.launcherVersion || "https://cdn.reflexinteractive.com/launcher-files/version.json",
         },
         localRoutes: {
             "/careers": "/careers.html",
@@ -47,6 +42,7 @@
 
     const state = {
         cache: new Map(),
+        productRequests: new Map(),
         supportHost: window.location.hostname.startsWith("support."),
         support: {
             articles: [],
@@ -139,37 +135,6 @@
             return false;
         },
 
-        isMobileDevice: () => {
-            const ua = navigator.userAgent.toLowerCase();
-            return /android|iphone|ipad|ipod|iemobile|mobile|tablet/.test(ua);
-        },
-
-        currentLauncherRuntime: () => {
-            if (utils.isMobileDevice()) return "";
-
-            const ua = navigator.userAgent.toLowerCase();
-            const uaDataPlatform = navigator.userAgentData?.platform || "";
-            const platform = `${uaDataPlatform} ${navigator.platform || ""}`.toLowerCase();
-
-            if (!ua.includes("win") && !platform.includes("win")) return "";
-            if (ua.includes("arm") || platform.includes("arm")) return "";
-            return CONFIG.launcherRuntime;
-        },
-
-        launcherPackageUrl: (packageInfo = {}) => {
-            const explicit = packageInfo.url || packageInfo.download_url || packageInfo.downloadUrl;
-            if (explicit) return explicit;
-
-            const relative = packageInfo.installer || packageInfo.filename || packageInfo.path || packageInfo.key || packageInfo.file || "";
-            if (!relative) return "";
-
-            try {
-                return new URL(relative, `${CONFIG.launcher.baseUrl.replace(/\/$/, "")}/`).toString();
-            } catch {
-                return "";
-            }
-        },
-
         newestFirst: (items = []) => [...items].sort((a, b) => {
             const at = Date.parse(a.date || a.release_date || a.updated || "");
             const bt = Date.parse(b.date || b.release_date || b.updated || "");
@@ -255,7 +220,10 @@
             const cached = state.cache.get(url);
             if (cached) return cached;
 
-            const request = fetch(url, { headers: { Accept: "application/json" } })
+            const request = fetch(url, {
+                headers: { Accept: "application/json" },
+                signal: window.AbortSignal?.timeout?.(8000),
+            })
                 .then((response) => {
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return response.json();
@@ -287,13 +255,23 @@
             }
         },
 
-        // Fetch games directly from Stripe product endpoint instead of Gists
+        products: async (catalog) => {
+            if (!state.productRequests.has(catalog)) {
+                const url = `${CONFIG.api.products}?catalog=${encodeURIComponent(catalog)}`;
+                state.productRequests.set(catalog, data.json(url).then(payload => payload.products || []));
+            }
+            try {
+                return await state.productRequests.get(catalog);
+            } catch (error) {
+                state.productRequests.delete(catalog);
+                throw error;
+            }
+        },
+
+        // Fetch the Stripe game catalog once per page and share it across home widgets.
         games: async () => {
             try {
-                const response = await fetch(`${CONFIG.api.products}?catalog=games`, { headers: { Accept: "application/json" } });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const payload = await response.json();
-                let products = payload.products || [];
+                const products = await data.products("games");
 
                 // Sort globally: Missing or future dates first (highest priority at top), then newest to oldest past dates
                 products.sort((a, b) => {
@@ -346,7 +324,7 @@
         newsCard: (article) => `
             <article class="card modern-card news-card h-100">
                 <a href="${utils.detailHref("newswire-details", article.id)}" class="d-flex h-100 flex-column">
-                    <img src="${utils.normalizeMedia(article.image_url, 720)}" alt="${utils.escape(article.title)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
+                <img src="${utils.normalizeMedia(article.image_url, 720)}" alt="${utils.escape(article.title)}" width="720" height="405" class="modern-card-img" loading="lazy" decoding="async">
                     <div class="card-body d-flex flex-column">
                         <time class="modern-card-date" datetime="${utils.escape(article.date)}">${utils.escape(article.date)}</time>
                         <h3 class="modern-card-title">${utils.escape(article.title)}</h3>
@@ -359,8 +337,9 @@
         gameCard: (game) => `
             <article class="card modern-game-card h-100">
                 <a href="/game-details?id=${encodeURIComponent(game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
-                    <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="eager" decoding="async">
+                    <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="lazy" decoding="async">
                     <div class="modern-game-card-overlay">
+                        <span class="badge bg-secondary align-self-start">Windows PC · 64-bit</span>
                         <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
                         <span class="modern-game-card-link">View Details ${templates.arrow}</span>
                     </div>
@@ -394,7 +373,7 @@
             </article>
         `,
 
-        storeCard: (product) => {
+        catalogCard: (product) => {
             const isGameCatalog = document.body.dataset.catalog === "games";
             const detailHref = isGameCatalog
                 ? `/game-details?id=${encodeURIComponent(product.id)}`
@@ -414,11 +393,12 @@
                     <a class="store-card-link" href="${detailHref}" aria-label="View ${utils.escape(product.name)} details">
                         <div class="position-relative">
                             ${isComingSoon ? '<span class="position-absolute top-0 start-0 m-3 badge bg-danger text-uppercase fw-bold shadow">Coming Soon</span>' : ''}
-                            <img src="${imageUrl}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
+                            <img src="${imageUrl}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="lazy" decoding="async">
                         </div>
                         <div class="card-body d-flex flex-column">
                             <span class="badge bg-secondary mb-2 align-self-start">${utils.escape(product.type)}</span>
                             <h3 class="modern-card-title">${utils.escape(product.name)}</h3>
+                            ${isGameCatalog ? '<p class="small text-muted mb-2">PC · Windows 10/11 · 64-bit</p>' : ""}
                             <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
                             <span class="fs-5 fw-bold text-white mt-auto">${priceFormatted}</span>
                         </div>
@@ -437,90 +417,6 @@
     const railControllers = new WeakMap();
 
     const ui = {
-        initDownloadButtons: async () => {
-            const buttons = dom.qsa(".launcher-download-btn");
-            if (!buttons.length) return;
-
-            const runtime = utils.currentLauncherRuntime();
-
-            const removeButtons = () => {
-                buttons.forEach((button) => button.remove());
-            };
-
-            const disable = (label = "Launcher unavailable") => {
-                buttons.forEach((button) => {
-                    button.href = "#";
-                    button.removeAttribute("download");
-                    button.setAttribute("aria-disabled", "true");
-                    button.classList.add("opacity-50", "cursor-not-allowed");
-                    button.textContent = label;
-                });
-            };
-
-            const enableFallbackDownload = () => {
-                const href = utils.fallbackLauncherPackageUrl();
-                if (!href) {
-                    disable("Launcher temporarily unavailable");
-                    return;
-                }
-
-                buttons.forEach((button) => {
-                    button.href = href;
-                    button.download = "Reflex Interactive Launcher.msi";
-                    button.removeAttribute("aria-disabled");
-                    button.classList.remove("opacity-50", "cursor-not-allowed");
-                    button.textContent = "Download Launcher";
-                });
-            };
-
-            if (!runtime) {
-                removeButtons();
-                return;
-            }
-
-            buttons.forEach((button) => {
-                button.textContent = "Preparing launcher...";
-                button.setAttribute("aria-disabled", "true");
-                button.classList.add("opacity-50", "cursor-not-allowed");
-            });
-
-            try {
-                const response = await fetch(`${CONFIG.launcher.versionUrl}?t=${Date.now()}`, {
-                    headers: { Accept: "application/json" },
-                    cache: "no-store",
-                });
-
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const packageInfo = await response.json();
-                if (packageInfo.runtime && packageInfo.runtime !== runtime) {
-                    throw new Error(`No launcher package for ${runtime}`);
-                }
-
-                const href = utils.launcherPackageUrl(packageInfo);
-                if (!href) throw new Error(`No launcher package for ${runtime}`);
-
-                buttons.forEach((button) => {
-                    button.href = href;
-                    button.download = packageInfo.installer || packageInfo.filename || `ReflexInteractiveLauncher-${runtime}.msi`;
-                    button.removeAttribute("aria-disabled");
-                    button.classList.remove("opacity-50", "cursor-not-allowed");
-                    button.textContent = "Download Launcher";
-                });
-            } catch (error) {
-                console.warn("[Launcher] Version file unavailable", error);
-                enableFallbackDownload();
-            }
-        },
-
-        fallbackLauncherPackageUrl: () => {
-            try {
-                return new URL("Reflex Interactive Launcher.msi", `${CONFIG.launcher.baseUrl.replace(/\/$/, "")}/`).toString();
-            } catch {
-                return "";
-            }
-        },
-
         initRail: (rail) => {
             if (!rail) return null;
             const existing = railControllers.get(rail);
@@ -1029,7 +925,7 @@
             }
         },
 
-        storePage: async (catalogOverride) => {
+        catalogPage: async (catalogOverride) => {
             const container = dom.id("store-products-container");
             if (!container) {
                 console.error("[Store] Critical Error: #store-products-container element not found in DOM!");
@@ -1040,25 +936,10 @@
 
             try {
                 const catalog = catalogOverride || (document.body.dataset.catalog === "shop" ? "shop" : "games");
-                const response = await fetch(`${CONFIG.api.products}?catalog=${catalog}`, {
-                    headers: { Accept: "application/json" },
-                });
-
-
-                if (!response.ok) {
-                    let errorDetails = "";
-                    try {
-                        errorDetails = await response.text();
-                    } catch {
-                        errorDetails = "Could not parse error body";
-                    }
-                    throw new Error(`HTTP ${response.status}: ${errorDetails}`);
-                }
-
-                const dataPayload = await response.json();
+                const catalogProducts = await data.products(catalog);
 
                 const expectedCatalog = catalog;
-                const products = (dataPayload.products || []).filter((product) => {
+                const products = catalogProducts.filter((product) => {
                     const metadata = product.metadata || {};
                     const isGame = String(metadata.game || "").toLowerCase() === "true";
                     const isApparel = [metadata.apparel, metadata.merch]
@@ -1078,7 +959,7 @@
                 products.forEach((product) => {
                     const wrapper = document.createElement("div");
                     wrapper.className = "col";
-                    wrapper.innerHTML = templates.storeCard(product);
+                    wrapper.innerHTML = templates.catalogCard(product);
                     fragment.appendChild(wrapper);
                 });
 
@@ -1091,19 +972,13 @@
             }
         },
 
-        storeDetail: async (productId) => {
+        shopDetail: async (productId) => {
             const gridView = dom.id("store-grid-view");
             const detailView = dom.id("store-detail-view");
             if (!gridView || !detailView) return;
 
             try {
-                const response = await fetch(`${CONFIG.api.products}?catalog=shop`, {
-                    headers: { Accept: "application/json" },
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const dataPayload = await response.json();
-                const products = dataPayload.products || [];
+                const products = await data.products("shop");
                 const product = products.find(p => String(p.id) === String(productId));
 
                 if (!product) {
@@ -1161,13 +1036,7 @@
             if (!id) return app.message("Game not found.", "/games", "Back to Games");
 
             try {
-                const response = await fetch(`${CONFIG.api.products}?catalog=games`, {
-                    headers: { Accept: "application/json" },
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const dataPayload = await response.json();
-                let products = dataPayload.products || [];
+                const products = await data.products("games");
 
                 // Sort: Missing or future dates first (highest priority at top), then newest to oldest past dates
                 products.sort((a, b) => {
@@ -1565,24 +1434,24 @@
 
     const router = {
         run: () => {
-            if (document.body.dataset.ssrCatalog === "true") return;
+            if (document.body.dataset.ssrPage === "true" || document.body.dataset.ssrCatalog === "true") return;
             const path = window.location.pathname.replace(/\/$/, "") || "/";
             const params = new URLSearchParams(window.location.search);
             const id = params.get("id");
 
             if (path === "/shop") {
-                if (id) return render.storeDetail(id);
-                return render.storePage("shop");
+                if (id) return render.shopDetail(id);
+                return render.catalogPage("shop");
             }
 
             if (path.includes("games")) {
                 if (id) return render.gameDetail(id);
-                return render.storePage("games");
+                return render.catalogPage("games");
             }
 
             if (path.includes("store")) {
-                if (id) return render.storeDetail(id);
-                return render.storePage("shop");
+                if (id) return render.shopDetail(id);
+                return render.catalogPage("shop");
             }
 
             if (path.includes("game-details") || (id && dom.id("game-hero"))) return render.gameDetail(id);
@@ -1603,7 +1472,6 @@
             await Promise.all([
                 data.component("navbar", "/components/navbar.html", () => {
                     window.ReflexNavigation?.init(CONFIG);
-                    ui.initDownloadButtons();
                 }),
                 data.component("footer", "/components/footer.html"),
             ]);

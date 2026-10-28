@@ -3,6 +3,7 @@
 const Stripe = require("stripe");
 
 const SITE_URL = "https://reflexinteractive.com";
+const NEWS_URL = "https://gist.githubusercontent.com/ryanduncuft/b4f22cbaf1366f5376bbba87228cab90/raw/reflex_newswire.json";
 const STATIC_ROUTES = [
     { path: "/", changefreq: "weekly", priority: "1.0" },
     { path: "/games", changefreq: "weekly", priority: "0.9" },
@@ -37,8 +38,23 @@ const routeXml = (loc, changefreq, priority) => `  <url>
     <priority>${priority}</priority>
   </url>`;
 
+const getNewsArticles = async () => {
+    try {
+        const response = await fetch(NEWS_URL, { signal: AbortSignal.timeout(5000) });
+        if (!response.ok) return [];
+        const payload = await response.json();
+        const articles = Array.isArray(payload) ? payload : payload.articles || payload.news || payload.posts || [];
+        return Array.isArray(articles) ? articles.filter(article => article?.id) : [];
+    } catch {
+        return [];
+    }
+};
+
 const generateSitemap = async stripe => {
-    const productList = await stripe.products.list({ active: true, limit: 100 });
+    const [productList, articles] = await Promise.all([
+        stripe.products.list({ active: true, limit: 100 }),
+        getNewsArticles(),
+    ]);
     const routes = STATIC_ROUTES.map(({ path, changefreq, priority }) =>
         routeXml(escapeXml(`${SITE_URL}${path}`), changefreq, priority));
 
@@ -51,6 +67,11 @@ const generateSitemap = async stripe => {
         const changefreq = isGame ? "weekly" : "monthly";
         const priority = isGame ? "0.85" : "0.75";
         routes.push(routeXml(`${SITE_URL}${path}?id=${escapeXml(product.id)}`, changefreq, priority));
+    }
+
+    for (const article of articles) {
+        const id = encodeURIComponent(String(article.id));
+        routes.push(routeXml(`${SITE_URL}/newswire-details?id=${escapeXml(id)}`, "monthly", "0.65"));
     }
 
     return `<?xml version="1.0" encoding="UTF-8"?>
