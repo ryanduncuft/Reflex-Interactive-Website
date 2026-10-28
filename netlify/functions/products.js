@@ -3,6 +3,13 @@
 const Stripe = require("stripe");
 const isTrue = value => String(value || "").toLowerCase() === "true";
 
+/*
+ * Stripe Dashboard > Product > Metadata:
+ * Games: game=true; apparel and merch should be false or omitted.
+ * Physical goods: apparel=true (or merch=true); game should be false or omitted.
+ * Catalog assignment intentionally reads Product metadata only; Price metadata is ignored.
+ */
+
 const json = (statusCode, body) => ({
     statusCode,
     headers: {
@@ -42,9 +49,8 @@ exports.handler = async (event) => {
             const price = prices.data.find(item => Number.isInteger(item.unit_amount));
             if (!price) return null;
 
-            const isGame = isTrue(product.metadata.game) || isTrue(price.metadata.game);
-            const isApparel = isTrue(product.metadata.apparel) || isTrue(product.metadata.merch)
-                || isTrue(price.metadata.apparel) || isTrue(price.metadata.merch);
+            const isGame = isTrue(product.metadata?.game);
+            const isApparel = isTrue(product.metadata?.apparel) || isTrue(product.metadata?.merch);
             if (catalog === "games" && (!isGame || isApparel)) return null;
             if (catalog === "shop" && (!isApparel || isGame)) return null;
 

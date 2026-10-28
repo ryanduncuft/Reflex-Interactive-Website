@@ -4,16 +4,17 @@ const Stripe = require("stripe");
 
 const SITE_URL = "https://reflexinteractive.com";
 const STATIC_ROUTES = [
-    ["/", "weekly", "1.0"],
-    ["/games", "weekly", "0.9"],
-    ["/newswire", "daily", "0.8"],
-    ["/shop", "monthly", "0.8"],
-    ["/support", "monthly", "0.6"],
-    ["/privacy", "yearly", "0.3"],
-    ["/tos", "yearly", "0.3"],
+    { path: "/", changefreq: "weekly", priority: "1.0" },
+    { path: "/games", changefreq: "weekly", priority: "0.9" },
+    { path: "/newswire", changefreq: "daily", priority: "0.8" },
+    { path: "/shop", changefreq: "monthly", priority: "0.8" },
+    { path: "/support", changefreq: "monthly", priority: "0.6" },
+    { path: "/privacy", changefreq: "yearly", priority: "0.3" },
+    { path: "/terms", changefreq: "yearly", priority: "0.3" },
+    { path: "/returns", changefreq: "yearly", priority: "0.4" },
 ];
-const isTrue = value => String(value || "").toLowerCase() === "true";
-const xmlEscape = value => String(value).replace(/[&<>"']/g, character => ({
+
+const escapeXml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -28,68 +29,52 @@ const getStripe = () => {
     return stripeClient;
 };
 
-const listProductRoutes = async stripe => {
-    const products = [];
-    for await (const product of stripe.products.list({ active: true, limit: 100 })) products.push(product);
+const isTrue = value => String(value || "").toLowerCase() === "true";
 
-    const routes = [];
-    const batchSize = 8;
-    for (let index = 0; index < products.length; index += batchSize) {
-        const batch = products.slice(index, index + batchSize);
-        const entries = await Promise.all(batch.map(async product => {
-            const prices = await stripe.prices.list({ product: product.id, active: true, type: "one_time", limit: 100 });
-            return { product, price: prices.data.find(item => Number.isInteger(item.unit_amount)) || null };
-        }));
+const routeXml = (loc, changefreq, priority) => `  <url>
+    <loc>${loc}</loc>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
+  </url>`;
 
-        entries.forEach(({ product, price }) => {
-            const game = isTrue(product.metadata?.game) || isTrue(price?.metadata?.game);
-            const apparel = isTrue(product.metadata?.apparel) || isTrue(product.metadata?.merch)
-                || isTrue(price?.metadata?.apparel) || isTrue(price?.metadata?.merch);
-            const status = String(product.metadata?.coming_soon || product.metadata?.status || "").toLowerCase();
-            const comingSoon = status === "true" || status === "coming_soon";
-            if ((!price && !comingSoon) || game === apparel) return;
+const generateSitemap = async stripe => {
+    const productList = await stripe.products.list({ active: true, limit: 100 });
+    const routes = STATIC_ROUTES.map(({ path, changefreq, priority }) =>
+        routeXml(escapeXml(`${SITE_URL}${path}`), changefreq, priority));
 
-            const catalogPath = game ? "/game-details" : "/shop";
-            const lastmod = product.updated ? new Date(product.updated * 1000).toISOString() : "";
-            routes.push({
-                loc: `${SITE_URL}${catalogPath}?id=${encodeURIComponent(product.id)}`,
-                lastmod,
-                priority: game ? "0.75" : "0.65",
-            });
-        });
+    for (const product of productList.data) {
+        const isGame = isTrue(product.metadata?.game);
+        const isApparel = isTrue(product.metadata?.apparel) || isTrue(product.metadata?.merch);
+        if (isGame === isApparel) continue;
+
+        const path = isGame ? "/game-details" : "/shop";
+        const changefreq = isGame ? "weekly" : "monthly";
+        const priority = isGame ? "0.85" : "0.75";
+        routes.push(routeXml(`${SITE_URL}${path}?id=${escapeXml(product.id)}`, changefreq, priority));
     }
-    return routes;
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${routes.join("\n")}
+</urlset>`;
 };
 
-const response = (statusCode, body) => ({
+const xmlResponse = (statusCode, body) => ({
     statusCode,
     headers: {
         "Content-Type": "application/xml; charset=utf-8",
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
-        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "public, max-age=3600",
     },
     body,
 });
 
 exports.handler = async event => {
-    if (event.httpMethod !== "GET") return response(405, "Method not allowed");
+    if (event.httpMethod !== "GET") return xmlResponse(405, "Method not allowed");
 
     try {
-        const dynamicRoutes = await listProductRoutes(getStripe());
-        const staticEntries = STATIC_ROUTES.map(([path, changefreq, priority]) => ({ loc: `${SITE_URL}${path}`, changefreq, priority }));
-        const entries = [...staticEntries, ...dynamicRoutes].map(route => `    <url>
-        <loc>${xmlEscape(route.loc)}</loc>${route.lastmod ? `
-        <lastmod>${xmlEscape(route.lastmod)}</lastmod>` : ""}
-        <changefreq>${route.changefreq || "weekly"}</changefreq>
-        <priority>${route.priority}</priority>
-    </url>`).join("\n");
-        const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries}
-</urlset>`;
-        return response(200, xml);
+        return xmlResponse(200, await generateSitemap(getStripe()));
     } catch (error) {
         console.error("Sitemap generation failed", error);
-        return response(503, "<?xml version=\"1.0\" encoding=\"UTF-8\"?><error>Sitemap temporarily unavailable</error>");
+        return xmlResponse(500, "<?xml version=\"1.0\" encoding=\"UTF-8\"?><error>Sitemap generation failed</error>");
     }
 };

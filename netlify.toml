@@ -134,6 +134,26 @@
   to = "/newswire-details.html"
   status = 200
 
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/tos"
+  to = "/terms"
+  status = 301
+
+[[redirects]]
+  from = "/terms"
+  to = "/terms.html"
+  status = 200
+
+[[redirects]]
+  from = "/returns"
+  to = "/returns.html"
+  status = 200
+
 # Prevent direct access to raw .html files by redirecting to clean URLs
 [[redirects]]
   from = "/*.html"

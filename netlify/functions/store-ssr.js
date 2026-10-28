@@ -6,6 +6,10 @@ const SITE_URL = "https://reflexinteractive.com";
 const DEFAULT_IMAGE = "https://res.cloudinary.com/dvju1xiaw/image/upload/q_auto,f_auto/v1778532765/Reflex_Interactive_f3zylo.png";
 const TRUE = value => String(value || "").toLowerCase() === "true";
 
+/* Stripe Product metadata: game=true for games; apparel=true or merch=true for
+ * physical goods. Set the opposite catalog flags to false or leave them absent.
+ * Price metadata does not assign products to a catalog. */
+
 let stripeClient;
 const getStripe = () => {
     if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
@@ -22,7 +26,7 @@ const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character =>
 }[character]));
 
 const safeJson = value => JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
-const truthyTag = (product, price, key) => TRUE(product.metadata?.[key]) || TRUE(price?.metadata?.[key]);
+const truthyTag = (product, key) => TRUE(product.metadata?.[key]);
 const asUrl = value => {
     try {
         const url = new URL(value);
@@ -38,8 +42,8 @@ const getPrice = async (stripe, productId) => {
 };
 
 const normalizeProduct = (product, price) => {
-    const game = truthyTag(product, price, "game");
-    const apparel = truthyTag(product, price, "apparel") || truthyTag(product, price, "merch");
+    const game = truthyTag(product, "game");
+    const apparel = truthyTag(product, "apparel") || truthyTag(product, "merch");
     if (game === apparel) return null;
 
     const status = String(product.metadata?.coming_soon || product.metadata?.status || "").toLowerCase();
@@ -181,21 +185,21 @@ const listingPage = (catalog, products) => {
     const canonical = `${SITE_URL}/${isGames ? "games" : "shop"}`;
     const cards = products.map(product => {
         return `<div class="col"><article class="card modern-card store-card h-100">
-            <a class="d-block" href="${escapeHtml(routeFor(catalog, product.id))}" aria-label="View ${escapeHtml(product.name)}">
+            <a class="store-card-link" href="${escapeHtml(routeFor(catalog, product.id))}" aria-label="View ${escapeHtml(product.name)} details">
                 <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" width="720" height="405" class="modern-card-img" loading="lazy" decoding="async">
-            </a>
-            <div class="card-body d-flex flex-column">
-                <span class="badge bg-secondary mb-2 align-self-start">${escapeHtml(product.metadata.category || (isGames ? "Game" : "Apparel"))}</span>
-                <h2 class="modern-card-title h4"><a class="text-white text-decoration-none" href="${escapeHtml(routeFor(catalog, product.id))}">${escapeHtml(product.name)}</a></h2>
-                ${product.metadata.genre ? `<p class="small text-muted mb-1">${escapeHtml(product.metadata.genre)}</p>` : ""}
-                ${product.metadata.release_date ? `<p class="small text-muted mb-2">Release: ${escapeHtml(product.metadata.release_date)}</p>` : ""}
-                <p class="text-muted small mb-3">${escapeHtml(product.description)}</p>
-                <div class="d-flex align-items-center justify-content-between gap-2 mt-auto">
-                    <span class="fs-5 fw-bold text-white">${escapeHtml(money(product))}</span>
-                    ${product.available
-                        ? `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${escapeHtml(product.id)}" data-checkout-price="${escapeHtml(product.priceId)}" data-checkout-catalog="${catalog}">${isGames ? "Buy Game" : "Buy Merch"}</button>`
-                        : `<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>`}
+                <div class="card-body d-flex flex-column">
+                    <span class="badge bg-secondary mb-2 align-self-start">${escapeHtml(product.metadata.category || (isGames ? "Game" : "Apparel"))}</span>
+                    <h2 class="modern-card-title h4">${escapeHtml(product.name)}</h2>
+                    ${product.metadata.genre ? `<p class="small text-muted mb-1">${escapeHtml(product.metadata.genre)}</p>` : ""}
+                    ${product.metadata.release_date ? `<p class="small text-muted mb-2">Release: ${escapeHtml(product.metadata.release_date)}</p>` : ""}
+                    <p class="text-muted small mb-3">${escapeHtml(product.description)}</p>
+                    <span class="fs-5 fw-bold text-white mt-auto">${escapeHtml(money(product))}</span>
                 </div>
+            </a>
+            <div class="store-card-actions">
+                ${product.available
+                    ? `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${escapeHtml(product.id)}" data-checkout-price="${escapeHtml(product.priceId)}" data-checkout-catalog="${catalog}">${isGames ? "Buy Game" : "Buy Merch"}</button>`
+                    : `<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>`}
             </div>
         </article></div>`;
     }).join("");

@@ -36,9 +36,12 @@
             "/newswire": "/newswire.html",
             "/newswire-details": "/newswire-details.html",
             "/privacy": "/privacy.html",
+            "/returns": "/returns.html",
+            "/shop": "/store.html",
             "/store": "/store.html",
             "/support": "/support.html",
-            "/tos": "/tos.html",
+            "/terms": "/terms.html",
+            "/tos": "/terms.html",
         },
     };
 
@@ -355,7 +358,7 @@
 
         gameCard: (game) => `
             <article class="card modern-game-card h-100">
-                <a href="/game-details.html?id=${encodeURIComponent(game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
+                <a href="/game-details?id=${encodeURIComponent(game.id)}" class="modern-game-card-anchor" aria-label="Explore ${utils.escape(game.title)}">
                     <img src="${utils.normalizeMedia(game.image_url, 720)}" alt="${utils.escape(game.title)} cover art" width="720" height="405" class="modern-game-card-img" loading="eager" decoding="async">
                     <div class="modern-game-card-overlay">
                         <h3 class="modern-game-card-title">${utils.escape(game.title)}</h3>
@@ -393,6 +396,9 @@
 
         storeCard: (product) => {
             const isGameCatalog = document.body.dataset.catalog === "games";
+            const detailHref = isGameCatalog
+                ? `/game-details?id=${encodeURIComponent(product.id)}`
+                : `/shop?id=${encodeURIComponent(product.id)}`;
             const priceFormatted = product.unitAmount === 0
                 ? "FREE"
                 : new Intl.NumberFormat(navigator.language || CONFIG.locale, {
@@ -405,23 +411,23 @@
 
             return `
                 <article class="card modern-card store-card h-100">
-                    <div class="position-relative">
-                        ${isComingSoon ? '<span class="position-absolute top-0 start-0 m-3 badge bg-danger text-uppercase fw-bold shadow">Coming Soon</span>' : ''}
-                        <img src="${imageUrl}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <span class="badge bg-secondary mb-2 align-self-start">${utils.escape(product.type)}</span>
-                        <h3 class="modern-card-title">
-                            ${document.body.dataset.catalog === "games" ? `<a href="/game-details?id=${encodeURIComponent(product.id)}" class="text-white text-decoration-none">${utils.escape(product.name)}</a>` : utils.escape(product.name)}
-                        </h3>
-                        <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
-                        <div class="d-flex align-items-center justify-content-between mt-auto">
-                            <span class="fs-5 fw-bold text-white">${priceFormatted}</span>
-                            ${isComingSoon
-                                ? '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>'
-                                : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}" data-checkout-catalog="${document.body.dataset.catalog || "games"}">${product.unitAmount === 0 ? "Get Free" : isGameCatalog ? "Buy Game" : "Buy Merch"}</button>`
-                            }
+                    <a class="store-card-link" href="${detailHref}" aria-label="View ${utils.escape(product.name)} details">
+                        <div class="position-relative">
+                            ${isComingSoon ? '<span class="position-absolute top-0 start-0 m-3 badge bg-danger text-uppercase fw-bold shadow">Coming Soon</span>' : ''}
+                            <img src="${imageUrl}" alt="${utils.escape(product.name)}" width="720" height="405" class="modern-card-img" loading="eager" decoding="async">
                         </div>
+                        <div class="card-body d-flex flex-column">
+                            <span class="badge bg-secondary mb-2 align-self-start">${utils.escape(product.type)}</span>
+                            <h3 class="modern-card-title">${utils.escape(product.name)}</h3>
+                            <p class="text-muted small mb-3">${utils.escape(product.description)}</p>
+                            <span class="fs-5 fw-bold text-white mt-auto">${priceFormatted}</span>
+                        </div>
+                    </a>
+                    <div class="store-card-actions">
+                        ${isComingSoon
+                            ? '<button type="button" class="btn btn-outline-secondary btn-sm" disabled>Coming Soon</button>'
+                            : `<button type="button" class="btn btn-danger btn-sm" data-checkout-product="${utils.escape(product.id)}" data-checkout-price="${utils.escape(product.priceId)}" data-checkout-catalog="${document.body.dataset.catalog || "games"}">${product.unitAmount === 0 ? "Get Free" : isGameCatalog ? "Buy Game" : "Buy Merch"}</button>`
+                        }
                     </div>
                 </article>
             `;
@@ -1051,10 +1057,20 @@
 
                 const dataPayload = await response.json();
 
-                const products = dataPayload.products || [];
+                const expectedCatalog = catalog;
+                const products = (dataPayload.products || []).filter((product) => {
+                    const metadata = product.metadata || {};
+                    const isGame = String(metadata.game || "").toLowerCase() === "true";
+                    const isApparel = [metadata.apparel, metadata.merch]
+                        .some((value) => String(value || "").toLowerCase() === "true");
+                    return expectedCatalog === "games"
+                        ? isGame && !isApparel
+                        : isApparel && !isGame;
+                });
 
                 if (!products.length) {
-                    container.innerHTML = '<div class="text-center text-muted py-5">No products available in the store right now. Please ensure your Stripe products are active with valid prices.</div>';
+                    const catalogLabel = catalog === "games" ? "games" : "merchandise";
+                    container.innerHTML = `<div class="text-center text-muted py-5">No ${catalogLabel} are available right now.</div>`;
                     return;
                 }
 

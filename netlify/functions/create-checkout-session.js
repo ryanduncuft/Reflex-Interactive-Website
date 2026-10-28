@@ -62,13 +62,14 @@ exports.handler = async (event) => {
         const product = await stripe.products.retrieve(productId);
         if (!product.active) return json(400, { error: "This item is not available" });
 
-        const productIsGame = String(product.metadata.game || "").toLowerCase() === "true";
-        const productIsApparel = [product.metadata.apparel, product.metadata.merch].some(value => String(value || "").toLowerCase() === "true");
-        const priceIsGame = String(price.metadata.game || "").toLowerCase() === "true";
-        const priceIsApparel = [price.metadata.apparel, price.metadata.merch].some(value => String(value || "").toLowerCase() === "true");
+        // Catalog tags must be set on the Stripe Product: game=true for games;
+        // apparel=true or merch=true for physical goods. Price metadata is not authoritative.
+        const productIsGame = String(product.metadata?.game || "").toLowerCase() === "true";
+        const productIsApparel = [product.metadata?.apparel, product.metadata?.merch]
+            .some(value => String(value || "").toLowerCase() === "true");
         const isCorrectCatalog = catalog === "shop"
-            ? (productIsApparel || priceIsApparel) && !(productIsGame || priceIsGame)
-            : (productIsGame || priceIsGame) && !(productIsApparel || priceIsApparel);
+            ? productIsApparel && !productIsGame
+            : productIsGame && !productIsApparel;
         if (!isCorrectCatalog) return json(400, { error: "This item is not available in this catalog" });
 
         const siteUrl = getSiteUrl();
@@ -78,15 +79,15 @@ exports.handler = async (event) => {
             ...(catalog === "shop" ? {
                 shipping_address_collection: { allowed_countries: ["GB"] },
             } : {}),
-            
+
             // Collect customer email for receipts and future account linking.
             customer_creation: "always",
             phone_number_collection: { enabled: false },
 
             success_url: `${siteUrl}/${catalog === "shop" ? "shop" : "games"}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${siteUrl}/${catalog === "shop" ? "shop" : "games"}?checkout=cancel`,
-            metadata: { 
-                productId: product.id, 
+            metadata: {
+                productId: product.id,
                 priceId: price.id,
                 catalog
             }
