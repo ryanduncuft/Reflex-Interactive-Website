@@ -52,6 +52,13 @@
   force = true
 
 # === 3. Main Domain Route Rewrites ===
+# Server-rendered homepage to prevent Soft 404 errors on search crawlers
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/home-ssr"
+  status = 200
+  force = true
+
 # Stripe-backed, server-rendered catalogs and crawlable product detail routes.
 [[redirects]]
   from = "/sitemap.xml"
@@ -163,7 +170,7 @@
   to = "/returns.html"
   status = 200
 
-# Keep the homepage's file URL on its canonical root route.
+# Keep the homepage's file URL on its canonical root route (fallback rule if needed, though caught above)
 [[redirects]]
   from = "/index.html"
   to = "/"
