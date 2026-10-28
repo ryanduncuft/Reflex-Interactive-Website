@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Account Access | Reflex Interactive</title>
+
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#000000">
+    
+    <!-- Resource Hints & Performance Optimizations -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- CSS Dependencies -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="bg-black text-white min-vh-100 d-flex flex-column justify-content-between overflow-x-hidden">
+
+    <div id="navbar"></div>
+
+    <main class="container d-flex align-items-center justify-content-center py-5 my-auto">
+        <div class="w-100" style="max-width: 440px;">
+            
+            <!-- Studio Branding Header -->
+            <div class="text-center mb-4">
+                <p class="section-kicker mb-2">Player Portal</p>
+                <h1 class="h2 fw-bold text-white">Access Your Account</h1>
+                <p class="text-muted small">Manage your profile, game downloads, and community access.</p>
+            </div>
+
+            <!-- Auth Card Container -->
+            <div class="bg-dark border border-secondary rounded-4 shadow-lg p-4 p-md-4 position-relative overflow-hidden">
+                
+                <!-- Subtle Red Glow Accent -->
+                <div class="position-absolute top-0 start-50 translate-middle-x bg-danger opacity-10 rounded-circle" style="width: 200px; height: 200px; filter: blur(60px); pointer-events: none;"></div>
+
+                <!-- Tab Navigation Switcher -->
+                <ul class="nav nav-pills nav-fill bg-black p-1 rounded-3 mb-4 border border-secondary border-opacity-50" id="authTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active text-white fw-bold py-2 rounded-2" id="signin-tab" data-bs-toggle="pill" data-bs-target="#signin-pane" type="button" role="tab" aria-controls="signin-pane" aria-selected="true">Sign In</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-muted fw-bold py-2 rounded-2" id="register-tab" data-bs-toggle="pill" data-bs-target="#register-pane" type="button" role="tab" aria-controls="register-pane" aria-selected="false">Register</button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content Bodies -->
+                <div class="tab-content position-relative z-3" id="authTabsContent">
+                    
+                    <!-- SIGN IN PANE -->
+                    <div class="tab-pane fade show active" id="signin-pane" role="tabpanel" aria-labelledby="signin-tab" tabindex="0">
+                        <form id="signin-form" onsubmit="event.preventDefault();">
+                            <div class="mb-3">
+                                <label for="signin-email" class="form-label small text-muted">Email Address</label>
+                                <input type="email" class="form-control bg-black text-white border-secondary" id="signin-email" placeholder="name@example.com" required disabled>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label for="signin-password" class="form-label small text-muted mb-0">Password</label>
+                                    <a href="#forgot" class="small text-danger text-decoration-none">Forgot?</a>
+                                </div>
+                                <input type="password" class="form-control bg-black text-white border-secondary mt-1" id="signin-password" placeholder="••••••••" required disabled>
+                            </div>
+                            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mt-2" disabled>Sign In</button>
+                        </form>
+                    </div>
+
+                    <!-- REGISTER PANE -->
+                    <div class="tab-pane fade" id="register-pane" role="tabpanel" aria-labelledby="register-tab" tabindex="0">
+                        <form id="register-form" onsubmit="event.preventDefault();">
+                            <div class="mb-3">
+                                <label for="register-username" class="form-label small text-muted">Username / GamerTag</label>
+                                <input type="text" class="form-control bg-black text-white border-secondary" id="register-username" placeholder="ReflexOperator" required disabled>
+                            </div>
+                            <div class="mb-3">
+                                <label for="register-email" class="form-label small text-muted">Email Address</label>
+                                <input type="email" class="form-control bg-black text-white border-secondary" id="register-email" placeholder="name@example.com" required disabled>
+                            </div>
+                            <div class="mb-3">
+                                <label for="register-password" class="form-label small text-muted">Create Password</label>
+                                <input type="password" class="form-control bg-black text-white border-secondary" id="register-password" placeholder="••••••••" required disabled>
+                                <div class="form-text text-muted" style="font-size: 0.75rem;">Must be at least 8 characters long.</div>
+                            </div>
+                            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mt-2" disabled>Create Account</button>
+                        </form>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Footer Return Link -->
+            <div class="text-center mt-4">
+                <a href="./" class="text-muted small text-decoration-none hover-text-white">&larr; Return to Reflex Interactive Home</a>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- IN-YOUR-FACE MAINTENANCE MODAL -->
+    <div class="modal fade" id="authNoticeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="authNoticeLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border border-secondary rounded-4 shadow-lg overflow-hidden position-relative">
+                
+                <!-- Red Accent Top Bar -->
+                <div class="bg-danger" style="height: 4px;"></div>
+
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <span class="badge bg-danger text-uppercase px-2 py-1 small fw-bold">Notice</span>
+                    <h5 class="modal-title ms-2 fw-bold" id="authNoticeLabel">System Notice</h5>
+                </div>
+                
+                <div class="modal-body px-4 py-3">
+                    <h4 class="fw-bold text-white mb-3">Portal Under Construction</h4>
+                    <p class="text-light fs-6 mb-3">
+                        Player account registration and authentication services are currently offline while we perform scheduled database and infrastructure upgrades.
+                    </p>
+                    <div class="p-3 bg-black rounded-3 border border-secondary border-opacity-50 text-muted small mb-3">
+                        <strong class="text-white d-block mb-1">Status Update:</strong>
+                        Full account creation will remain suspended until system integration is complete. Access will be officially enabled once the <strong>Sign In / Register</strong> options appear in the main navigation header.
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex flex-column flex-sm-row gap-2">
+                    <button type="button" class="btn btn-outline-light w-100 py-2 fw-bold" data-bs-dismiss="modal">Acknowledge</button>
+                    <a href="./" class="btn btn-danger w-100 py-2 fw-bold text-center">Return Home</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="footer"></div>
+
+    <!-- Core Scripts needed for layout template compliance -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./js/site-config.js"></script>
+    <script src="./js/navigation.js" defer></script>
+    <script src="./js/settings.js" defer></script>
+    <script src="./js/core.js" defer></script>
+
+    <!-- Auto-launch Modal JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var noticeModal = new bootstrap.Modal(document.getElementById('authNoticeModal'));
+            noticeModal.show();
+        });
+    </script>
+</body>
+</html>

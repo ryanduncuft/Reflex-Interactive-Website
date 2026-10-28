@@ -174,48 +174,6 @@
       ]
     }
     </script>
-
-    <style>
-        .overhaul-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 99999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .overhaul-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .overhaul-modal {
-            background: #121212;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-top: 4px solid #dc3545;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 100%;
-            padding: 2.5rem 2rem;
-            text-align: center;
-            box-shadow: none;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-
-        .overhaul-overlay.show .overhaul-modal {
-            transform: scale(1);
-        }
-    </style>
 </head>
 <body class="bg-black text-white overflow-x-hidden">
     
@@ -309,6 +267,22 @@
             </div>
         </section>
     </main>
+
+    <!-- NON-INTRUSIVE OVERHAUL POPUP / TOAST -->
+    <div id="maintenance-toast" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+        <div class="toast show bg-dark text-white border border-secondary shadow-lg rounded-4" role="alert" aria-live="assertive" aria-atomic="true" style="max-width: 360px;">
+            <div class="toast-header bg-black text-white border-bottom border-secondary rounded-top-4 px-3 py-2">
+                <span class="badge bg-danger me-2">Overhaul</span>
+                <strong class="me-auto fs-6">System Maintenance</strong>
+                <small class="text-muted">~2 Months</small>
+                <button type="button" class="btn-close btn-close-white ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close" onclick="document.getElementById('maintenance-toast').style.display='none'"></button>
+            </div>
+            <div class="toast-body p-3 fs-7">
+                <p class="mb-2 text-light">We are building out a new Supabase account system and setting up proper game file hosting.</p>
+                <p class="mb-0 text-muted small">Mostly everything should work fine, but <strong>we cannot guarantee full stability</strong> during this transition. Thanks for your patience!</p>
+            </div>
+        </div>
+    </div>
 
     <div id="footer"></div>
     
