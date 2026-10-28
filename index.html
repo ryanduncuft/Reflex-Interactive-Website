@@ -310,36 +310,6 @@
     </main>
 
     <div id="footer"></div>
-
-    <!-- Overhaul Alert Modal -->
-    <div id="overhaulModal" class="overhaul-overlay" role="dialog" aria-modal="true" aria-labelledby="overhaul-title">
-        <div class="overhaul-modal">
-            <p class="section-kicker mb-2">Notice</p>
-            <h2 id="overhaul-title" class="h3 fw-bold mb-3">Site Under Overhaul</h2>
-            <p class="text-muted mb-4">
-                We're currently undergoing a massive redesign. Most features and pages will be broken or unavailable while updates are taking place. Thank you for your patience!
-            </p>
-            <button type="button" class="btn btn-danger btn-lg px-4" onclick="dismissOverhaulModal()">
-                I Understand
-            </button>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const modal = document.getElementById('overhaulModal');
-            if (modal) {
-                modal.classList.add('show');
-            }
-        });
-
-        function dismissOverhaulModal() {
-            const modal = document.getElementById('overhaulModal');
-            if (modal) {
-                modal.classList.remove('show');
-            }
-        }
-    </script>
     
     <script src="./js/site-config.js"></script>
     <script src="./js/navigation.js" defer></script>
