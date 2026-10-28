@@ -64,11 +64,13 @@
   query = { id = ":id" }
   to = "/.netlify/functions/store-ssr?catalog=shop&id=:id"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/shop"
   to = "/.netlify/functions/store-ssr?catalog=shop"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/games"
@@ -153,6 +155,13 @@
   from = "/returns"
   to = "/returns.html"
   status = 200
+
+# Keep the homepage's file URL on its canonical root route.
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+  force = true
 
 # Prevent direct access to raw .html files by redirecting to clean URLs
 [[redirects]]

@@ -1029,7 +1029,7 @@
             }
         },
 
-        storePage: async () => {
+        storePage: async (catalogOverride) => {
             const container = dom.id("store-products-container");
             if (!container) {
                 console.error("[Store] Critical Error: #store-products-container element not found in DOM!");
@@ -1039,7 +1039,7 @@
             utils.spinner("store-loading-spinner", true);
 
             try {
-                const catalog = document.body.dataset.catalog === "shop" ? "shop" : "games";
+                const catalog = catalogOverride || (document.body.dataset.catalog === "shop" ? "shop" : "games");
                 const response = await fetch(`${CONFIG.api.products}?catalog=${catalog}`, {
                     headers: { Accept: "application/json" },
                 });
@@ -1570,14 +1570,19 @@
             const params = new URLSearchParams(window.location.search);
             const id = params.get("id");
 
+            if (path === "/shop") {
+                if (id) return render.storeDetail(id);
+                return render.storePage("shop");
+            }
+
             if (path.includes("games")) {
                 if (id) return render.gameDetail(id);
-                return render.storePage();
+                return render.storePage("games");
             }
 
             if (path.includes("store")) {
                 if (id) return render.storeDetail(id);
-                return render.storePage();
+                return render.storePage("shop");
             }
 
             if (path.includes("game-details") || (id && dom.id("game-hero"))) return render.gameDetail(id);
